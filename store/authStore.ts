@@ -1,0 +1,1 @@
+// Auth state (user data, JWT tokens)

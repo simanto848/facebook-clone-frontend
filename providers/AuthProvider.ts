@@ -1,0 +1,1 @@
+// Manages session checking on load
