@@ -8,6 +8,7 @@ const LeftSidebar = () => {
     <aside
       className="
         w-72
+        min-h-screen
         bg-[#111827]
         border-r
         border-[#1f2937]

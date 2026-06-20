@@ -2,6 +2,7 @@ import CreatePost from "@/components/features/post/CreatePost";
 import PostCard from "@/components/features/post/PostCard";
 import Stories from "@/components/features/story/Stories";
 import LeftSidebar from "@/components/layout/LeftSidebar";
+import RightSidebar from "@/components/layout/RightSidebar";
 
 export default function Home() {
   return (
@@ -26,7 +27,9 @@ export default function Home() {
       </section>
 
       {/* RIGHT SIDEBAR */}
-      <section className="shrink-0"></section>
+      <section className="shrink-0">
+        <RightSidebar />
+      </section>
     </div>
   );
 }
