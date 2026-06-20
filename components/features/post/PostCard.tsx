@@ -4,7 +4,7 @@ import React from "react";
 
 const PostCard = () => {
   return (
-    <div className="bg-[#111827] border border-slate-800 rounded-2xl p-5 max-w-2xl">
+    <div className="bg-[#111827] border border-slate-800 rounded-2xl p-5 max-w-3xl">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
