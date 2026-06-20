@@ -88,7 +88,7 @@ const RightSidebar = () => {
               key={friend.name}
               className="flex items-center gap-3 rounded-xl p-2 transition-all duration-200 hover:bg-[#1a2233] cursor-pointer"
             >
-              <div className="relative flex-shrink-0">
+              <div className="relative shrink-0">
                 <Image
                   src={friend.image}
                   alt={friend.name}
