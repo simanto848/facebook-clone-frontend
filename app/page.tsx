@@ -2,34 +2,36 @@ import CreatePost from "@/components/features/post/CreatePost";
 import PostCard from "@/components/features/post/PostCard";
 import Stories from "@/components/features/story/Stories";
 import LeftSidebar from "@/components/layout/LeftSidebar";
+import Navbar from "@/components/layout/Navbar";
 import RightSidebar from "@/components/layout/RightSidebar";
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen">
-      {/* LEFT SIDEBAR */}
-      <div className="sticky top-0 h-screen shrink-0 overflow-y-auto">
-        <LeftSidebar />
-      </div>
+    <div className="min-h-screen bg-[#0f172a]">
+      {/* TOP NAVBAR */}
+      <Navbar />
 
-      {/* MAIN CONTENT */}
-      <section className="flex-1 max-w-3xl py-6 px-4">
-        <main>
-          {/* STORY SECTION */}
-          <Stories />
+      {/* PAGE CONTENT */}
+      <div className="flex">
+        {/* LEFT SIDEBAR */}
+        <aside className="w-72 shrink-0">
+          <LeftSidebar />
+        </aside>
 
-          {/* CREATE POST SECTION */}
-          <CreatePost />
-
-          {/* POSTS SECTION (FEED) */}
-          <PostCard />
+        {/* MAIN FEED */}
+        <main className="flex-1 flex justify-center">
+          <div className="w-full max-w-3xl px-6 py-6">
+            <Stories />
+            <CreatePost />
+            <PostCard />
+          </div>
         </main>
-      </section>
 
-      {/* RIGHT SIDEBAR */}
-      <section className="shrink-0">
-        <RightSidebar />
-      </section>
+        {/* RIGHT SIDEBAR */}
+        <aside className="w-80 shrink-0">
+          <RightSidebar />
+        </aside>
+      </div>
     </div>
   );
 }
