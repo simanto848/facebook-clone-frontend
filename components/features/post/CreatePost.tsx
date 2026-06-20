@@ -4,7 +4,7 @@ import Image from "next/image";
 
 const CreatePost = () => {
   return (
-    <div className="my-10 bg-[#111827] border border-[#1f2937] rounded-2xl overflow-hidden">
+    <div className="bg-[#111827] border border-[#1f2937] rounded-2xl overflow-hidden">
       <div className="flex gap-4 p-5">
         <div className="h-12 w-12 rounded-full overflow-hidden shrink-0">
           <Image
