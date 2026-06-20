@@ -26,7 +26,7 @@ export default function Home() {
       </section>
 
       {/* RIGHT SIDEBAR */}
-      <section className="flex-shrink-0"></section>
+      <section className="shrink-0"></section>
     </div>
   );
 }
