@@ -1,12 +1,13 @@
 import CreatePost from "@/components/features/post/CreatePost";
 import PostCard from "@/components/features/post/PostCard";
 import Stories from "@/components/features/story/Stories";
+import LeftSidebar from "@/components/layout/LeftSidebar";
 
 export default function Home() {
   return (
     <>
       {/* LEFT SIDEBAR */}
-      <section></section>
+      <LeftSidebar />
 
       {/* MAIN CONTENT */}
       <section className="max-w-3xl mx-auto">
