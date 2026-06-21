@@ -1,1 +1,101 @@
 @import "tailwindcss";
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+.theme-light {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+.theme-light body,
+.theme-light .bg-\[\#0f172a\],
+.theme-light .bg-\[\#0b0f19\] {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+.theme-light .bg-\[\#111827\],
+.theme-light .bg-\[\#1f2937\],
+.theme-light .bg-\[\#1f2937\]\/50,
+.theme-light .bg-\[\#1f2937\]\/30,
+.theme-light .bg-\[\#111827\]\/80,
+.theme-light .bg-\[\#111827\]\/30,
+.theme-light .bg-\[\#111827\]\/40 {
+  background-color: #ffffff !important;
+  color: #1e293b !important;
+}
+.theme-light .border-\[\#1f2937\],
+.theme-light .border-\[\#374151\],
+.theme-light .border-t,
+.theme-light .border-b,
+.theme-light .border-r {
+  border-color: #e2e8f0 !important;
+}
+.theme-light .text-slate-300,
+.theme-light .text-slate-400,
+.theme-light .text-slate-500,
+.theme-light .text-slate-200 {
+  color: #475569 !important;
+}
+.theme-light .text-white,
+.theme-light h1,
+.theme-light h2,
+.theme-light h3,
+.theme-light h4,
+.theme-light h5,
+.theme-light h6,
+.theme-light span.text-white {
+  color: #0f172a !important;
+}
+
+/* CYBERPUNK THEME */
+.theme-cyberpunk {
+  background-color: #0c0014 !important;
+  color: #39ff14 !important;
+}
+.theme-cyberpunk body,
+.theme-cyberpunk .bg-\[\#0f172a\],
+.theme-cyberpunk .bg-\[\#0b0f19\] {
+  background-color: #0c0014 !important;
+  color: #39ff14 !important;
+}
+.theme-cyberpunk .bg-\[\#111827\],
+.theme-cyberpunk .bg-\[\#1f2937\],
+.theme-cyberpunk .bg-\[\#1f2937\]\/50,
+.theme-cyberpunk .bg-\[\#1f2937\]\/30,
+.theme-cyberpunk .bg-\[\#111827\]\/80,
+.theme-cyberpunk .bg-\[\#111827\]\/30,
+.theme-cyberpunk .bg-\[\#111827\]\/40 {
+  background-color: #200030 !important;
+  color: #ff007f !important;
+  box-shadow: 0 0 10px rgba(255, 0, 127, 0.2);
+}
+.theme-cyberpunk .border-\[\#1f2937\],
+.theme-cyberpunk .border-\[\#374151\],
+.theme-cyberpunk .border-t,
+.theme-cyberpunk .border-b,
+.theme-cyberpunk .border-r {
+  border-color: #ff007f !important;
+}
+.theme-cyberpunk .text-slate-300,
+.theme-cyberpunk .text-slate-400,
+.theme-cyberpunk .text-slate-200 {
+  color: #00ffff !important;
+}
+.theme-cyberpunk .text-white,
+.theme-cyberpunk h1,
+.theme-cyberpunk h2,
+.theme-cyberpunk h3,
+.theme-cyberpunk h4,
+.theme-cyberpunk h5,
+.theme-cyberpunk h6,
+.theme-cyberpunk span.text-white {
+  color: #ff007f !important;
+  text-shadow: 0 0 5px rgba(255, 0, 127, 0.5);
+}

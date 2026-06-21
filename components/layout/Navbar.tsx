@@ -42,6 +42,16 @@ export default function Navbar() {
     };
   }, []);
 
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("app-theme") || "dark";
+    document.documentElement.classList.remove("theme-light", "theme-cyberpunk");
+    if (savedTheme === "light") {
+      document.documentElement.classList.add("theme-light");
+    } else if (savedTheme === "cyberpunk") {
+      document.documentElement.classList.add("theme-cyberpunk");
+    }
+  }, []);
+
   const toggleDropdown = (type: "profile" | "notifications" | "messages") => {
     setActiveDropdown((prev) => (prev === type ? null : type));
   };

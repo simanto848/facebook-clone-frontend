@@ -1,7 +1,31 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import SettingsSection from "@/components/features/settings/SettingsSection";
 import SettingSelect from "@/components/features/settings/SettingSelect";
 
 export default function AppearanceSection() {
+  const [theme, setTheme] = useState("dark");
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("app-theme") || "dark";
+    setTheme(savedTheme);
+  }, []);
+
+  const handleThemeChange = (newTheme: string) => {
+    setTheme(newTheme);
+    localStorage.setItem("app-theme", newTheme);
+
+    // Remove existing theme classes
+    document.documentElement.classList.remove("theme-light", "theme-cyberpunk");
+
+    if (newTheme === "light") {
+      document.documentElement.classList.add("theme-light");
+    } else if (newTheme === "cyberpunk") {
+      document.documentElement.classList.add("theme-cyberpunk");
+    }
+  };
+
   return (
     <SettingsSection
       title="Appearance"
@@ -11,11 +35,12 @@ export default function AppearanceSection() {
         <SettingSelect
           label="Theme"
           description="Choose your preferred theme."
-          defaultValue="dark"
+          defaultValue={theme}
+          onChange={handleThemeChange}
           options={[
-            { label: "Light", value: "light" },
             { label: "Dark", value: "dark" },
-            { label: "System", value: "system" },
+            { label: "Light", value: "light" },
+            { label: "Cyberpunk", value: "cyberpunk" },
           ]}
         />
 

@@ -11,6 +11,7 @@ interface SettingSelectProps {
   options: SelectOption[];
   defaultValue?: string;
   description?: string;
+  onChange?: (value: string) => void;
 }
 
 const SettingSelect = ({
@@ -18,6 +19,7 @@ const SettingSelect = ({
   options,
   defaultValue,
   description,
+  onChange,
 }: SettingSelectProps) => {
   return (
     <div className="space-y-2">
@@ -34,6 +36,7 @@ const SettingSelect = ({
       <div className="relative">
         <select
           defaultValue={defaultValue}
+          onChange={(e) => onChange && onChange(e.target.value)}
           className="
             h-12
             w-full
