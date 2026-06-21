@@ -147,10 +147,10 @@ export default function ProfilePage() {
       </div>
 
       {/* CONTENT */}
-      <div className="px-12 py-8">
+      <div className="px-4 md:px-12 py-8">
         <div className="grid grid-cols-12 gap-6">
           {/* LEFT SIDEBAR */}
-          <div className="col-span-3 space-y-6">
+          <div className="col-span-12 lg:col-span-3 space-y-6">
             {/* About */}
             <div className="rounded-2xl border border-[#1f2937] bg-[#111827] p-6 shadow-xl">
               <div className="mb-4 flex items-center gap-2">
@@ -203,13 +203,13 @@ export default function ProfilePage() {
           </div>
 
           {/* CENTER */}
-          <div className="col-span-6 space-y-6">
+          <div className="col-span-12 lg:col-span-6 space-y-6">
             {activeTab === "posts" && <CreatePost />}
             {renderActiveTabContent()}
           </div>
 
           {/* RIGHT SIDEBAR */}
-          <div className="col-span-3 space-y-6">
+          <div className="col-span-12 lg:col-span-3 space-y-6">
             <div className="rounded-2xl border border-[#1f2937] bg-[#111827] p-6 shadow-xl">
               <div className="mb-5 flex items-center gap-2">
                 <Users size={18} className="text-blue-400" />
@@ -217,11 +217,22 @@ export default function ProfilePage() {
               </div>
 
               <div className="space-y-4">
-                {["Sarah Chen", "David Kim", "Elena Rostova"].map((user) => (
-                  <div key={user} className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-[#1f2937]" />
+                {[
+                  { name: "Sarah Chen", avatar: "https://images.unsplash.com/photo-1780570589435-059359e813cc?q=80&w=100&auto=format&fit=crop" },
+                  { name: "David Kim", avatar: "https://images.unsplash.com/photo-1780764895105-ea3037466236?q=80&w=100&auto=format&fit=crop" },
+                  { name: "Elena Rostova", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100" }
+                ].map((user) => (
+                  <div key={user.name} className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-[#1f2937] relative overflow-hidden border border-[#1f2937]">
+                      <Image
+                        src={user.avatar}
+                        fill
+                        className="object-cover"
+                        alt={user.name}
+                      />
+                    </div>
                     <div>
-                      <p className="text-sm font-medium">{user}</p>
+                      <p className="text-sm font-medium">{user.name}</p>
                       <p className="text-[10px] text-slate-400 mt-0.5">Product Designer</p>
                     </div>
                   </div>

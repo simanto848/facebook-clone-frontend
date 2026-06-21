@@ -135,7 +135,7 @@ export default function ExplorePage() {
     <div className="min-h-screen bg-[#0f172a] text-white">
       <div className="flex">
         {/* LEFT SIDEBAR */}
-        <aside className="w-72 shrink-0">
+        <aside className="hidden lg:block w-72 shrink-0">
           <LeftSidebar />
         </aside>
 
@@ -335,7 +335,7 @@ export default function ExplorePage() {
         </main>
 
         {/* RIGHT SIDEBAR */}
-        <aside className="w-80 shrink-0">
+        <aside className="hidden xl:block w-80 shrink-0">
           <RightSidebar />
         </aside>
       </div>
