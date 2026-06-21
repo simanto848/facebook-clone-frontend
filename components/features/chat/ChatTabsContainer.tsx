@@ -22,7 +22,7 @@ function ChatTab({ box }: { box: ChatBox }) {
 
   const handleProfileClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    router.push("/profile");
+    router.push(`/profile/${box.id}`);
   };
 
   // Scroll to bottom on new messages
@@ -46,7 +46,7 @@ function ChatTab({ box }: { box: ChatBox }) {
           <div className="absolute right-2 top-11 z-40 w-48 rounded-xl border border-[#1f2937] bg-[#111827] p-1 shadow-xl animate-in fade-in slide-in-from-top-1 duration-100 text-xs">
             <button
               onClick={() => {
-                router.push("/profile");
+                router.push(`/profile/${box.id}`);
                 setShowMenu(false);
               }}
               className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-slate-300 hover:bg-[#1f2937] hover:text-white transition text-left"
