@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { MessageSquare, Share2, Send, Heart, ShieldAlert, Globe, Users, Lock } from "lucide-react";
 import { PostType, usePostStore } from "@/store/postStore";
 import PostDropdown from "./PostDropdown";
@@ -81,18 +82,26 @@ export default function PostCard({ post }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between p-5">
         <div className="flex items-center gap-3">
-          <div className="relative h-11 w-11 overflow-hidden rounded-full border border-[#1f2937]">
+          <Link
+            href={post.author.username === "alex" ? "/profile" : `/profile/${post.author.username}`}
+            className="relative h-11 w-11 overflow-hidden rounded-full border border-[#1f2937] hover:opacity-85 transition shrink-0"
+          >
             <Image
               src={post.author.avatar}
               alt={post.author.name}
               fill
               className="object-cover"
             />
-          </div>
+          </Link>
 
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="font-semibold text-white text-sm">{post.author.name}</h2>
+              <Link
+                href={post.author.username === "alex" ? "/profile" : `/profile/${post.author.username}`}
+                className="font-semibold text-white text-sm hover:underline hover:cursor-pointer"
+              >
+                {post.author.name}
+              </Link>
               {post.type === "shared" && (
                 <span className="text-xs text-slate-500 font-medium">shared a post</span>
               )}
