@@ -2,10 +2,12 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
-import { X, Minimize2, Maximize2, Send, MessageSquare } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { X, Minimize2, Maximize2, Send, Phone, Video, MoreVertical } from "lucide-react";
 import { useChatStore, ChatBox } from "@/store/chatStore";
 
 function ChatTab({ box }: { box: ChatBox }) {
+  const router = useRouter();
   const { closeChat, toggleCollapse, sendMessage } = useChatStore();
   const [inputText, setInputText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -15,6 +17,11 @@ function ChatTab({ box }: { box: ChatBox }) {
     if (!inputText.trim()) return;
     sendMessage(box.id, inputText);
     setInputText("");
+  };
+
+  const handleProfileClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    router.push("/profile");
   };
 
   // Scroll to bottom on new messages
@@ -36,24 +43,51 @@ function ChatTab({ box }: { box: ChatBox }) {
         onClick={() => toggleCollapse(box.id)}
         className="h-12 px-3 border-b border-[#1f2937]/50 flex items-center justify-between cursor-pointer hover:bg-[#1f2937]/30 select-none bg-[#111827]/80 rounded-t-2xl"
       >
-        <div className="flex items-center gap-2">
+        <div
+          onClick={handleProfileClick}
+          className="flex items-center gap-2 hover:opacity-80 transition active:scale-95"
+          title="View profile"
+        >
           <div className="relative h-7 w-7 rounded-full overflow-hidden shrink-0 border border-[#1f2937]">
             <Image src={box.avatar} fill className="object-cover" alt={box.name} />
           </div>
-          <span className="text-xs font-semibold text-white truncate max-w-[120px]">{box.name}</span>
+          <span className="text-xs font-bold text-white truncate max-w-[90px]">{box.name}</span>
           <div className="h-1.5 w-1.5 rounded-full bg-green-500 shrink-0" />
         </div>
 
-        <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+          <button
+            onClick={() => alert(`Starting audio call with ${box.name}...`)}
+            className="text-slate-400 hover:text-white p-1 rounded-md hover:bg-[#1f2937] transition"
+            title="Audio call"
+          >
+            <Phone size={12} />
+          </button>
+          <button
+            onClick={() => alert(`Starting video call with ${box.name}...`)}
+            className="text-slate-400 hover:text-white p-1 rounded-md hover:bg-[#1f2937] transition"
+            title="Video call"
+          >
+            <Video size={12} />
+          </button>
+          <button
+            onClick={() => alert("Options menu opened.")}
+            className="text-slate-400 hover:text-white p-1 rounded-md hover:bg-[#1f2937] transition"
+            title="Options"
+          >
+            <MoreVertical size={12} />
+          </button>
           <button
             onClick={() => toggleCollapse(box.id)}
             className="text-slate-400 hover:text-white p-1 rounded-md hover:bg-[#1f2937] transition"
+            title={box.isCollapsed ? "Expand" : "Minimize"}
           >
             {box.isCollapsed ? <Maximize2 size={12} /> : <Minimize2 size={12} />}
           </button>
           <button
             onClick={() => closeChat(box.id)}
             className="text-slate-400 hover:text-white p-1 rounded-md hover:bg-[#1f2937] transition"
+            title="Close"
           >
             <X size={12} />
           </button>
