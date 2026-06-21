@@ -4,17 +4,10 @@ import React, { useState } from "react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import { useChatStore } from "@/store/chatStore";
+import { usePostStore, ConnectionUser } from "@/store/postStore";
 import { Users, UserPlus, UserCheck, MessageSquare, Check, X, Compass, Sparkles } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-
-interface ConnectionUser {
-  id: string;
-  name: string;
-  avatar: string;
-  role: string;
-  mutual: number;
-}
 
 const initialRequests: ConnectionUser[] = [
   {
@@ -60,25 +53,25 @@ const initialCurrentConnections: ConnectionUser[] = [
   },
 ];
 
+
 export default function ConnectionsPage() {
   const { openChat } = useChatStore();
-  const [requests, setRequests] = useState<ConnectionUser[]>(initialRequests);
+  const { connectionRequests, acceptRequest, declineRequest } = usePostStore();
   const [suggestions, setSuggestions] = useState<ConnectionUser[]>(initialSuggestions);
   const [connections, setConnections] = useState<ConnectionUser[]>(initialCurrentConnections);
   const [activeTab, setActiveTab] = useState<"requests" | "suggestions" | "connections">("requests");
 
   const handleAcceptRequest = (user: ConnectionUser) => {
-    setRequests(requests.filter((r) => r.id !== user.id));
+    acceptRequest(user.id);
     setConnections([user, ...connections]);
   };
 
   const handleDeclineRequest = (userId: string) => {
-    setRequests(requests.filter((r) => r.id !== userId));
+    declineRequest(userId);
   };
 
   const handleAddFriend = (user: ConnectionUser) => {
     setSuggestions(suggestions.filter((s) => s.id !== user.id));
-    // Simulate pending state or directly add for mock purposes
     setConnections([user, ...connections]);
   };
 
@@ -107,7 +100,7 @@ export default function ConnectionsPage() {
             {/* Tabs */}
             <div className="border-b border-[#1f2937]/60 flex gap-6">
               {[
-                { id: "requests", label: "Requests", count: requests.length },
+                { id: "requests", label: "Requests", count: connectionRequests.length },
                 { id: "suggestions", label: "Suggestions", count: suggestions.length },
                 { id: "connections", label: "Your Connections", count: connections.length },
               ].map((tab) => {
@@ -134,14 +127,14 @@ export default function ConnectionsPage() {
             <div className="space-y-4">
               {activeTab === "requests" && (
                 <div className="space-y-4">
-                  {requests.length === 0 ? (
+                  {connectionRequests.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-16 text-center space-y-3 rounded-2xl border border-dashed border-[#1f2937] bg-[#111827]/40">
                       <p className="text-slate-400 font-semibold text-sm">No pending connection requests</p>
                       <p className="text-xs text-slate-500 max-w-xs">When people invite you to connect, they will show up here.</p>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {requests.map((user) => (
+                      {connectionRequests.map((user) => (
                         <div key={user.id} className="rounded-2xl border border-[#1f2937] bg-[#111827] p-4 flex flex-col justify-between space-y-4">
                           <Link href={`/profile/${user.id}`} className="flex items-start gap-3 hover:opacity-90 transition">
                             <div className="relative h-12 w-12 rounded-full overflow-hidden shrink-0 border border-[#1f2937] bg-[#0f172a]">

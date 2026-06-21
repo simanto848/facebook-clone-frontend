@@ -79,9 +79,18 @@ export interface StoryType {
   reactions: number;
 }
 
+export interface ConnectionUser {
+  id: string;
+  name: string;
+  avatar: string;
+  role: string;
+  mutual: number;
+}
+
 interface PostState {
   posts: PostType[];
   stories: StoryType[];
+  connectionRequests: ConnectionUser[];
   filter: "latest" | "popular" | "trending" | "following";
   setFilter: (filter: "latest" | "popular" | "trending" | "following") => void;
   createPost: (post: Omit<PostType, "id" | "createdAt" | "reactions" | "comments">) => void;
@@ -99,6 +108,8 @@ interface PostState {
   addStory: (story: Omit<StoryType, "id" | "createdAt" | "views" | "reactions">) => void;
   viewStory: (storyId: string) => void;
   reactStory: (storyId: string) => void;
+  acceptRequest: (id: string) => void;
+  declineRequest: (id: string) => void;
 }
 
 const initialPosts: PostType[] = [
@@ -316,6 +327,22 @@ const removeCommentFromList = (comments: CommentType[], commentId: string): Comm
 export const usePostStore = create<PostState>((set) => ({
   posts: initialPosts,
   stories: initialStories,
+  connectionRequests: [
+    {
+      id: "elena",
+      name: "Elena Rostova",
+      avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100",
+      role: "Core Infrastructure Lead",
+      mutual: 8,
+    },
+    {
+      id: "davidk",
+      name: "David Kim",
+      avatar: "https://images.unsplash.com/photo-1780764895105-ea3037466236?q=80&w=100&auto=format&fit=crop",
+      role: "Digital Artist & Photographer",
+      mutual: 12,
+    },
+  ],
   filter: "latest",
   setFilter: (filter) => set({ filter }),
   createPost: (post) =>
@@ -519,5 +546,13 @@ export const usePostStore = create<PostState>((set) => ({
   reactStory: (storyId) =>
     set((state) => ({
       stories: state.stories.map((s) => (s.id === storyId ? { ...s, reactions: s.reactions + 1 } : s)),
+    })),
+  acceptRequest: (id) =>
+    set((state) => ({
+      connectionRequests: state.connectionRequests.filter((r) => r.id !== id),
+    })),
+  declineRequest: (id) =>
+    set((state) => ({
+      connectionRequests: state.connectionRequests.filter((r) => r.id !== id),
     })),
 }));

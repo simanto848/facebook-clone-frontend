@@ -1,9 +1,14 @@
+"use client";
+
 import { LeftSidebarItems } from "@/lib/SidebarItems";
 import Image from "next/image";
 import React from "react";
 import { Sidebaritem } from "./SidebarItem";
+import { usePostStore } from "@/store/postStore";
 
 const LeftSidebar = () => {
+  const connectionRequests = usePostStore((state) => state.connectionRequests);
+
   return (
     <aside
       className="
@@ -34,9 +39,19 @@ const LeftSidebar = () => {
 
       {/* Navigation */}
       <nav className="space-y-2">
-        {LeftSidebarItems.map((item) => (
-          <Sidebaritem key={item.label} {...item} />
-        ))}
+        {LeftSidebarItems.map((item) => {
+          const isConnections = item.label === "Connections";
+          const badgeValue = isConnections ? connectionRequests.length : undefined;
+          return (
+            <Sidebaritem
+              key={item.label}
+              icon={item.icon}
+              label={item.label}
+              href={item.href}
+              badge={badgeValue}
+            />
+          );
+        })}
       </nav>
     </aside>
   );
