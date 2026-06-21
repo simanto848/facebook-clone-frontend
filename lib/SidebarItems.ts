@@ -1,4 +1,4 @@
-import { Bell, Bookmark, House, User, Compass, Users } from "lucide-react";
+import { Bell, Bookmark, House, User, Compass, Users, UserPlus, Calendar } from "lucide-react";
 
 export const LeftSidebarItems = [
   {
@@ -15,6 +15,16 @@ export const LeftSidebarItems = [
     label: "Groups",
     href: "/groups",
     icon: Users,
+  },
+  {
+    label: "Connections",
+    href: "/connections",
+    icon: UserPlus,
+  },
+  {
+    label: "Events",
+    href: "/events",
+    icon: Calendar,
   },
   {
     label: "Profile",
