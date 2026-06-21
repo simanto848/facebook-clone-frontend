@@ -6,7 +6,7 @@ import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
 import { usePostStore } from "@/store/postStore";
 import { useChatStore } from "@/store/chatStore";
-import { Search, Hash, Users, UserPlus, UserCheck, MessageSquare, Flame } from "lucide-react";
+import { Search, Hash, Users, UserPlus, UserCheck, MessageSquare, Flame, BookOpen, Compass, Shield } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -33,10 +33,10 @@ const recommendedPeople = [
   },
 ];
 
-const popularGuilds = [
-  { name: "UI Brutalists", members: "12.4k members", category: "Design" },
-  { name: "Core Infrastructure", members: "8.2k members", category: "Systems" },
-  { name: "Tokyo Creative Club", members: "3.5k members", category: "Photography" },
+const mockGuilds = [
+  { id: "g1", name: "UI Brutalists", members: "12.4k members", category: "Design", avatar: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=100" },
+  { id: "g2", name: "Core Infrastructure", members: "8.2k members", category: "Systems", avatar: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=100" },
+  { id: "g3", name: "Tokyo Creative Club", members: "3.5k members", category: "Photography", avatar: "https://images.unsplash.com/photo-1519608487953-e999c86e7455?w=100" },
 ];
 
 export default function ExplorePage() {
@@ -44,7 +44,9 @@ export default function ExplorePage() {
   const { openChat } = useChatStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [activeCategory, setActiveCategory] = useState<"all" | "posts" | "people" | "groups" | "pages">("all");
   const [followingStates, setFollowingStates] = useState<Record<string, boolean>>({});
+  const [joinedGuilds, setJoinedGuilds] = useState<Record<string, boolean>>({});
 
   const toggleFollow = (username: string) => {
     setFollowingStates((prev) => ({
@@ -53,6 +55,14 @@ export default function ExplorePage() {
     }));
   };
 
+  const toggleJoinGuild = (guildId: string) => {
+    setJoinedGuilds((prev) => ({
+      ...prev,
+      [guildId]: !prev[guildId],
+    }));
+  };
+
+  // 1. FILTER POSTS
   const getFilteredPosts = () => {
     let list = [...posts];
 
@@ -72,19 +82,54 @@ export default function ExplorePage() {
       );
     }
 
+    // Filter by category: pages -> only show article post types
+    if (activeCategory === "pages") {
+      list = list.filter((p) => p.type === "article");
+    }
+
     return list;
   };
 
   const filteredPosts = getFilteredPosts();
 
-  // Search filtered people
-  const filteredPeople = searchQuery.trim() !== ""
-    ? recommendedPeople.filter(
+  // 2. FILTER PEOPLE
+  const getFilteredPeople = () => {
+    if (searchQuery.trim() !== "") {
+      const q = searchQuery.toLowerCase();
+      return recommendedPeople.filter(
         (person) =>
-          person.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          person.id.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : [];
+          person.name.toLowerCase().includes(q) ||
+          person.id.toLowerCase().includes(q)
+      );
+    }
+    // Default show all recommended if tab is active
+    return recommendedPeople;
+  };
+
+  const filteredPeople = getFilteredPeople();
+
+  // 3. FILTER GROUPS
+  const getFilteredGroups = () => {
+    if (searchQuery.trim() !== "") {
+      const q = searchQuery.toLowerCase();
+      return mockGuilds.filter(
+        (g) =>
+          g.name.toLowerCase().includes(q) ||
+          g.category.toLowerCase().includes(q)
+      );
+    }
+    return mockGuilds;
+  };
+
+  const filteredGroups = getFilteredGroups();
+
+  const categories = [
+    { id: "all", label: "All" },
+    { id: "posts", label: "Posts" },
+    { id: "people", label: "People" },
+    { id: "groups", label: "Groups" },
+    { id: "pages", label: "Pages" },
+  ] as const;
 
   return (
     <div className="min-h-screen bg-[#0f172a] text-white">
@@ -106,7 +151,7 @@ export default function ExplorePage() {
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
-                  setSelectedTag(null); // Clear tag selection on manual type
+                  setSelectedTag(null);
                 }}
                 className="ml-3 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
               />
@@ -134,7 +179,7 @@ export default function ExplorePage() {
                           setSelectedTag(null);
                         } else {
                           setSelectedTag(tag);
-                          setSearchQuery(""); // Clear search bar
+                          setSearchQuery("");
                         }
                       }}
                       className={`
@@ -154,17 +199,43 @@ export default function ExplorePage() {
               </div>
             </div>
 
-            {/* Searched People Results */}
-            {searchQuery && filteredPeople.length > 0 && (
+            {/* Category Filter Tabs */}
+            <div className="border-b border-[#1f2937]/60 flex gap-6">
+              {categories.map((cat) => {
+                const isActive = activeCategory === cat.id;
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => setActiveCategory(cat.id)}
+                    className={`
+                      pb-3 px-1 text-xs font-bold transition-all relative border-b-2
+                      ${isActive ? "border-blue-500 text-blue-400 font-extrabold" : "border-transparent text-slate-400 hover:text-slate-200"}
+                    `}
+                  >
+                    {cat.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* 1. RENDER PEOPLE SECTION */}
+            {(activeCategory === "people" || (activeCategory === "all" && searchQuery)) && filteredPeople.length > 0 && (
               <div className="rounded-2xl border border-[#1f2937] bg-[#111827] p-5 shadow-xl space-y-4">
-                <span className="text-xs font-bold tracking-wider uppercase text-slate-400 block">People matching "{searchQuery}"</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold tracking-wider uppercase text-slate-400 block">People</span>
+                  {activeCategory === "all" && (
+                    <button onClick={() => setActiveCategory("people")} className="text-[10px] text-blue-400 font-bold hover:underline">
+                      See All
+                    </button>
+                  )}
+                </div>
                 <div className="divide-y divide-[#1f2937]">
                   {filteredPeople.map((person) => {
                     const following = !!followingStates[person.id];
                     return (
                       <div key={person.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
                         <Link href={`/profile/${person.id}`} className="flex items-center gap-3 hover:opacity-85 transition">
-                          <div className="relative h-10 w-10 overflow-hidden rounded-full border border-[#1f2937]">
+                          <div className="relative h-10 w-10 overflow-hidden rounded-full border border-[#1f2937] bg-[#0f172a]">
                             <Image src={person.avatar} fill className="object-cover" alt={person.name} />
                           </div>
                           <div>
@@ -175,7 +246,7 @@ export default function ExplorePage() {
                         <div className="flex gap-2">
                           <button
                             onClick={() => toggleFollow(person.id)}
-                            className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-bold transition ${
+                            className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[10px] font-bold transition ${
                               following ? "bg-slate-800 text-slate-300" : "bg-blue-600 text-white"
                             }`}
                           >
@@ -196,32 +267,70 @@ export default function ExplorePage() {
               </div>
             )}
 
-            {/* Explore Feed */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 border-b border-[#1f2937] pb-3">
-                <Flame size={16} className="text-blue-400" />
-                <span className="text-xs font-bold tracking-wider uppercase text-slate-400">
-                  {selectedTag
-                    ? `Trending Posts for #${selectedTag}`
-                    : searchQuery
-                    ? `Search results for "${searchQuery}"`
-                    : "Trending Feed"}
-                </span>
+            {/* 2. RENDER GROUPS / GUILDS SECTION */}
+            {(activeCategory === "groups" || (activeCategory === "all" && searchQuery)) && filteredGroups.length > 0 && (
+              <div className="rounded-2xl border border-[#1f2937] bg-[#111827] p-5 shadow-xl space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold tracking-wider uppercase text-slate-400 block">Suggested Guilds</span>
+                  {activeCategory === "all" && (
+                    <button onClick={() => setActiveCategory("groups")} className="text-[10px] text-blue-400 font-bold hover:underline">
+                      See All
+                    </button>
+                  )}
+                </div>
+                <div className="divide-y divide-[#1f2937]">
+                  {filteredGroups.map((guild) => {
+                    const joined = !!joinedGuilds[guild.id];
+                    return (
+                      <div key={guild.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
+                        <div className="flex items-center gap-3">
+                          <div className="relative h-10 w-10 overflow-hidden rounded-xl border border-[#1f2937] bg-[#0f172a]">
+                            <Image src={guild.avatar} fill className="object-cover" alt={guild.name} />
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-white">{guild.name}</p>
+                            <p className="text-[10px] text-slate-400 mt-0.5">{guild.category} • {guild.members}</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => toggleJoinGuild(guild.id)}
+                          className={`rounded-full px-3.5 py-1.5 text-[10px] font-bold transition ${
+                            joined ? "bg-slate-800 text-slate-300" : "bg-blue-600 text-white"
+                          }`}
+                        >
+                          {joined ? "Joined" : "Join"}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
+            )}
 
-              {filteredPosts.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-center space-y-3 rounded-2xl border border-dashed border-[#1f2937] bg-[#111827]/40">
-                  <p className="text-slate-400 font-semibold text-sm">No matches found</p>
-                  <p className="text-xs text-slate-500 max-w-xs">Try selecting a different topic or adjusting your search keyword.</p>
+            {/* 3. RENDER POSTS & PAGES FEED */}
+            {(activeCategory === "all" || activeCategory === "posts" || activeCategory === "pages") && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 border-b border-[#1f2937] pb-3">
+                  <Flame size={16} className="text-blue-400" />
+                  <span className="text-xs font-bold tracking-wider uppercase text-slate-400">
+                    {activeCategory === "pages" ? "Articles & Pages" : "Trending Feed"}
+                  </span>
                 </div>
-              ) : (
-                <div className="space-y-6">
-                  {filteredPosts.map((post) => (
-                    <PostCard key={post.id} post={post} />
-                  ))}
-                </div>
-              )}
-            </div>
+
+                {filteredPosts.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-center space-y-3 rounded-2xl border border-dashed border-[#1f2937] bg-[#111827]/40">
+                    <p className="text-slate-400 font-semibold text-sm">No matches found</p>
+                    <p className="text-xs text-slate-500 max-w-xs">Try selecting a different topic or category.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {filteredPosts.map((post) => (
+                      <PostCard key={post.id} post={post} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </main>
 
