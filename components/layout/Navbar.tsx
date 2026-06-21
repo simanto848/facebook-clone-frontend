@@ -17,10 +17,13 @@ import {
 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { useChatStore } from "@/store/chatStore";
 
 export default function Navbar() {
   const [activeDropdown, setActiveDropdown] = useState<"profile" | "notifications" | "messages" | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const { openChat } = useChatStore();
+
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -212,10 +215,17 @@ export default function Navbar() {
 
                 <div className="max-h-80 overflow-y-auto divide-y divide-[#1f2937] custom-scrollbar">
                   {messages.map((msg) => (
-                    <Link
+                    <div
                       key={msg.id}
-                      href="/messages"
-                      className={`flex gap-3 p-3.5 hover:bg-[#1f2937]/50 transition cursor-pointer block ${
+                      onClick={() => {
+                        openChat({
+                          id: msg.id.toString(),
+                          name: msg.sender,
+                          avatar: msg.avatar,
+                        });
+                        setActiveDropdown(null);
+                      }}
+                      className={`flex gap-3 p-3.5 hover:bg-[#1f2937]/50 transition cursor-pointer ${
                         msg.unread ? "bg-blue-500/5" : ""
                       }`}
                     >
@@ -232,7 +242,7 @@ export default function Navbar() {
                       {msg.unread && (
                         <div className="h-2 w-2 rounded-full bg-[#7aa2ff] shrink-0 self-center" />
                       )}
-                    </Link>
+                    </div>
                   ))}
                 </div>
 
