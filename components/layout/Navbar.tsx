@@ -14,14 +14,19 @@ import {
   User,
   MessageSquare,
   CheckCheck,
+  Palette,
 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useChatStore } from "@/store/chatStore";
 
 export default function Navbar() {
-  const [activeDropdown, setActiveDropdown] = useState<"profile" | "notifications" | "messages" | null>(null);
+  const [activeDropdown, setActiveDropdown] = useState<"profile" | "notifications" | "messages" | "theme" | null>(null);
+  const [currentTheme, setCurrentTheme] = useState<"dark" | "light" | "cyberpunk">("dark");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
   const { openChat } = useChatStore();
 
 
@@ -33,6 +38,12 @@ export default function Navbar() {
       ) {
         setActiveDropdown(null);
       }
+      if (
+        searchContainerRef.current &&
+        !searchContainerRef.current.contains(event.target as Node)
+      ) {
+        setShowSearchSuggestions(false);
+      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -43,7 +54,8 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem("app-theme") || "dark";
+    const savedTheme = (localStorage.getItem("app-theme") || "dark") as "dark" | "light" | "cyberpunk";
+    setCurrentTheme(savedTheme);
     document.documentElement.classList.remove("theme-light", "theme-cyberpunk");
     if (savedTheme === "light") {
       document.documentElement.classList.add("theme-light");
@@ -52,7 +64,19 @@ export default function Navbar() {
     }
   }, []);
 
-  const toggleDropdown = (type: "profile" | "notifications" | "messages") => {
+  const changeTheme = (theme: "dark" | "light" | "cyberpunk") => {
+    localStorage.setItem("app-theme", theme);
+    setCurrentTheme(theme);
+    document.documentElement.classList.remove("theme-light", "theme-cyberpunk");
+    if (theme === "light") {
+      document.documentElement.classList.add("theme-light");
+    } else if (theme === "cyberpunk") {
+      document.documentElement.classList.add("theme-cyberpunk");
+    }
+    setActiveDropdown(null);
+  };
+
+  const toggleDropdown = (type: "profile" | "notifications" | "messages" | "theme") => {
     setActiveDropdown((prev) => (prev === type ? null : type));
   };
 
@@ -131,17 +155,117 @@ export default function Navbar() {
         </div>
 
         {/* Search */}
-        <div className="hidden w-105 items-center rounded-full border border-[#374151] bg-[#1f2937] px-4 py-2 md:flex">
-          <Search size={18} className="text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search people, posts, topics..."
-            className="ml-3 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
-          />
+        <div ref={searchContainerRef} className="relative hidden w-105 md:block">
+          <div className="flex w-full items-center rounded-full border border-[#374151] bg-[#1f2937] px-4 py-2">
+            <Search size={18} className="text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search people, posts, topics..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setShowSearchSuggestions(e.target.value.length > 0);
+              }}
+              onFocus={() => {
+                if (searchQuery.length > 0) setShowSearchSuggestions(true);
+              }}
+              className="ml-3 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
+            />
+          </div>
+
+          {showSearchSuggestions && (
+            <div className="absolute left-0 right-0 top-12 z-50 rounded-2xl border border-[#1f2937] bg-[#111827] shadow-2xl p-3 animate-in fade-in slide-in-from-top-2 duration-150">
+              <div className="space-y-4">
+                {/* Users section */}
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">People</p>
+                  <div className="space-y-2">
+                    {[
+                      { name: "Sarah Chen", role: "UI Designer", avatar: "https://images.unsplash.com/photo-1780570589435-059359e813cc?q=80&w=100&auto=format&fit=crop" },
+                      { name: "Sarah Wilson", role: "Product Manager", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80" },
+                    ]
+                      .filter(u => u.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                      .map((u, i) => (
+                        <div key={i} className="flex items-center gap-3 p-2 hover:bg-[#1f2937] rounded-xl cursor-pointer transition">
+                          <div className="relative h-8 w-8 rounded-full overflow-hidden border border-[#1f2937]">
+                            <Image src={u.avatar} fill className="object-cover" alt={u.name} />
+                          </div>
+                          <div>
+                            <p className="text-xs font-semibold text-white">{u.name}</p>
+                            <p className="text-[10px] text-slate-400">{u.role}</p>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+
+                {/* Topics section */}
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">Topics & Tags</p>
+                  <div className="space-y-1">
+                    {["#Glassmorphism", "#Lumina UI V2", "#NextJS Server Actions", "#React19"]
+                      .filter(t => t.toLowerCase().includes(searchQuery.toLowerCase()))
+                      .map((t, i) => (
+                        <div key={i} className="flex items-center gap-2 px-3 py-2 hover:bg-[#1f2937] rounded-xl cursor-pointer text-xs font-semibold text-[#7aa2ff] transition">
+                          <Search size={12} />
+                          {t}
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Actions Dropdown Group */}
         <div className="flex items-center gap-3" ref={containerRef}>
+          {/* Theme Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => toggleDropdown("theme")}
+              className={`flex h-10 w-10 items-center justify-center rounded-full transition ${
+                activeDropdown === "theme" ? "bg-blue-600 text-white" : "bg-[#1f2937] text-slate-300 hover:bg-[#2a3447]"
+              }`}
+              title="Change theme"
+            >
+              <Palette size={18} />
+            </button>
+
+            {activeDropdown === "theme" && (
+              <div className="absolute right-0 top-14 z-50 w-48 rounded-2xl border border-[#1f2937] bg-[#111827] shadow-2xl p-2.5 space-y-1 animate-in fade-in slide-in-from-top-2 duration-150">
+                <p className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">Select Theme</p>
+                <button
+                  onClick={() => changeTheme("dark")}
+                  className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold transition ${
+                    currentTheme === "dark" ? "bg-[#7aa2ff]/15 text-[#7aa2ff]" : "text-slate-300 hover:bg-[#1f2937]"
+                  }`}
+                >
+                  Dark Mode
+                  {currentTheme === "dark" && <span className="h-1.5 w-1.5 rounded-full bg-[#7aa2ff]" />}
+                </button>
+                <button
+                  onClick={() => changeTheme("light")}
+                  className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold transition ${
+                    currentTheme === "light" ? "bg-blue-600/15 text-blue-600" : "text-slate-300 hover:bg-[#1f2937]"
+                  }`}
+                >
+                  Light Mode
+                  {currentTheme === "light" && <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />}
+                </button>
+                <button
+                  onClick={() => changeTheme("cyberpunk")}
+                  className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold transition ${
+                    currentTheme === "cyberpunk" ? "bg-[#ff007f]/15 text-[#ff007f]" : "text-slate-300 hover:bg-[#1f2937]"
+                  }`}
+                >
+                  Cyberpunk
+                  {currentTheme === "cyberpunk" && <span className="h-1.5 w-1.5 rounded-full bg-[#ff007f]" />}
+                </button>
+              </div>
+            )}
+          </div>
+
           {/* Notifications */}
           <div className="relative">
             <button

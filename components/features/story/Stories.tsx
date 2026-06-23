@@ -3,13 +3,18 @@ import Image from "next/image";
 import { Plus, X, Eye, Heart, Type, Image as ImageIcon, Video } from "lucide-react";
 import { usePostStore, StoryType } from "@/store/postStore";
 
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
 export default function Stories() {
   const { stories, addStory, viewStory, reactStory } = usePostStore();
-  const [activeStory, setActiveStory] = useState<StoryType | null>(null);
+  const [activeStoryIndex, setActiveStoryIndex] = useState<number | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newStoryType, setNewStoryType] = useState<"text" | "image" | "video">("text");
   const [newStoryText, setNewStoryText] = useState("");
   const [newStoryMedia, setNewStoryMedia] = useState("");
+  const [progress, setProgress] = useState(0);
+
+  const activeStory = activeStoryIndex !== null ? stories[activeStoryIndex] : null;
 
   const handleCreateStory = (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,16 +36,31 @@ export default function Stories() {
     setShowCreateModal(false);
   };
 
-  const handleOpenStory = (story: StoryType) => {
-    setActiveStory(story);
-    viewStory(story.id);
+  const handleOpenStory = (index: number) => {
+    setActiveStoryIndex(index);
+    viewStory(stories[index].id);
+  };
+
+  const handleNextStory = () => {
+    if (activeStoryIndex !== null) {
+      if (activeStoryIndex < stories.length - 1) {
+        setActiveStoryIndex(activeStoryIndex + 1);
+        viewStory(stories[activeStoryIndex + 1].id);
+      } else {
+        setActiveStoryIndex(null);
+      }
+    }
+  };
+
+  const handlePrevStory = () => {
+    if (activeStoryIndex !== null && activeStoryIndex > 0) {
+      setActiveStoryIndex(activeStoryIndex - 1);
+      viewStory(stories[activeStoryIndex - 1].id);
+    }
   };
 
   const handleReactStory = (storyId: string) => {
     reactStory(storyId);
-    if (activeStory && activeStory.id === storyId) {
-      setActiveStory((prev) => prev ? { ...prev, reactions: prev.reactions + 1 } : null);
-    }
   };
 
   const loadMockMedia = (mediaType: "image" | "video") => {
@@ -50,6 +70,23 @@ export default function Stories() {
       setNewStoryMedia("https://assets.mixkit.co/videos/preview/mixkit-downtown-tokyo-by-night-14022-large.mp4");
     }
   };
+
+  // Story Auto-Advance Effect
+  useEffect(() => {
+    if (activeStoryIndex === null) return;
+    setProgress(0);
+    const interval = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 100) {
+          handleNextStory();
+          return 0;
+        }
+        return prev + 2; // reaches 100% in 5 seconds (5000ms / 100ms * 2% = 100%)
+      });
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [activeStoryIndex]);
 
   return (
     <div className="flex items-center gap-5">
@@ -66,10 +103,10 @@ export default function Stories() {
 
       {/* Stories Carousel */}
       <div className="flex gap-4 overflow-x-auto py-1 no-scrollbar">
-        {stories.map((story) => (
+        {stories.map((story, index) => (
           <button
             key={story.id}
-            onClick={() => handleOpenStory(story)}
+            onClick={() => handleOpenStory(index)}
             className="flex flex-col items-center shrink-0"
           >
             <div className="p-0.5 rounded-full bg-linear-to-tr from-yellow-400 via-pink-500 to-purple-600">
@@ -172,57 +209,104 @@ export default function Stories() {
       {/* Story Viewer Modal */}
       {activeStory && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={() => setActiveStory(null)} />
-          <div className="relative z-10 w-full max-w-sm rounded-2xl overflow-hidden bg-[#111827] border border-[#1f2937] shadow-2xl flex flex-col h-[520px] text-white">
-            {/* Header info */}
-            <div className="absolute top-0 left-0 right-0 z-10 bg-linear-to-b from-black/80 to-transparent p-4 flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <div className="relative h-8 w-8 rounded-full overflow-hidden">
-                  <Image src={activeStory.author.avatar} fill className="object-cover" alt="Author" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold">{activeStory.author.name}</h4>
-                  <span className="text-[9px] text-slate-400">{activeStory.createdAt} (24h expiration)</span>
-                </div>
-              </div>
-              <button onClick={() => setActiveStory(null)} className="rounded-full p-1 text-slate-400 hover:bg-white/10 hover:text-white transition">
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* Story Content Area */}
-            <div className="flex-1 relative flex items-center justify-center bg-black">
-              {activeStory.type === "text" && (
-                <div className="p-8 text-center text-lg font-bold bg-linear-to-tr from-indigo-500 via-purple-500 to-pink-500 h-full w-full flex items-center justify-center px-6">
-                  {activeStory.content}
-                </div>
-              )}
-
-              {activeStory.type === "image" && (
-                <div className="relative w-full h-full">
-                  <Image src={activeStory.content} fill className="object-contain" alt="Story content" />
-                </div>
-              )}
-
-              {activeStory.type === "video" && (
-                <video src={activeStory.content} autoPlay loop playsInline className="w-full h-full object-contain" />
-              )}
-            </div>
-
-            {/* Footer views/reactions */}
-            <div className="p-4 bg-[#111827] border-t border-[#1f2937]/50 flex justify-between items-center text-xs text-slate-400">
-              <div className="flex items-center gap-1.5">
-                <Eye size={14} />
-                <span>{activeStory.views} views</span>
-              </div>
+          <div className="absolute inset-0 bg-black/95 backdrop-blur-md" onClick={() => setActiveStoryIndex(null)} />
+          
+          {/* Main Viewer Wrapper */}
+          <div className="relative z-10 flex items-center gap-4">
+            
+            {/* Desktop Left Button */}
+            {activeStoryIndex !== null && activeStoryIndex > 0 && (
               <button
-                onClick={() => handleReactStory(activeStory.id)}
-                className="flex items-center gap-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 px-3 py-1.5 rounded-full transition font-semibold"
+                onClick={handlePrevStory}
+                className="hidden md:flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition shrink-0"
               >
-                <Heart size={14} className="fill-red-400" />
-                <span>{activeStory.reactions}</span>
+                <ChevronLeft size={24} />
               </button>
+            )}
+
+            {/* Main Phone Card Container */}
+            <div className="relative w-full max-w-sm rounded-2xl overflow-hidden bg-[#111827] border border-[#1f2937] shadow-2xl flex flex-col h-[560px] text-white">
+              
+              {/* Progress Bars */}
+              <div className="absolute top-3 left-4 right-4 z-20 flex gap-1">
+                {stories.map((_, idx) => (
+                  <div key={idx} className="h-1 flex-1 bg-white/20 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-white transition-all duration-100 ease-linear"
+                      style={{
+                        width: idx < activeStoryIndex ? "100%" : idx === activeStoryIndex ? `${progress}%` : "0%",
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* Header info */}
+              <div className="absolute top-6 left-0 right-0 z-10 bg-linear-to-b from-black/80 to-transparent p-4 flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <div className="relative h-8 w-8 rounded-full overflow-hidden border border-white/25">
+                    <Image src={activeStory.author.avatar} fill className="object-cover" alt="Author" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold">{activeStory.author.name}</h4>
+                    <span className="text-[9px] text-slate-400">{activeStory.createdAt}</span>
+                  </div>
+                </div>
+                <button onClick={() => setActiveStoryIndex(null)} className="rounded-full p-1 text-slate-400 hover:bg-white/10 hover:text-white transition">
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Story Content Area */}
+              <div className="flex-1 relative flex items-center justify-center bg-black">
+                
+                {/* Touch Zones for Mobile Navigation */}
+                <div className="absolute inset-y-0 left-0 w-1/3 z-20 cursor-pointer" onClick={handlePrevStory} />
+                <div className="absolute inset-y-0 right-0 w-1/3 z-20 cursor-pointer" onClick={handleNextStory} />
+
+                {activeStory.type === "text" && (
+                  <div className="p-8 text-center text-lg font-bold bg-linear-to-tr from-indigo-500 via-purple-500 to-pink-500 h-full w-full flex items-center justify-center px-6">
+                    {activeStory.content}
+                  </div>
+                )}
+
+                {activeStory.type === "image" && (
+                  <div className="relative w-full h-full">
+                    <Image src={activeStory.content} fill className="object-contain" alt="Story content" />
+                  </div>
+                )}
+
+                {activeStory.type === "video" && (
+                  <video src={activeStory.content} autoPlay loop playsInline className="w-full h-full object-contain" />
+                )}
+              </div>
+
+              {/* Footer views/reactions */}
+              <div className="p-4 bg-[#111827] border-t border-[#1f2937]/50 flex justify-between items-center text-xs text-slate-400">
+                <div className="flex items-center gap-1.5">
+                  <Eye size={14} />
+                  <span>{activeStory.views} views</span>
+                </div>
+                <button
+                  onClick={() => handleReactStory(activeStory.id)}
+                  className="flex items-center gap-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 px-3 py-1.5 rounded-full transition font-semibold"
+                >
+                  <Heart size={14} className="fill-red-400" />
+                  <span>{activeStory.reactions}</span>
+                </button>
+              </div>
             </div>
+
+            {/* Desktop Right Button */}
+            {activeStoryIndex !== null && activeStoryIndex < stories.length - 1 && (
+              <button
+                onClick={handleNextStory}
+                className="hidden md:flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition shrink-0"
+              >
+                <ChevronRight size={24} />
+              </button>
+            )}
+
           </div>
         </div>
       )}
