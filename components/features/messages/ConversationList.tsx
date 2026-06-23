@@ -1,31 +1,10 @@
 import { Search } from "lucide-react";
 import Image from "next/image";
-
-const users = [
-  {
-    id: 1,
-    name: "Sarah Wilson",
-    message: "See you tomorrow!",
-    online: true,
-    image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300",
-  },
-  {
-    id: 2,
-    name: "Alex Johnson",
-    message: "Working on it.",
-    online: false,
-    image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300",
-  },
-  {
-    id: 3,
-    name: "Emma Brown",
-    message: "That's awesome 🔥",
-    online: true,
-    image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=300",
-  },
-];
+import { useChatStore } from "@/store/chatStore";
 
 export default function ConversationList() {
+  const { conversations, activeConversationId, setActiveConversationId } = useChatStore();
+
   return (
     <div className="h-full">
       <div className="p-5">
@@ -42,32 +21,45 @@ export default function ConversationList() {
       </div>
 
       <div className="space-y-1 px-3">
-        {users.map((user) => (
-          <button
-            key={user.id}
-            className="flex w-full items-center gap-3 rounded-xl p-3 text-left transition hover:bg-[#1f2937]"
-          >
-            <div className="relative">
-              <Image
-                src={user.image}
-                alt={user.name}
-                width={48}
-                height={48}
-                className="h-12 w-12 rounded-full object-cover"
-              />
+        {conversations.map((user) => {
+          const isActive = user.id === activeConversationId;
+          const lastMsg = user.messages[user.messages.length - 1];
 
-              {user.online && (
-                <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-[#111827] bg-green-500" />
-              )}
-            </div>
+          return (
+            <button
+              key={user.id}
+              onClick={() => setActiveConversationId(user.id)}
+              className={`flex w-full items-center gap-3 rounded-xl p-3 text-left transition ${
+                isActive ? "bg-[#1f2937]" : "hover:bg-[#1f2937]/50"
+              }`}
+            >
+              <div className="relative">
+                <Image
+                  src={user.avatar}
+                  alt={user.name}
+                  width={48}
+                  height={48}
+                  className="h-12 w-12 rounded-full object-cover"
+                />
 
-            <div className="flex-1">
-              <h3 className="font-medium text-white">{user.name}</h3>
+                {user.online && (
+                  <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-[#111827] bg-green-500" />
+                )}
+              </div>
 
-              <p className="truncate text-sm text-slate-400">{user.message}</p>
-            </div>
-          </button>
-        ))}
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-medium text-white">{user.name}</h3>
+                  {lastMsg && <span className="text-[10px] text-slate-500">{lastMsg.time}</span>}
+                </div>
+
+                <p className={`truncate text-sm ${isActive ? "text-slate-200" : "text-slate-400"}`}>
+                  {lastMsg ? `${lastMsg.sender === "me" ? "You: " : ""}${lastMsg.text}` : "No messages yet"}
+                </p>
+              </div>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

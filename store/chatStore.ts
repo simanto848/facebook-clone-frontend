@@ -14,16 +14,64 @@ export interface ChatBox {
   messages: Message[];
 }
 
+export interface Conversation {
+  id: string;
+  name: string;
+  avatar: string;
+  online: boolean;
+  messages: Message[];
+}
+
 interface ChatState {
   openChatBoxes: ChatBox[];
+  conversations: Conversation[];
+  activeConversationId: string | null;
   openChat: (person: { id: string; name: string; avatar: string }) => void;
   closeChat: (id: string) => void;
   toggleCollapse: (id: string) => void;
   sendMessage: (id: string, text: string) => void;
+  setActiveConversationId: (id: string | null) => void;
+  sendDirectMessage: (id: string, text: string) => void;
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
   openChatBoxes: [],
+  activeConversationId: "1", // Default to Sarah Wilson
+  conversations: [
+    {
+      id: "1",
+      name: "Sarah Wilson",
+      avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300",
+      online: true,
+      messages: [
+        { sender: "them", text: "Hi Alex! How's the social media app going?", time: "10:30 AM" },
+        { sender: "me", text: "Going great 🚀. Just finished the profile page.", time: "10:31 AM" },
+        { sender: "them", text: "Nice! Did you implement the messaging page yet?", time: "10:32 AM" },
+        { sender: "me", text: "Working on it now 😄", time: "10:32 AM" },
+        { sender: "them", text: "Can't wait to see it 🔥", time: "10:33 AM" },
+      ],
+    },
+    {
+      id: "2",
+      name: "Alex Johnson",
+      avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300",
+      online: false,
+      messages: [
+        { sender: "them", text: "Hey! Are you working today?", time: "Yesterday" },
+        { sender: "me", text: "Yeah, mostly frontend updates.", time: "Yesterday" },
+        { sender: "them", text: "Working on it.", time: "Yesterday" },
+      ],
+    },
+    {
+      id: "3",
+      name: "Emma Brown",
+      avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=300",
+      online: true,
+      messages: [
+        { sender: "them", text: "That's awesome 🔥", time: "2 hours ago" },
+      ],
+    },
+  ],
   openChat: (person) => {
     set((state) => {
       const existing = state.openChatBoxes.find((box) => box.id === person.id);
@@ -77,7 +125,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       }),
     }));
 
-    // Trigger mock automated reply after 1.5 seconds
+    // Trigger mock automated reply after 1.2 seconds
     setTimeout(() => {
       const answers = [
         "That's awesome! Let's talk more about it later.",
@@ -94,6 +142,45 @@ export const useChatStore = create<ChatState>((set, get) => ({
           return {
             ...box,
             messages: [...box.messages, { sender: "them", text: randomAnswer, time: "Just now" }],
+          };
+        }),
+      }));
+    }, 1200);
+  },
+  setActiveConversationId: (id) => set({ activeConversationId: id }),
+  sendDirectMessage: (id, text) => {
+    if (!text.trim()) return;
+    const timeString = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+    // Add user's message
+    set((state) => ({
+      conversations: state.conversations.map((conv) => {
+        if (conv.id !== id) return conv;
+        return {
+          ...conv,
+          messages: [...conv.messages, { sender: "me", text, time: timeString }],
+        };
+      }),
+    }));
+
+    // Trigger mock automated reply after 1.2 seconds
+    setTimeout(() => {
+      const answers = [
+        "That's awesome! Let's talk more about it later.",
+        "Interesting. Can you send me the link?",
+        "Sounds good to me!",
+        "Awesome! I am working on the messaging features right now.",
+        "Haha nice! Talk to you soon.",
+      ];
+      const randomAnswer = answers[Math.floor(Math.random() * answers.length)];
+      const responseTime = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+      set((state) => ({
+        conversations: state.conversations.map((conv) => {
+          if (conv.id !== id) return conv;
+          return {
+            ...conv,
+            messages: [...conv.messages, { sender: "them", text: randomAnswer, time: responseTime }],
           };
         }),
       }));
