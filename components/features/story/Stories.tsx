@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { Plus, X, Eye, Heart, Type, Image as ImageIcon, Video } from "lucide-react";
 import { usePostStore, StoryType } from "@/store/postStore";
@@ -207,7 +207,7 @@ export default function Stories() {
       )}
 
       {/* Story Viewer Modal */}
-      {activeStory && (
+      {activeStoryIndex !== null && activeStory && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/95 backdrop-blur-md" onClick={() => setActiveStoryIndex(null)} />
           
@@ -215,7 +215,7 @@ export default function Stories() {
           <div className="relative z-10 flex items-center gap-4">
             
             {/* Desktop Left Button */}
-            {activeStoryIndex !== null && activeStoryIndex > 0 && (
+            {activeStoryIndex > 0 && (
               <button
                 onClick={handlePrevStory}
                 className="hidden md:flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition shrink-0"
@@ -234,7 +234,7 @@ export default function Stories() {
                     <div
                       className="h-full bg-white transition-all duration-100 ease-linear"
                       style={{
-                        width: idx < activeStoryIndex ? "100%" : idx === activeStoryIndex ? `${progress}%` : "0%",
+                        width: idx < activeStoryIndex! ? "100%" : idx === activeStoryIndex! ? `${progress}%` : "0%",
                       }}
                     />
                   </div>
