@@ -20,15 +20,15 @@ const LeftSidebar = () => {
         p-5
       "
     >
-      {/* User */}
       <div className="flex items-center gap-3 mb-8">
-        <Image
-          src="https://images.unsplash.com/photo-1779040622687-42bb00790c67?w=500"
-          alt="Alex"
-          width={48}
-          height={48}
-          className="rounded-full"
-        />
+        <div className="relative w-12 h-12 rounded-full overflow-hidden shrink-0">
+          <Image
+            src="https://images.unsplash.com/photo-1779040622687-42bb00790c67?w=500"
+            alt="Alex"
+            fill
+            className="object-cover"
+          />
+        </div>
 
         <div>
           <h2 className="font-semibold text-white">Alex Morgan</h2>
