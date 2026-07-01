@@ -33,7 +33,7 @@ export default function PostVisibilitySelect({ value, onChange }: Props) {
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute left-0 mt-1.5 w-60 z-50 rounded-xl border border-[#1f2937] bg-[#111827] p-1.5 shadow-xl">
+          <div className="absolute right-0 mt-1.5 w-60 z-50 rounded-xl border border-[#1f2937] bg-[#111827] p-1.5 shadow-xl">
             {options.map((opt) => {
               const OptIcon = opt.icon;
               return (
