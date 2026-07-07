@@ -1,1 +1,1 @@
-// Manages session checking on load
+export * from "./AuthProvider";
