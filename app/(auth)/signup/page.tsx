@@ -4,11 +4,11 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { User, Mail, Lock, Eye, EyeOff, Calendar, Sparkles } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { registerAction } from "./actions";
 
 export default function SignupPage() {
   const router = useRouter();
-  const { register, loading } = useAuth();
+  const [loading, setLoading] = useState(false);
   
   const [formData, setFormData] = useState({
     displayName: "",
@@ -51,17 +51,19 @@ export default function SignupPage() {
       return;
     }
 
-    const result = await register({
-      displayName: formData.displayName,
-      username: formData.username,
-      email: formData.email,
-      password: formData.password,
-      dateOfBirth: formData.dateOfBirth,
-      gender: formData.gender,
-    });
+    setLoading(true);
+    const data = new FormData();
+    data.append("displayName", formData.displayName);
+    data.append("username", formData.username);
+    data.append("email", formData.email);
+    data.append("password", formData.password);
+    data.append("dateOfBirth", formData.dateOfBirth);
+    data.append("gender", formData.gender);
+
+    const result = await registerAction(null, data);
 
     if (result.success) {
-      setSuccessMsg("Account created successfully! Please check your email to verify.");
+      setSuccessMsg(result.message || "Account created successfully! Please check your email to verify.");
       setFormData({
         displayName: "",
         username: "",
@@ -77,6 +79,7 @@ export default function SignupPage() {
     } else {
       setErrorMsg(result.message);
     }
+    setLoading(false);
   };
 
   return (
