@@ -22,6 +22,7 @@ interface AuthState {
   logout: () => Promise<void>;
   checkSession: () => Promise<void>;
 }
+const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
@@ -32,7 +33,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   register: async (data) => {
     set({ loading: true, error: null });
     try {
-      const response = await axios.post("/api/auth/register", data);
+      const response = await axios.post(`${apiBaseUrl}/auth/register`, data);
       set({ loading: false });
       return { success: true, message: response.data.message || "Registration successful." };
     } catch (err: any) {
@@ -45,7 +46,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: async (data) => {
     set({ loading: true, error: null });
     try {
-      const response = await axios.post("/api/auth/login", data);
+      const response = await axios.post(`${apiBaseUrl}/auth/login`, data);
       const { user, accessToken } = response.data.data || {};
       
       // Set default auth header for all subsequent API requests
@@ -65,7 +66,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: async () => {
     set({ loading: true });
     try {
-      await axios.post("/api/auth/logout");
+      await axios.post(`${apiBaseUrl}/auth/logout`);
     } catch (err) {
       console.error("Logout error:", err);
     } finally {
@@ -77,7 +78,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   checkSession: async () => {
     set({ loading: true });
     try {
-      const response = await axios.get("/api/auth/me");
+      const response = await axios.get(`${apiBaseUrl}/auth/me`);
       const { accessToken, user } = response.data.data || {};
       
       if (accessToken) {

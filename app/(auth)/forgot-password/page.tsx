@@ -3,7 +3,7 @@
 import { useState, FormEvent } from "react";
 import Link from "next/link";
 import { ArrowLeft, Mail, Loader2, CheckCircle2 } from "lucide-react";
-import axios from "axios";
+import { forgotPasswordAction } from "./actions";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -23,15 +23,17 @@ export default function ForgotPasswordPage() {
 
     setLoading(true);
     try {
-      const response = await axios.post("/api/auth/forgot-password", { email });
-      if (response.data.success) {
-        setSuccessMsg(response.data.message || "A recovery email has been sent successfully.");
+      const data = new FormData();
+      data.append("email", email);
+      const result = await forgotPasswordAction(null, data);
+      if (result.success) {
+        setSuccessMsg(result.message || "A recovery email has been sent successfully.");
         setEmail("");
       } else {
-        setErrorMsg(response.data.message || "Failed to send reset link.");
+        setErrorMsg(result.message || "Failed to send reset link.");
       }
     } catch (err: any) {
-      setErrorMsg(err.response?.data?.message || err.message || "An error occurred. Please try again.");
+      setErrorMsg(err.message || "An error occurred. Please try again.");
     } finally {
       setLoading(false);
     }

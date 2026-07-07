@@ -4,7 +4,7 @@ import React, { useState, FormEvent, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Eye, EyeOff, Lock, ShieldCheck, Loader2, CheckCircle2, XCircle } from "lucide-react";
-import axios from "axios";
+import { resetPasswordAction } from "./actions";
 
 function ResetPasswordContent() {
   const router = useRouter();
@@ -57,25 +57,24 @@ function ResetPasswordContent() {
 
     setLoading(true);
     try {
-      const response = await axios.post("/api/auth/reset-password", {
-        token,
-        newPassword,
-      });
+      const data = new FormData();
+      data.append("token", token);
+      data.append("newPassword", newPassword);
+      const result = await resetPasswordAction(null, data);
 
-      if (response.data.success) {
-        setSuccessMsg(response.data.message || "Password updated successfully! Redirecting to login...");
+      if (result.success) {
+        setSuccessMsg(result.message || "Password updated successfully! Redirecting to login...");
         setNewPassword("");
         setConfirmPassword("");
         setTimeout(() => {
           router.push("/login");
         }, 3000);
       } else {
-        setErrorMsg(response.data.message || "Failed to reset password. The link may have expired.");
+        setErrorMsg(result.message || "Failed to reset password. The link may have expired.");
       }
     } catch (err: any) {
       setErrorMsg(
-        err.response?.data?.message ||
-          err.message ||
+        err.message ||
           "An error occurred. Please try again."
       );
     } finally {

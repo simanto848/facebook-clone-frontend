@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, ShieldCheck, Loader2 } from "lucide-react";
-import axios from "axios";
+import { verifyOtpAction } from "./actions";
 
 function VerifyOtpContent() {
   const router = useRouter();
@@ -47,19 +47,20 @@ function VerifyOtpContent() {
     setSuccessMsg(null);
 
     try {
-      const response = await axios.post("/api/auth/verify-email", { token });
-      if (response.data.success) {
-        setSuccessMsg(response.data.message || "Email verified successfully!");
+      const data = new FormData();
+      data.append("token", token);
+      const result = await verifyOtpAction(null, data);
+      if (result.success) {
+        setSuccessMsg(result.message || "Email verified successfully!");
         setTimeout(() => {
           router.push("/login");
         }, 3000);
       } else {
-        setErrorMsg(response.data.message || "Verification failed. Invalid or expired token.");
+        setErrorMsg(result.message || "Verification failed. Invalid or expired token.");
       }
     } catch (err: any) {
       setErrorMsg(
-        err.response?.data?.message ||
-          err.message ||
+        err.message ||
           "An error occurred during verification. Please try again."
       );
     } finally {
