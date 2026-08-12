@@ -1,4 +1,4 @@
-import useAxios from "@/lib/useAxios";
+import { useAxios } from "@/lib/useAxios";
 
 export interface CreateReportInput {
   targetId: string;
@@ -9,13 +9,13 @@ export interface CreateReportInput {
 
 export const reportService = {
   createReport: async (data: CreateReportInput) => {
-    const axios = useAxios();
+    const axios = await useAxios();
     const response = await axios.post("/reports", data);
     return response.data;
   },
 
   getReports: async () => {
-    const axios = useAxios();
+    const axios = await useAxios();
     const response = await axios.get("/reports");
     return response.data;
   },
