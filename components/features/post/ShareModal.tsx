@@ -1,155 +1,81 @@
-import React, { useState } from "react";
-import { X, Rss, Tv, MessageSquare, Link, Check } from "lucide-react";
-import { usePostStore, PostType } from "@/store/postStore";
+"use client";
 
-interface Props {
-  post: PostType;
+import React, { useState } from "react";
+import { Share2, X, Send } from "lucide-react";
+import { shareService } from "@/services/shareService";
+
+interface ShareModalProps {
   isOpen: boolean;
   onClose: () => void;
+  postId: string;
 }
 
-export default function ShareModal({ post, isOpen, onClose }: Props) {
-  const { createPost, addStory } = usePostStore();
-  const [copied, setCopied] = useState(false);
-  const [sharedText, setSharedText] = useState("");
-  const [shareStep, setShareStep] = useState<"select" | "feed">("select");
+export default function ShareModal({ isOpen, onClose, postId }: ShareModalProps) {
+  const [caption, setCaption] = useState("");
+  const [sharing, setSharing] = useState(false);
+  const [shared, setShared] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleCopyLink = () => {
-    const mockUrl = `${window.location.origin}/post/${post.id}`;
-    navigator.clipboard.writeText(mockUrl);
-    setCopied(true);
-    setTimeout(() => {
-      setCopied(false);
+  const handleShare = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSharing(true);
+
+    try {
+      await shareService.sharePost(postId, caption);
+      setShared(true);
+      setTimeout(() => {
+        setShared(false);
+        setCaption("");
+        onClose();
+      }, 1200);
+    } catch (err) {
+      console.error("Share post error:", err);
       onClose();
-    }, 1500);
-  };
-
-  const handleShareToFeed = () => {
-    createPost({
-      author: {
-        name: "Alex Morgan",
-        username: "alex",
-        avatar: "https://images.unsplash.com/photo-1779040622687-42bb00790c67?w=500",
-      },
-      visibility: "public",
-      type: "shared",
-      content: sharedText || "Shared this post",
-      sharedPost: {
-        id: post.id,
-        author: post.author,
-        content: post.content,
-        createdAt: post.createdAt,
-      },
-    });
-    onClose();
-  };
-
-  const handleShareToStory = () => {
-    addStory({
-      author: {
-        name: "Alex Morgan",
-        avatar: "https://images.unsplash.com/photo-1779040622687-42bb00790c67?w=500",
-      },
-      type: "text",
-      content: `Recommended post: "${post.content.substring(0, 40)}..."`,
-    });
-    alert("Shared to your Story!");
-    onClose();
-  };
-
-  const handleShareToMessage = () => {
-    alert("Shared to Messages!");
-    onClose();
+    } finally {
+      setSharing(false);
+    }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-xs" onClick={onClose} />
-
-      {/* Modal Box */}
-      <div className="relative z-10 w-full max-w-md rounded-2xl border border-[#1f2937] bg-[#111827] p-6 shadow-2xl text-white">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-lg font-bold">Share Post</h3>
-          <button onClick={onClose} className="rounded-full p-1 text-slate-400 hover:bg-[#1f2937] hover:text-white transition">
-            <X size={20} />
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-xs" onClick={onClose} />
+      <div className="relative z-10 w-full max-w-md rounded-2xl border border-[#1f2937] bg-[#111827] p-6 text-white shadow-2xl space-y-4">
+        <div className="flex items-center justify-between border-b border-[#1f2937] pb-3">
+          <div className="flex items-center gap-2 text-blue-400">
+            <Share2 size={20} />
+            <h3 className="font-bold text-base text-white">Share Post to Feed</h3>
+          </div>
+          <button onClick={onClose} className="p-1 rounded-full text-slate-400 hover:bg-[#1f2937]">
+            <X size={18} />
           </button>
         </div>
 
-        {shareStep === "select" ? (
-          <div className="grid grid-cols-2 gap-4">
-            <button
-              onClick={() => setShareStep("feed")}
-              className="flex flex-col items-center gap-3 rounded-xl border border-[#1f2937] bg-[#111827]/40 p-4 transition hover:bg-[#1f2937]"
-            >
-              <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400">
-                <Rss size={20} />
-              </div>
-              <span className="text-sm font-semibold">Feed</span>
-            </button>
-
-            <button
-              onClick={handleShareToStory}
-              className="flex flex-col items-center gap-3 rounded-xl border border-[#1f2937] bg-[#111827]/40 p-4 transition hover:bg-[#1f2937]"
-            >
-              <div className="h-10 w-10 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-400">
-                <Tv size={20} />
-              </div>
-              <span className="text-sm font-semibold">Story</span>
-            </button>
-
-            <button
-              onClick={handleShareToMessage}
-              className="flex flex-col items-center gap-3 rounded-xl border border-[#1f2937] bg-[#111827]/40 p-4 transition hover:bg-[#1f2937]"
-            >
-              <div className="h-10 w-10 rounded-full bg-green-500/10 flex items-center justify-center text-green-400">
-                <MessageSquare size={20} />
-              </div>
-              <span className="text-sm font-semibold">Message</span>
-            </button>
-
-            <button
-              onClick={handleCopyLink}
-              className="flex flex-col items-center gap-3 rounded-xl border border-[#1f2937] bg-[#111827]/40 p-4 transition hover:bg-[#1f2937]"
-            >
-              <div className="h-10 w-10 rounded-full bg-yellow-500/10 flex items-center justify-center text-yellow-400">
-                {copied ? <Check size={20} /> : <Link size={20} />}
-              </div>
-              <span className="text-sm font-semibold">{copied ? "Copied!" : "Copy Link"}</span>
-            </button>
+        {shared ? (
+          <div className="py-8 text-center space-y-2">
+            <Send size={32} className="mx-auto text-blue-400" />
+            <h4 className="font-bold text-sm text-white">Post Shared to Timeline!</h4>
           </div>
         ) : (
-          <div className="space-y-4">
-            <textarea
-              value={sharedText}
-              onChange={(e) => setSharedText(e.target.value)}
-              placeholder="Say something about this post..."
-              className="w-full h-24 rounded-xl border border-[#1f2937] bg-[#0f172a] p-3 text-sm text-white outline-none resize-none placeholder:text-slate-400 focus:border-blue-500"
-            />
-
-            {/* Original post preview */}
-            <div className="rounded-xl border border-[#1f2937] bg-[#0f172a]/50 p-3 text-xs text-slate-300">
-              <span className="font-semibold text-white">{post.author.name}</span>
-              <p className="mt-1 line-clamp-2">{post.content}</p>
+          <form onSubmit={handleShare} className="space-y-4 text-xs">
+            <div className="space-y-1">
+              <label className="text-slate-300 font-semibold">Add thoughts (Optional)</label>
+              <textarea
+                value={caption}
+                onChange={(e) => setCaption(e.target.value)}
+                placeholder="Say something about this post..."
+                className="w-full h-24 rounded-xl border border-[#1f2937] bg-[#0f172a] p-3 outline-none resize-none focus:border-blue-500"
+              />
             </div>
 
-            <div className="flex gap-3 justify-end mt-4">
-              <button
-                onClick={() => setShareStep("select")}
-                className="px-4 py-2 text-xs font-semibold text-slate-400 hover:bg-[#1f2937] rounded-xl transition"
-              >
-                Back
-              </button>
-              <button
-                onClick={handleShareToFeed}
-                className="px-5 py-2 text-xs font-semibold bg-blue-600 hover:bg-blue-700 rounded-xl transition"
-              >
-                Share Now
-              </button>
-            </div>
-          </div>
+            <button
+              type="submit"
+              disabled={sharing}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-lg shadow-blue-600/10"
+            >
+              {sharing ? "Sharing..." : "Share Now"}
+            </button>
+          </form>
         )}
       </div>
     </div>
