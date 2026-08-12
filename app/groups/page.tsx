@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
 import { usePostStore } from "@/store/postStore";
-import { Plus, X, Users, Compass, ShieldAlert, Sparkles } from "lucide-react";
+import { Plus, X, Users, Compass } from "lucide-react";
 import Image from "next/image";
+import { groupService } from "@/services/groupService";
 
 interface Guild {
   id: string;
@@ -52,7 +53,7 @@ export default function GroupsPage() {
   const { posts } = usePostStore();
   const [guilds, setGuilds] = useState<Guild[]>(initialGuilds);
   const [selectedGuild, setSelectedGuild] = useState<Guild | null>(null);
-  const [joinedGuilds, setJoinedGuilds] = useState<Record<string, boolean>>({ g1: true }); // Mock UI Brutalists joined initially
+  const [joinedGuilds, setJoinedGuilds] = useState<Record<string, boolean>>({ g1: true });
   const [showCreateModal, setShowCreateModal] = useState(false);
 
   // New Guild Form
@@ -61,40 +62,95 @@ export default function GroupsPage() {
   const [description, setDescription] = useState("");
   const [avatar, setAvatar] = useState("");
 
-  const handleCreateGuild = (e: React.FormEvent) => {
+  const fetchBackendGroups = async () => {
+    try {
+      const res = await groupService.getJoinedGroups();
+      const items = res.data || res || [];
+      if (Array.isArray(items) && items.length > 0) {
+        const fetched: Guild[] = items.map((g: any) => ({
+          id: g.id,
+          name: g.name,
+          avatar: g.avatar || "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=100",
+          cover: g.cover || "https://images.unsplash.com/photo-1519608487953-e999c86e7455?w=500",
+          members: `${g._count?.members || 1}`,
+          category: g.category || "Community",
+          description: g.description || "",
+        }));
+        setGuilds(fetched);
+        const joinedMap: Record<string, boolean> = {};
+        fetched.forEach((g) => (joinedMap[g.id] = true));
+        setJoinedGuilds(joinedMap);
+      }
+    } catch (err) {
+      console.error("Using local fallback groups:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchBackendGroups();
+  }, []);
+
+  const handleCreateGuild = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
 
-    const newGuild: Guild = {
-      id: `g_${Math.random().toString(36).substring(7)}`,
-      name,
-      avatar: avatar || "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=100",
-      cover: "https://images.unsplash.com/photo-1519608487953-e999c86e7455?w=500",
-      members: "1",
-      category,
-      description,
-    };
+    try {
+      const res = await groupService.createGroup({
+        name,
+        description,
+        category,
+        avatar: avatar || undefined,
+      });
+      const created = res.data || res;
+      const newGuild: Guild = {
+        id: created.id || `g_${Date.now()}`,
+        name: created.name || name,
+        avatar: avatar || "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=100",
+        cover: "https://images.unsplash.com/photo-1519608487953-e999c86e7455?w=500",
+        members: "1",
+        category,
+        description,
+      };
 
-    setGuilds([...guilds, newGuild]);
-    setJoinedGuilds((prev) => ({ ...prev, [newGuild.id]: true }));
-    setShowCreateModal(false);
-
-    // Reset
-    setName("");
-    setDescription("");
-    setAvatar("");
+      setGuilds((prev) => [...prev, newGuild]);
+      setJoinedGuilds((prev) => ({ ...prev, [newGuild.id]: true }));
+    } catch (err) {
+      console.error("Create group failed, fallback to local state", err);
+      const newGuild: Guild = {
+        id: `g_${Math.random().toString(36).substring(7)}`,
+        name,
+        avatar: avatar || "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=100",
+        cover: "https://images.unsplash.com/photo-1519608487953-e999c86e7455?w=500",
+        members: "1",
+        category,
+        description,
+      };
+      setGuilds((prev) => [...prev, newGuild]);
+      setJoinedGuilds((prev) => ({ ...prev, [newGuild.id]: true }));
+    } finally {
+      setShowCreateModal(false);
+      setName("");
+      setDescription("");
+      setAvatar("");
+    }
   };
 
-  const toggleJoin = (guildId: string) => {
-    setJoinedGuilds((prev) => ({
-      ...prev,
-      [guildId]: !prev[guildId],
-    }));
+  const toggleJoin = async (guildId: string) => {
+    const isJoined = joinedGuilds[guildId];
+    setJoinedGuilds((prev) => ({ ...prev, [guildId]: !isJoined }));
+
+    try {
+      if (isJoined) {
+        await groupService.leaveGroup(guildId);
+      } else {
+        await groupService.joinGroup(guildId);
+      }
+    } catch (err) {
+      console.error("Group join/leave API error:", err);
+    }
   };
 
-  // Get posts relevant to the active guild
   const getGuildPosts = (guildName: string) => {
-    // If the post matches tags, author, or content keyword related to the guild
     if (guildName === "UI Brutalists") {
       return posts.filter((p) => p.content.toLowerCase().includes("brutalis") || p.author.username === "sarahc");
     }
@@ -104,7 +160,7 @@ export default function GroupsPage() {
     if (guildName === "Tokyo Creative Club") {
       return posts.filter((p) => p.content.toLowerCase().includes("neon") || p.author.username === "davidk");
     }
-    return posts.slice(0, 2); // Fallback mock posts for newly created guilds
+    return posts.slice(0, 2);
   };
 
   return (
