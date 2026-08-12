@@ -5,22 +5,22 @@ export type VariantConfig<T> = {
   variants?: T;
   compoundVariants?: Array<
     {
-      [K in keyof T]?: keyof T[K] | boolean | Array<keyof T[K] | boolean>;
+      [K in keyof T]?: keyof T[K] | boolean | string | number | Array<keyof T[K] | boolean | string | number>;
     } & { class?: string; className?: string }
   >;
   defaultVariants?: {
-    [K in keyof T]?: keyof T[K] | boolean;
+    [K in keyof T]?: keyof T[K] | boolean | string | number;
   };
 };
 
 export type VariantProps<T extends (...args: any) => any> = Parameters<T>[0];
 
 export function cva<
-  T extends Record<string, Record<string | number | boolean, string>>
+  T extends Record<string, Record<string, string>>
 >(base?: string, config?: VariantConfig<T>) {
   return function (
     props?: {
-      [K in keyof T]?: keyof T[K] | boolean | undefined;
+      [K in keyof T]?: keyof T[K] | boolean | number | string | undefined;
     } & { className?: string }
   ): string {
     const { className, ...variantProps } = props || {};
