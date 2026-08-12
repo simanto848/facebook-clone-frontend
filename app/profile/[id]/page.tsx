@@ -2,10 +2,10 @@
 
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
-import { useUsers } from "@/hooks/useUsers";
+import { useUsers, followUser, unfollowUser } from "@/hooks/useUsers";
 import { usePostStore } from "@/store/postStore";
 import { useRouter } from "next/navigation";
-import { Follow, Unfollow } from "lucide-react";
+import { UserPlus, UserCheck } from "lucide-react";
 import PostCard from "@/components/features/post/PostCard";
 
 export default function ProfilePage() {
@@ -93,7 +93,7 @@ export default function ProfilePage() {
                         className="flex-1 rounded-xl px-4 py-2 text-sm font-medium transition
                           border border-[#1f2937] text-slate-300 hover:bg-[#111827]"
                       >
-                        <Unfollow size={12} className="fill-slate-300 mr-1" />
+                        <UserCheck size={12} className="text-slate-300 mr-1 inline" />
                         Following
                       </button>
                     ) : (
@@ -102,7 +102,7 @@ export default function ProfilePage() {
                         className="flex-1 rounded-xl px-4 py-2 text-sm font-medium transition
                           bg-blue-600 text-white hover:bg-blue-700"
                       >
-                        <Follow size={12} className="fill-white mr-1" />
+                        <UserPlus size={12} className="text-white mr-1 inline" />
                         Follow
                       </button>
                     )}

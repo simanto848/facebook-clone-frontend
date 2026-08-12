@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
-import { useUsers } from "@/hooks/useUsers";
+import { useUsers, followUser, unfollowUser } from "@/hooks/useUsers";
 import { useRouter } from "next/navigation";
-import { Follow, Unfollow, Flag, Shield, Check } from "lucide-react";
+import { UserPlus, UserCheck, Flag, Shield, Check } from "lucide-react";
 import Link from "next/link";
 
 export interface ProfileCardProps {
@@ -69,7 +69,7 @@ export const ProfileCard = ({
 
         <div>
           <Link
-            href=userId ? `/profile/${userId}` : `/profile/${user.username}`
+            href={userId ? `/profile/${userId}` : `/profile/${user.username}`}
             className="font-bold text-white hover:underline"
           >
             <h3 className="text-lg font-semibold text-white">
@@ -93,7 +93,7 @@ export const ProfileCard = ({
           className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition
             bg-blue-600 text-white hover:bg-blue-700`}
         >
-          <Follow size={14} className="fill-white" />
+          <UserPlus size={14} className="text-white" />
           Follow
         </button>
       )}
@@ -104,7 +104,7 @@ export const ProfileCard = ({
           className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition
             border border-[#1f2937] text-slate-300 hover:bg-[#111827]`}
         >
-          <Unfollow size={14} className="fill-slate-300" />
+          <UserCheck size={14} className="text-slate-300" />
           Following
         </button>
       )}
