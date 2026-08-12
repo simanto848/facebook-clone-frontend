@@ -19,6 +19,7 @@ import {
 import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useChatStore } from "@/store/chatStore";
+import { notificationService } from "@/services/notificationService";
 
 export default function Navbar() {
   const [activeDropdown, setActiveDropdown] = useState<"profile" | "notifications" | "messages" | "theme" | null>(null);
