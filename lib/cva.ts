@@ -13,7 +13,7 @@ export type VariantConfig<T> = {
   };
 };
 
-export type VariantProps<T extends (...args: any) => any> = Parameters<T>[0];
+export type VariantProps<T extends (...args: any) => any> = NonNullable<Parameters<T>[0]>;
 
 export function cva<
   T extends Record<string, Record<string, string>>
