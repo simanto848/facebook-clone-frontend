@@ -5,43 +5,17 @@ import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
 import { usePostStore } from "@/store/postStore";
-import { useChatStore } from "@/store/chatStore";
+import { useChatStore, useUsers } from "@/hooks";
 import { Search, Hash, Users, UserPlus, UserCheck, MessageSquare, Flame, BookOpen, Compass, Shield } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
 const popularTags = ["design", "webgl", "react", "brutalism", "tokyo", "security"];
 
-const recommendedPeople = [
-  {
-    id: "sarahc",
-    name: "Sarah Chen",
-    avatar: "https://images.unsplash.com/photo-1780570589435-059359e813cc?q=80&w=100&auto=format&fit=crop",
-    bio: "Fluid Systems Designer",
-  },
-  {
-    id: "davidk",
-    name: "David Kim",
-    avatar: "https://images.unsplash.com/photo-1780764895105-ea3037466236?q=80&w=100&auto=format&fit=crop",
-    bio: "3D Artist & Photographer",
-  },
-  {
-    id: "elena",
-    name: "Elena Rostova",
-    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100",
-    bio: "Core Infrastructure Lead",
-  },
-];
-
-const mockGuilds = [
-  { id: "g1", name: "UI Brutalists", members: "12.4k members", category: "Design", avatar: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=100" },
-  { id: "g2", name: "Core Infrastructure", members: "8.2k members", category: "Systems", avatar: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=100" },
-  { id: "g3", name: "Tokyo Creative Club", members: "3.5k members", category: "Photography", avatar: "https://images.unsplash.com/photo-1519608487953-e999c86e7455?w=100" },
-];
-
 export default function ExplorePage() {
   const { posts } = usePostStore();
   const { openChat } = useChatStore();
+  const { data: profile, refetch } = useUsers("/me");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<"all" | "posts" | "people" | "groups" | "pages">("all");
@@ -92,18 +66,22 @@ export default function ExplorePage() {
 
   const filteredPosts = getFilteredPosts();
 
+  // Fetch suggestions when profile loads
+  useEffect(() => {
+    if (profile) {
+      refetch("/users/suggestions").then((data) => {
+        // suggestions now available via useUsers hook state
+      });
+    }
+  }, [profile, refetch]);
+
   // 2. FILTER PEOPLE
   const getFilteredPeople = () => {
     if (searchQuery.trim() !== "") {
       const q = searchQuery.toLowerCase();
-      return recommendedPeople.filter(
-        (person) =>
-          person.name.toLowerCase().includes(q) ||
-          person.id.toLowerCase().includes(q)
-      );
+      return /* filtered from API */;
     }
-    // Default show all recommended if tab is active
-    return recommendedPeople;
+    return [];
   };
 
   const filteredPeople = getFilteredPeople();
@@ -112,13 +90,9 @@ export default function ExplorePage() {
   const getFilteredGroups = () => {
     if (searchQuery.trim() !== "") {
       const q = searchQuery.toLowerCase();
-      return mockGuilds.filter(
-        (g) =>
-          g.name.toLowerCase().includes(q) ||
-          g.category.toLowerCase().includes(q)
-      );
+      return [];
     }
-    return mockGuilds;
+    return [];
   };
 
   const filteredGroups = getFilteredGroups();
@@ -177,6 +151,7 @@ export default function ExplorePage() {
                       onClick={() => {
                         if (isActive) {
                           setSelectedTag(null);
+                          setSearchQuery("");
                         } else {
                           setSelectedTag(tag);
                           setSearchQuery("");

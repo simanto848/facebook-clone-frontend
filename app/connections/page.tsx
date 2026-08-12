@@ -4,75 +4,63 @@ import React, { useState } from "react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import { useChatStore } from "@/store/chatStore";
-import { usePostStore, ConnectionUser } from "@/store/postStore";
+import { usePostStore, ConnectionUser, useUsers } from "@/hooks";
 import { Users, UserPlus, UserCheck, MessageSquare, Check, X, Compass, Sparkles } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
-const initialRequests: ConnectionUser[] = [
-  {
-    id: "elena",
-    name: "Elena Rostova",
-    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100",
-    role: "Core Infrastructure Lead",
-    mutual: 8,
-  },
-  {
-    id: "davidk",
-    name: "David Kim",
-    avatar: "https://images.unsplash.com/photo-1780764895105-ea3037466236?q=80&w=100&auto=format&fit=crop",
-    role: "Digital Artist & Photographer",
-    mutual: 12,
-  },
-];
+const initialRequests: ConnectionUser[] = [];
 
-const initialSuggestions: ConnectionUser[] = [
-  {
-    id: "marcus",
-    name: "Marcus Aurelius",
-    avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100",
-    role: "Systems Philosopher",
-    mutual: 2,
-  },
-  {
-    id: "ada",
-    name: "Ada Lovelace",
-    avatar: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=100",
-    role: "First Compiler Dev",
-    mutual: 18,
-  },
-];
+const initialSuggestions: ConnectionUser[] = [];
 
-const initialCurrentConnections: ConnectionUser[] = [
-  {
-    id: "sarahc",
-    name: "Sarah Chen",
-    avatar: "https://images.unsplash.com/photo-1780570589435-059359e813cc?q=80&w=100&auto=format&fit=crop",
-    role: "Fluid Systems Designer",
-    mutual: 15,
-  },
-];
-
+const initialCurrentConnections: ConnectionUser[] = [];
 
 export default function ConnectionsPage() {
   const { openChat } = useChatStore();
-  const { connectionRequests, acceptRequest, declineRequest } = usePostStore();
+  const { posts } = usePostStore();
+  const { data: profile, isLoading, error, refetch } = useUsers("/me");
   const [suggestions, setSuggestions] = useState<ConnectionUser[]>(initialSuggestions);
   const [connections, setConnections] = useState<ConnectionUser[]>(initialCurrentConnections);
   const [activeTab, setActiveTab] = useState<"requests" | "suggestions" | "connections">("requests");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Fetch connections and suggestions on mount
+  useEffect(() => {
+    if (profile) {
+      refetch("/users/suggestions").then((data) => {
+        setSuggestions(data.users || []);
+      });
+      refetch("/users/connections/requests").then((data) => {
+        // Handle requests if needed
+      });
+    }
+  }, [profile, refetch]);
 
   const handleAcceptRequest = (user: ConnectionUser) => {
-    acceptRequest(user.id);
-    setConnections([user, ...connections]);
+    followUser(user.id).then(() => {
+      setConnections([user, ...connections]);
+      setSuggestions(suggestions.filter((s) => s.id !== user.id));
+    });
   };
 
   const handleDeclineRequest = (userId: string) => {
-    declineRequest(userId);
+    unfollowUser(userId).then(() => {
+      // Remove from requests
+    });
   };
 
   const handleAddFriend = (user: ConnectionUser) => {
-    setSuggestions(suggestions.filter((s) => s.id !== user.id));
-    setConnections([user, ...connections]);
+    followUser(user.id).then(() => {
+      setSuggestions(suggestions.filter((s) => s.id !== user.id));
+      setConnections([user, ...connections]);
+    });
+  };
+
+  const handleFollowUser = (userId: string) => {
+    followUser(userId).then(() => {
+      setSuggestions(suggestions.filter((s) => s.id !== userId));
+      setConnections([...connections, { id: userId, name: "", avatar: "", role: "", mutual: 0 }]);
+    });
   };
 
   return (
@@ -100,7 +88,7 @@ export default function ConnectionsPage() {
             {/* Tabs */}
             <div className="border-b border-[#1f2937]/60 flex gap-6">
               {[
-                { id: "requests", label: "Requests", count: connectionRequests.length },
+                { id: "requests", label: "Requests", count: connections.length },
                 { id: "suggestions", label: "Suggestions", count: suggestions.length },
                 { id: "connections", label: "Your Connections", count: connections.length },
               ].map((tab) => {
@@ -127,14 +115,14 @@ export default function ConnectionsPage() {
             <div className="space-y-4">
               {activeTab === "requests" && (
                 <div className="space-y-4">
-                  {connectionRequests.length === 0 ? (
+                  {connections.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-16 text-center space-y-3 rounded-2xl border border-dashed border-[#1f2937] bg-[#111827]/40">
                       <p className="text-slate-400 font-semibold text-sm">No pending connection requests</p>
                       <p className="text-xs text-slate-500 max-w-xs">When people invite you to connect, they will show up here.</p>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {connectionRequests.map((user) => (
+                      {connections.map((user) => (
                         <div key={user.id} className="rounded-2xl border border-[#1f2937] bg-[#111827] p-4 flex flex-col justify-between space-y-4">
                           <Link href={`/profile/${user.id}`} className="flex items-start gap-3 hover:opacity-90 transition">
                             <div className="relative h-12 w-12 rounded-full overflow-hidden shrink-0 border border-[#1f2937] bg-[#0f172a]">
@@ -246,6 +234,7 @@ export default function ConnectionsPage() {
                             </button>
                             <button
                               onClick={() => {
+                                // Remove from connections
                                 setConnections(connections.filter((c) => c.id !== user.id));
                                 setSuggestions([user, ...suggestions]);
                               }}
