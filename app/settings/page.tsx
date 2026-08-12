@@ -10,6 +10,8 @@ import AppearanceSection from "@/components/features/settings/sections/Appearanc
 import LanguageSection from "@/components/features/settings/sections/LanguageSection";
 import FeedSection from "@/components/features/settings/sections/FeedSection";
 
+import ActivityLogSection from "@/components/features/settings/sections/ActivityLogSection";
+
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("account");
 
@@ -17,6 +19,8 @@ export default function SettingsPage() {
     switch (activeTab) {
       case "account":
         return <AccountSection />;
+      case "activity_log":
+        return <ActivityLogSection />;
       case "notifications":
         return <NotificationsSection />;
       case "privacy":
