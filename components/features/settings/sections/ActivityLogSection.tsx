@@ -37,8 +37,8 @@ export default function ActivityLogSection() {
         }));
         setLogs(parsed);
       }
-    } catch (err) {
-      console.error("Using fallback activity logs:", err);
+    } catch {
+      setLogs(fallbackLogs);
     } finally {
       setLoading(false);
     }

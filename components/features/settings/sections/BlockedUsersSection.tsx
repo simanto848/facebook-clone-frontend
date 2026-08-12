@@ -20,7 +20,7 @@ export default function BlockedUsersSection() {
     setLoading(true);
     try {
       const res = await blockService.getBlockedUsers();
-      const items = res.data || res || [];
+      const items = res?.data || res || [];
       if (Array.isArray(items)) {
         setBlocked(
           items.map((u: any) => ({
@@ -30,8 +30,8 @@ export default function BlockedUsersSection() {
           }))
         );
       }
-    } catch (err) {
-      console.error("Fetch blocked users error:", err);
+    } catch {
+      setBlocked([]);
     } finally {
       setLoading(false);
     }
