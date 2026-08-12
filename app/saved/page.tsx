@@ -1,15 +1,34 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
-import { usePostStore } from "@/store/postStore";
 import { Bookmark } from "lucide-react";
+import { bookmarkService } from "@/services/bookmarkService";
 
 export default function SavedPostsPage() {
-  const { posts } = usePostStore();
-  const savedPosts = posts.filter((post) => post.saved);
+  const [savedPosts, setSavedPosts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchBookmarks = async () => {
+    setLoading(true);
+    try {
+      const res = await bookmarkService.getUserBookmarks();
+      const items = res.data || res || [];
+      // Transform bookmarks if backend wraps post inside bookmark item
+      const posts = items.map((b: any) => (b.post ? { ...b.post, bookmarkId: b.id, saved: true } : { ...b, saved: true }));
+      setSavedPosts(posts);
+    } catch (err) {
+      console.error("Error fetching bookmarks:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBookmarks();
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#0f172a] text-white">
@@ -32,7 +51,9 @@ export default function SavedPostsPage() {
               </div>
             </div>
 
-            {savedPosts.length === 0 ? (
+            {loading ? (
+              <p className="text-xs text-slate-400 text-center py-8">Loading bookmarks...</p>
+            ) : savedPosts.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-center space-y-4 rounded-2xl border border-dashed border-[#1f2937] bg-[#111827]/30">
                 <Bookmark size={40} className="text-slate-500" />
                 <div>
