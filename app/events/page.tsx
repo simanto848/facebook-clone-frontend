@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
-import { Calendar, MapPin, Users, Ticket, Check, BellRing, Compass, Sparkles } from "lucide-react";
+import { Calendar, MapPin, Users, Ticket, Check } from "lucide-react";
 import Image from "next/image";
+import { eventService } from "@/services/eventService";
 
 interface TechEvent {
   id: string;
@@ -12,7 +13,7 @@ interface TechEvent {
   cover: string;
   date: string;
   location: string;
-  category: "Hackathon" | "Meetup" | "Conference";
+  category: "Hackathon" | "Meetup" | "Conference" | string;
   attendees: number;
   description: string;
 }
@@ -51,26 +52,63 @@ const initialEvents: TechEvent[] = [
 ];
 
 export default function EventsPage() {
-  const [events] = useState<TechEvent[]>(initialEvents);
+  const [events, setEvents] = useState<TechEvent[]>(initialEvents);
   const [rsvps, setRsvps] = useState<Record<string, "going" | "interested" | null>>({ e1: "interested" });
   const [activeFilter, setActiveFilter] = useState<"all" | "hackathons" | "meetups" | "going">("all");
+  const [loading, setLoading] = useState(false);
 
-  const handleRsvp = (eventId: string, status: "going" | "interested") => {
-    setRsvps((prev) => {
-      const current = prev[eventId];
-      return {
-        ...prev,
-        [eventId]: current === status ? null : status,
-      };
-    });
+  const fetchEventsFromBackend = async () => {
+    setLoading(true);
+    try {
+      const res = await eventService.getEvents();
+      const items = res.data || res || [];
+      if (Array.isArray(items) && items.length > 0) {
+        const fetched: TechEvent[] = items.map((item: any) => ({
+          id: item.id,
+          title: item.title,
+          cover: item.coverImage || "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=600",
+          date: item.startDate ? new Date(item.startDate).toLocaleDateString() : "Upcoming",
+          location: item.location || "Online",
+          category: item.category || "Meetup",
+          attendees: item._count?.rsvps || 0,
+          description: item.description || "",
+        }));
+        setEvents(fetched);
+      }
+    } catch (err) {
+      console.error("Using local fallback events due to fetch error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchEventsFromBackend();
+  }, []);
+
+  const handleRsvp = async (eventId: string, status: "going" | "interested") => {
+    const current = rsvps[eventId];
+    const newStatus = current === status ? null : status;
+    setRsvps((prev) => ({
+      ...prev,
+      [eventId]: newStatus,
+    }));
+
+    if (newStatus) {
+      try {
+        await eventService.rsvpEvent(eventId, newStatus.toUpperCase() as any);
+      } catch (err) {
+        console.error("RSVP error:", err);
+      }
+    }
   };
 
   const getFilteredEvents = () => {
     switch (activeFilter) {
       case "hackathons":
-        return events.filter((e) => e.category === "Hackathon");
+        return events.filter((e) => e.category.toLowerCase().includes("hackathon"));
       case "meetups":
-        return events.filter((e) => e.category === "Meetup");
+        return events.filter((e) => e.category.toLowerCase().includes("meetup"));
       case "going":
         return events.filter((e) => rsvps[e.id] === "going");
       default:
@@ -128,7 +166,9 @@ export default function EventsPage() {
 
             {/* Events List Grid */}
             <div className="space-y-6">
-              {filteredEvents.length === 0 ? (
+              {loading ? (
+                <p className="text-xs text-slate-400 text-center py-8">Loading tech events...</p>
+              ) : filteredEvents.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-center space-y-3 rounded-2xl border border-dashed border-[#1f2937] bg-[#111827]/40">
                   <p className="text-slate-400 font-semibold text-sm">No events found</p>
                   <p className="text-xs text-slate-500 max-w-xs">Try selecting a different filter category.</p>
