@@ -1,42 +1,44 @@
+"use client";
+
+import React, { useState } from "react";
 import SettingsSection from "@/components/features/settings/SettingsSection";
-import SettingSelect from "@/components/features/settings/SettingSelect";
-import SettingToggle from "@/components/features/settings/SettingToggle";
 import BlockedUsersSection from "@/components/features/settings/sections/BlockedUsersSection";
+import { Select, Switch } from "@/components/ui";
 
 export default function PrivacySection() {
+  const [isPrivate, setIsPrivate] = useState(false);
+  const [showOnlineStatus, setShowOnlineStatus] = useState(true);
+  const [visibility, setVisibility] = useState("public");
+
   return (
     <>
       <SettingsSection
-        title="Privacy"
-        description="Manage your privacy preferences."
+        title="Privacy Settings"
+        description="Manage visibility and who can see your content."
       >
-        <div className="space-y-5">
-          <SettingToggle
-            title="Private Account"
-            description="Only approved followers can see your content."
+        <div className="space-y-6">
+          <Switch
+            label="Private Account"
+            description="Only approved followers can see your posts and media."
+            checked={isPrivate}
+            onChange={(e) => setIsPrivate(e.target.checked)}
           />
 
-          <SettingToggle
-            title="Show Online Status"
-            description="Allow others to see when you're online."
+          <Switch
+            label="Show Online Status"
+            description="Allow active connections to see when you are currently online."
+            checked={showOnlineStatus}
+            onChange={(e) => setShowOnlineStatus(e.target.checked)}
           />
 
-          <SettingSelect
+          <Select
             label="Profile Visibility"
-            defaultValue="public"
+            value={visibility}
+            onChange={(e) => setVisibility(e.target.value)}
             options={[
-              {
-                label: "Public",
-                value: "public",
-              },
-              {
-                label: "Friends Only",
-                value: "friends",
-              },
-              {
-                label: "Private",
-                value: "private",
-              },
+              { label: "Public (Everyone)", value: "public" },
+              { label: "Friends Only", value: "friends" },
+              { label: "Private (Only Me)", value: "private" },
             ]}
           />
         </div>

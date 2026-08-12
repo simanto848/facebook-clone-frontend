@@ -1,30 +1,29 @@
+"use client";
+
+import React, { useState } from "react";
 import SettingsSection from "@/components/features/settings/SettingsSection";
-import SettingSelect from "@/components/features/settings/SettingSelect";
+import { Select } from "@/components/ui";
 
 export default function FeedSection() {
+  const [feedMode, setFeedMode] = useState("latest");
+
   return (
     <SettingsSection
       title="Feed Preferences"
-      description="Customize your feed experience."
+      description="Customize your default newsfeed sorting algorithm."
     >
-      <SettingSelect
-        label="Default Feed"
-        defaultValue="latest"
-        options={[
-          {
-            label: "Latest",
-            value: "latest",
-          },
-          {
-            label: "Most Popular",
-            value: "popular",
-          },
-          {
-            label: "Recommended",
-            value: "recommended",
-          },
-        ]}
-      />
+      <div className="max-w-md">
+        <Select
+          label="Default Feed View"
+          value={feedMode}
+          onChange={(e) => setFeedMode(e.target.value)}
+          options={[
+            { label: "Latest Posts (Chronological)", value: "latest" },
+            { label: "Most Popular & Trending", value: "popular" },
+            { label: "Recommended for You", value: "recommended" },
+          ]}
+        />
+      </div>
     </SettingsSection>
   );
 }

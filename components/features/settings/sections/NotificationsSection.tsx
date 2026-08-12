@@ -1,26 +1,39 @@
+"use client";
+
+import React, { useState } from "react";
 import SettingsSection from "@/components/features/settings/SettingsSection";
-import SettingToggle from "@/components/features/settings/SettingToggle";
+import { Switch } from "@/components/ui";
 
 export default function NotificationsSection() {
+  const [pushEnabled, setPushEnabled] = useState(true);
+  const [emailEnabled, setEmailEnabled] = useState(true);
+  const [marketingEnabled, setMarketingEnabled] = useState(false);
+
   return (
     <SettingsSection
       title="Notifications"
-      description="Control how you receive notifications."
+      description="Control how and when you receive notification alerts."
     >
-      <div className="space-y-5">
-        <SettingToggle
-          title="Push Notifications"
-          description="Receive notifications on your device."
+      <div className="space-y-6">
+        <Switch
+          label="Push Notifications"
+          description="Receive instant real-time notifications on your browser/device."
+          checked={pushEnabled}
+          onChange={(e) => setPushEnabled(e.target.checked)}
         />
 
-        <SettingToggle
-          title="Email Notifications"
-          description="Receive updates by email."
+        <Switch
+          label="Email Notifications"
+          description="Receive activity digests and important updates by email."
+          checked={emailEnabled}
+          onChange={(e) => setEmailEnabled(e.target.checked)}
         />
 
-        <SettingToggle
-          title="Marketing Emails"
-          description="Receive product announcements."
+        <Switch
+          label="Marketing & Feature Announcements"
+          description="Receive product updates, newsletters, and promotional offers."
+          checked={marketingEnabled}
+          onChange={(e) => setMarketingEnabled(e.target.checked)}
         />
       </div>
     </SettingsSection>

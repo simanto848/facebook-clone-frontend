@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Activity, Trash2, History } from "lucide-react";
+import { Trash2, History } from "lucide-react";
 import { activityLogService } from "@/services/activityLogService";
+import { DataTable, Button, type Column } from "@/components/ui";
 
 interface LogEntry {
   id: string;
@@ -15,6 +16,7 @@ const fallbackLogs: LogEntry[] = [
   { id: "1", action: "LOGIN", details: "Logged in from Chrome macOS", createdAt: "Just now" },
   { id: "2", action: "POST_CREATE", details: "Published a post in feed", createdAt: "2 hours ago" },
   { id: "3", action: "PROFILE_UPDATE", details: "Updated profile bio", createdAt: "Yesterday" },
+  { id: "4", action: "SECURITY", details: "Updated account security settings", createdAt: "3 days ago" },
 ];
 
 export default function ActivityLogSection() {
@@ -64,6 +66,45 @@ export default function ActivityLogSection() {
     }
   };
 
+  const columns: Column<LogEntry>[] = [
+    {
+      key: "action",
+      header: "Action",
+      sortable: true,
+      cell: (row) => (
+        <span className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-blue-600/20 text-blue-400 uppercase">
+          {row.action}
+        </span>
+      ),
+    },
+    {
+      key: "details",
+      header: "Details & Event",
+      sortable: true,
+      cell: (row) => <span className="text-xs text-slate-200 font-medium">{row.details}</span>,
+    },
+    {
+      key: "createdAt",
+      header: "Timestamp",
+      sortable: true,
+      cell: (row) => <span className="text-[11px] text-slate-400">{row.createdAt}</span>,
+    },
+    {
+      key: "actions",
+      header: "Manage",
+      cell: (row) => (
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => handleDelete(row.id)}
+          className="hover:text-red-400"
+        >
+          <Trash2 size={14} />
+        </Button>
+      ),
+    },
+  ];
+
   return (
     <div className="rounded-2xl border border-[#1f2937] bg-[#111827] p-6 text-white space-y-6">
       <div className="flex items-center justify-between border-b border-[#1f2937] pb-4">
@@ -78,43 +119,26 @@ export default function ActivityLogSection() {
         </div>
 
         {logs.length > 0 && (
-          <button
+          <Button
+            size="sm"
+            variant="danger"
+            leftIcon={<Trash2 size={13} />}
             onClick={handleClear}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-red-500/10 text-red-400 hover:bg-red-500/20 transition border border-red-500/20"
           >
-            <Trash2 size={13} />
-            <span>Clear Log</span>
-          </button>
+            Clear Log
+          </Button>
         )}
       </div>
 
       {loading ? (
         <p className="text-xs text-slate-400 py-8 text-center">Loading audit log...</p>
-      ) : logs.length === 0 ? (
-        <div className="py-12 text-center text-slate-500 text-xs">No recorded activity logs found.</div>
       ) : (
-        <div className="divide-y divide-[#1f2937]">
-          {logs.map((log) => (
-            <div key={log.id} className="py-3 flex items-center justify-between first:pt-0 last:pb-0">
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-600/20 text-blue-400 uppercase">
-                    {log.action}
-                  </span>
-                  <span className="text-xs text-slate-300">{log.details}</span>
-                </div>
-                <p className="text-[10px] text-slate-500">{log.createdAt}</p>
-              </div>
-
-              <button
-                onClick={() => handleDelete(log.id)}
-                className="text-slate-500 hover:text-red-400 p-1.5 rounded-lg hover:bg-slate-800 transition"
-              >
-                <Trash2 size={14} />
-              </button>
-            </div>
-          ))}
-        </div>
+        <DataTable
+          columns={columns}
+          data={logs}
+          searchPlaceholder="Filter audit logs..."
+          pageSize={5}
+        />
       )}
     </div>
   );

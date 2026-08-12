@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import SettingsSection from "@/components/features/settings/SettingsSection";
-import SettingSelect from "@/components/features/settings/SettingSelect";
+import { Select, ToggleGroup } from "@/components/ui";
 
 export default function AppearanceSection() {
   const [theme, setTheme] = useState("dark");
+  const [fontSize, setFontSize] = useState("medium");
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("app-theme") || "dark";
@@ -16,7 +17,6 @@ export default function AppearanceSection() {
     setTheme(newTheme);
     localStorage.setItem("app-theme", newTheme);
 
-    // Remove existing theme classes
     document.documentElement.classList.remove("theme-light", "theme-cyberpunk");
 
     if (newTheme === "light") {
@@ -28,29 +28,31 @@ export default function AppearanceSection() {
 
   return (
     <SettingsSection
-      title="Appearance"
-      description="Customize how Your World looks."
+      title="Appearance & Theme"
+      description="Customize how Your World looks on your screen."
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <SettingSelect
-          label="Theme"
-          description="Choose your preferred theme."
-          defaultValue={theme}
-          onChange={handleThemeChange}
-          options={[
-            { label: "Dark", value: "dark" },
-            { label: "Light", value: "light" },
-            { label: "Cyberpunk", value: "cyberpunk" },
-          ]}
-        />
+      <div className="space-y-6 max-w-md">
+        <div className="space-y-2">
+          <label className="text-xs font-semibold text-slate-300 block">Theme Palette</label>
+          <ToggleGroup
+            options={[
+              { value: "dark", label: "Dark" },
+              { value: "light", label: "Light" },
+              { value: "cyberpunk", label: "Cyberpunk" },
+            ]}
+            value={theme}
+            onChange={handleThemeChange}
+          />
+        </div>
 
-        <SettingSelect
+        <Select
           label="Font Size"
-          defaultValue="medium"
+          value={fontSize}
+          onChange={(e) => setFontSize(e.target.value)}
           options={[
-            { label: "Small", value: "small" },
-            { label: "Medium", value: "medium" },
-            { label: "Large", value: "large" },
+            { label: "Small (12px)", value: "small" },
+            { label: "Medium (14px)", value: "medium" },
+            { label: "Large (16px)", value: "large" },
           ]}
         />
       </div>
