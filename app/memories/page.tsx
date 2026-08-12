@@ -108,7 +108,7 @@ export default function MemoriesPage() {
 
                     {m.mediaUrl && (
                       <div className="relative h-64 rounded-xl overflow-hidden border border-[#1f2937]">
-                        <Image src={m.mediaUrl} fill className="object-cover" alt="Memory media" />
+                        <Image src={m.mediaUrl} fill sizes="100vw" className="object-cover" alt="Memory media" />
                       </div>
                     )}
                   </div>

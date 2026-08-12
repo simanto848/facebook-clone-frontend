@@ -82,6 +82,7 @@ export default function ProfilePage() {
             alt="Cover"
             fill
             priority
+            sizes="100vw"
             className="object-cover"
           />
           <div className="absolute inset-0 bg-black/40" />
@@ -94,6 +95,7 @@ export default function ProfilePage() {
               src="https://images.unsplash.com/photo-1779040622687-42bb00790c67?w=500"
               alt="Alex Morgan"
               fill
+              sizes="128px"
               className="object-cover"
             />
           </div>
@@ -186,13 +188,13 @@ export default function ProfilePage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="aspect-square rounded-xl bg-[#1f2937] relative overflow-hidden">
-                  <Image src="https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=200" fill className="object-cover" alt="Recent 1" />
+                  <Image src="https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=200" fill sizes="100px" className="object-cover" alt="Recent 1" />
                 </div>
                 <div className="aspect-square rounded-xl bg-[#1f2937] relative overflow-hidden">
-                  <Image src="https://images.unsplash.com/photo-1519608487953-e999c86e7455?w=200" fill className="object-cover" alt="Recent 2" />
+                  <Image src="https://images.unsplash.com/photo-1519608487953-e999c86e7455?w=200" fill sizes="100px" className="object-cover" alt="Recent 2" />
                 </div>
                 <div className="aspect-square rounded-xl bg-[#1f2937] relative overflow-hidden">
-                  <Image src="https://images.unsplash.com/photo-1778192391493-7436d746b128?w=200" fill className="object-cover" alt="Recent 3" />
+                  <Image src="https://images.unsplash.com/photo-1778192391493-7436d746b128?w=200" fill sizes="100px" className="object-cover" alt="Recent 3" />
                 </div>
 
                 <button className="aspect-square rounded-xl bg-[#1f2937] flex items-center justify-center hover:bg-[#263247] transition">

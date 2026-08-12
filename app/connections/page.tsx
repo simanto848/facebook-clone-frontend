@@ -176,7 +176,7 @@ export default function ConnectionsPage() {
                         <div key={user.id} className="rounded-2xl border border-[#1f2937] bg-[#111827] p-4 flex flex-col justify-between space-y-4">
                           <Link href={`/profile/${user.id}`} className="flex items-start gap-3 hover:opacity-90 transition">
                             <div className="relative h-12 w-12 rounded-full overflow-hidden shrink-0 border border-[#1f2937] bg-[#0f172a]">
-                              <Image src={user.avatar} fill className="object-cover" alt={user.name} />
+                              <Image src={user.avatar} fill sizes="48px" className="object-cover" alt={user.name} />
                             </div>
                             <div>
                               <p className="text-sm font-bold text-white leading-tight">{user.name}</p>
@@ -219,7 +219,7 @@ export default function ConnectionsPage() {
                         <div key={user.id} className="rounded-2xl border border-[#1f2937] bg-[#111827] p-4 flex flex-col justify-between space-y-4">
                           <Link href={`/profile/${user.id}`} className="flex items-start gap-3 hover:opacity-90 transition">
                             <div className="relative h-12 w-12 rounded-full overflow-hidden shrink-0 border border-[#1f2937] bg-[#0f172a]">
-                              <Image src={user.avatar} fill className="object-cover" alt={user.name} />
+                              <Image src={user.avatar} fill sizes="48px" className="object-cover" alt={user.name} />
                             </div>
                             <div>
                               <p className="text-sm font-bold text-white leading-tight">{user.name}</p>
@@ -263,7 +263,7 @@ export default function ConnectionsPage() {
                         <div key={user.id} className="rounded-2xl border border-[#1f2937] bg-[#111827] p-4 flex flex-col justify-between space-y-4">
                           <Link href={`/profile/${user.id}`} className="flex items-start gap-3 hover:opacity-90 transition">
                             <div className="relative h-12 w-12 rounded-full overflow-hidden shrink-0 border border-[#1f2937] bg-[#0f172a]">
-                              <Image src={user.avatar} fill className="object-cover" alt={user.name} />
+                              <Image src={user.avatar} fill sizes="48px" className="object-cover" alt={user.name} />
                             </div>
                             <div>
                               <p className="text-sm font-bold text-white leading-tight">{user.name}</p>

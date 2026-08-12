@@ -188,6 +188,7 @@ export default function EventsPage() {
                         <Image
                           src={event.cover}
                           fill
+                          sizes="(max-width: 768px) 100vw, 224px"
                           className="object-cover transition-transform duration-300 group-hover:scale-105"
                           alt={event.title}
                         />

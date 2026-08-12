@@ -69,7 +69,7 @@ export default function BlockedUsersSection() {
             <div key={user.id} className="py-3 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="relative h-9 w-9 rounded-full overflow-hidden border border-[#1f2937]">
-                  <Image src={user.avatar} fill className="object-cover" alt={user.name} />
+                  <Image src={user.avatar} fill sizes="36px" className="object-cover" alt={user.name} />
                 </div>
                 <span className="text-xs font-semibold text-white">{user.name}</span>
               </div>

@@ -147,13 +147,13 @@ export default function PagesHubPage() {
                 return (
                   <div key={p.id} className="rounded-2xl border border-[#1f2937] bg-[#111827] overflow-hidden flex flex-col justify-between">
                     <div className="relative h-24 w-full">
-                      <Image src={p.cover} fill className="object-cover" alt="cover" />
+                      <Image src={p.cover} fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" alt="cover" />
                       <div className="absolute inset-0 bg-black/30" />
                     </div>
                     <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
                       <div className="flex gap-3 items-start">
                         <div className="relative h-10 w-10 rounded-xl overflow-hidden shrink-0 border border-white/20 bg-[#0f172a] -mt-7 z-10">
-                          <Image src={p.avatar} fill className="object-cover" alt="avatar" />
+                          <Image src={p.avatar} fill sizes="40px" className="object-cover" alt="avatar" />
                         </div>
                         <div>
                           <h3 className="text-sm font-bold text-white">{p.name}</h3>

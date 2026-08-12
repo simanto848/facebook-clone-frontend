@@ -200,7 +200,7 @@ export default function GroupsPage() {
               <div className="space-y-6">
                 {/* Cover Banner */}
                 <div className="relative h-44 rounded-2xl overflow-hidden border border-[#1f2937]">
-                  <Image src={selectedGuild.cover} fill className="object-cover" alt={selectedGuild.name} />
+                  <Image src={selectedGuild.cover} fill sizes="100vw" className="object-cover" alt={selectedGuild.name} />
                   <div className="absolute inset-0 bg-black/50" />
                   <button
                     onClick={() => setSelectedGuild(null)}
@@ -211,7 +211,7 @@ export default function GroupsPage() {
                   <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between">
                     <div className="flex items-center gap-3">
                       <div className="relative h-12 w-12 rounded-xl overflow-hidden border-2 border-white/20">
-                        <Image src={selectedGuild.avatar} fill className="object-cover" alt="Guild avatar" />
+                        <Image src={selectedGuild.avatar} fill sizes="48px" className="object-cover" alt="Guild avatar" />
                       </div>
                       <div>
                         <h2 className="text-xl font-bold text-white leading-tight">{selectedGuild.name}</h2>
@@ -260,7 +260,7 @@ export default function GroupsPage() {
                         >
                           <div className="flex items-center gap-3">
                             <div className="relative h-10 w-10 rounded-xl overflow-hidden">
-                              <Image src={guild.avatar} fill className="object-cover" alt={guild.name} />
+                              <Image src={guild.avatar} fill sizes="40px" className="object-cover" alt={guild.name} />
                             </div>
                             <div>
                               <p className="text-sm font-semibold text-white truncate max-w-[120px]">{guild.name}</p>
@@ -288,13 +288,13 @@ export default function GroupsPage() {
                           className="rounded-2xl border border-[#1f2937] bg-[#111827] overflow-hidden flex flex-col justify-between"
                         >
                           <div className="relative h-20 w-full">
-                            <Image src={guild.cover} fill className="object-cover" alt="cover" />
+                            <Image src={guild.cover} fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" alt="cover" />
                             <div className="absolute inset-0 bg-black/40" />
                           </div>
                           <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
                             <div className="flex gap-3 items-start">
                               <div className="relative h-9 w-9 rounded-xl overflow-hidden shrink-0 border border-white/10 bg-[#0f172a] -mt-8 z-10">
-                                <Image src={guild.avatar} fill className="object-cover" alt="avatar" />
+                                <Image src={guild.avatar} fill sizes="36px" className="object-cover" alt="avatar" />
                               </div>
                               <div>
                                 <h3
