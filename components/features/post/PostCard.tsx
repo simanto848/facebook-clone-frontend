@@ -342,6 +342,7 @@ export default function PostCard({ post }: Props) {
 
       {/* Share Modal Dialog Overlay */}
       <ShareModal
+        postId={post.id}
         post={post}
         isOpen={shareModalOpen}
         onClose={() => setShareModalOpen(false)}

@@ -7,22 +7,25 @@ import { shareService } from "@/services/shareService";
 interface ShareModalProps {
   isOpen: boolean;
   onClose: () => void;
-  postId: string;
+  postId?: string;
+  post?: { id: string; [key: string]: any };
 }
 
-export default function ShareModal({ isOpen, onClose, postId }: ShareModalProps) {
+export default function ShareModal({ isOpen, onClose, postId, post }: ShareModalProps) {
   const [caption, setCaption] = useState("");
   const [sharing, setSharing] = useState(false);
   const [shared, setShared] = useState(false);
 
   if (!isOpen) return null;
 
+  const targetPostId = postId || post?.id || "";
+
   const handleShare = async (e: React.FormEvent) => {
     e.preventDefault();
     setSharing(true);
 
     try {
-      await shareService.sharePost(postId, caption);
+      await shareService.sharePost(targetPostId, caption);
       setShared(true);
       setTimeout(() => {
         setShared(false);
