@@ -4,14 +4,14 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { useUsers, followUser, unfollowUser } from "@/hooks/useUsers";
 import { usePostStore } from "@/store/postStore";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { UserPlus, UserCheck } from "lucide-react";
 import PostCard from "@/components/features/post/PostCard";
 
 export default function ProfilePage() {
+  const params = useParams();
   const router = useRouter();
-  const pathParts = router.asPath.split("/").filter((p) => p);
-  const userId = pathParts[pathParts.length - 1]; // last segment
+  const userId = (params?.id as string) || "";
 
   const { data: profile, isLoading, error } = useUsers(
     userId ? `/${userId}` : undefined
