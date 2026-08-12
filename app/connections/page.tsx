@@ -1,66 +1,114 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import { useChatStore } from "@/store/chatStore";
-import { usePostStore, ConnectionUser, useUsers } from "@/hooks";
-import { Users, UserPlus, UserCheck, MessageSquare, Check, X, Compass, Sparkles } from "lucide-react";
+import { Users, UserPlus, UserCheck, MessageSquare, Check, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { friendshipService } from "@/services/friendshipService";
 
-const initialRequests: ConnectionUser[] = [];
-
-const initialSuggestions: ConnectionUser[] = [];
-
-const initialCurrentConnections: ConnectionUser[] = [];
+export interface DisplayUser {
+  id: string;
+  name: string;
+  avatar: string;
+  role: string;
+  mutual: number;
+}
 
 export default function ConnectionsPage() {
   const { openChat } = useChatStore();
-  const { posts } = usePostStore();
-  const { data: profile, isLoading, error, refetch } = useUsers("/me");
-  const [suggestions, setSuggestions] = useState<ConnectionUser[]>(initialSuggestions);
-  const [connections, setConnections] = useState<ConnectionUser[]>(initialCurrentConnections);
+  const [requests, setRequests] = useState<DisplayUser[]>([]);
+  const [suggestions, setSuggestions] = useState<DisplayUser[]>([]);
+  const [connections, setConnections] = useState<DisplayUser[]>([]);
   const [activeTab, setActiveTab] = useState<"requests" | "suggestions" | "connections">("requests");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  // Fetch connections and suggestions on mount
-  useEffect(() => {
-    if (profile) {
-      refetch("/users/suggestions").then((data) => {
-        setSuggestions(data.users || []);
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      // Load pending requests
+      const reqRes = await friendshipService.getPendingRequests();
+      const reqData = (reqRes.data || reqRes || []).map((item: any) => {
+        const u = item.requester || item;
+        return {
+          id: u.id,
+          name: `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.username || "User",
+          avatar: u.avatarUrl || u.profilePicture || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
+          role: u.headline || u.bio || "Member",
+          mutual: u.mutualFriendsCount || 0,
+        };
       });
-      refetch("/users/connections/requests").then((data) => {
-        // Handle requests if needed
-      });
+      setRequests(reqData);
+
+      // Load friends
+      const friendsRes = await friendshipService.getFriends();
+      const friendsData = (friendsRes.data || friendsRes || []).map((u: any) => ({
+        id: u.id,
+        name: `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.username || "User",
+        avatar: u.avatarUrl || u.profilePicture || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
+        role: u.headline || u.bio || "Developer",
+        mutual: u.mutualFriendsCount || 0,
+      }));
+      setConnections(friendsData);
+
+      // Load suggestions
+      const sugRes = await friendshipService.getSuggestions();
+      const sugData = (sugRes.data || sugRes || []).map((u: any) => ({
+        id: u.id,
+        name: `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.username || "User",
+        avatar: u.avatarUrl || u.profilePicture || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
+        role: u.headline || u.bio || "Developer",
+        mutual: u.mutualFriendsCount || 0,
+      }));
+      setSuggestions(sugData);
+    } catch (err) {
+      console.error("Failed to load connection data", err);
+    } finally {
+      setLoading(false);
     }
-  }, [profile, refetch]);
-
-  const handleAcceptRequest = (user: ConnectionUser) => {
-    followUser(user.id).then(() => {
-      setConnections([user, ...connections]);
-      setSuggestions(suggestions.filter((s) => s.id !== user.id));
-    });
   };
 
-  const handleDeclineRequest = (userId: string) => {
-    unfollowUser(userId).then(() => {
-      // Remove from requests
-    });
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const handleAcceptRequest = async (user: DisplayUser) => {
+    try {
+      await friendshipService.acceptFriendRequest(user.id);
+      setRequests((prev) => prev.filter((r) => r.id !== user.id));
+      setConnections((prev) => [user, ...prev]);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
-  const handleAddFriend = (user: ConnectionUser) => {
-    followUser(user.id).then(() => {
-      setSuggestions(suggestions.filter((s) => s.id !== user.id));
-      setConnections([user, ...connections]);
-    });
+  const handleDeclineRequest = async (userId: string) => {
+    try {
+      await friendshipService.declineFriendRequest(userId);
+      setRequests((prev) => prev.filter((r) => r.id !== userId));
+    } catch (e) {
+      console.error(e);
+    }
   };
 
-  const handleFollowUser = (userId: string) => {
-    followUser(userId).then(() => {
-      setSuggestions(suggestions.filter((s) => s.id !== userId));
-      setConnections([...connections, { id: userId, name: "", avatar: "", role: "", mutual: 0 }]);
-    });
+  const handleAddFriend = async (user: DisplayUser) => {
+    try {
+      await friendshipService.sendFriendRequest(user.id);
+      setSuggestions((prev) => prev.filter((s) => s.id !== user.id));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleUnfriend = async (userId: string) => {
+    try {
+      await friendshipService.unfriend(userId);
+      setConnections((prev) => prev.filter((c) => c.id !== userId));
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   return (
@@ -88,7 +136,7 @@ export default function ConnectionsPage() {
             {/* Tabs */}
             <div className="border-b border-[#1f2937]/60 flex gap-6">
               {[
-                { id: "requests", label: "Requests", count: connections.length },
+                { id: "requests", label: "Requests", count: requests.length },
                 { id: "suggestions", label: "Suggestions", count: suggestions.length },
                 { id: "connections", label: "Your Connections", count: connections.length },
               ].map((tab) => {
@@ -113,16 +161,18 @@ export default function ConnectionsPage() {
 
             {/* Content Lists */}
             <div className="space-y-4">
-              {activeTab === "requests" && (
+              {loading && <p className="text-xs text-slate-400 text-center py-8">Loading network...</p>}
+
+              {!loading && activeTab === "requests" && (
                 <div className="space-y-4">
-                  {connections.length === 0 ? (
+                  {requests.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-16 text-center space-y-3 rounded-2xl border border-dashed border-[#1f2937] bg-[#111827]/40">
                       <p className="text-slate-400 font-semibold text-sm">No pending connection requests</p>
                       <p className="text-xs text-slate-500 max-w-xs">When people invite you to connect, they will show up here.</p>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {connections.map((user) => (
+                      {requests.map((user) => (
                         <div key={user.id} className="rounded-2xl border border-[#1f2937] bg-[#111827] p-4 flex flex-col justify-between space-y-4">
                           <Link href={`/profile/${user.id}`} className="flex items-start gap-3 hover:opacity-90 transition">
                             <div className="relative h-12 w-12 rounded-full overflow-hidden shrink-0 border border-[#1f2937] bg-[#0f172a]">
@@ -156,7 +206,7 @@ export default function ConnectionsPage() {
                 </div>
               )}
 
-              {activeTab === "suggestions" && (
+              {!loading && activeTab === "suggestions" && (
                 <div className="space-y-4">
                   {suggestions.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-16 text-center space-y-3 rounded-2xl border border-dashed border-[#1f2937] bg-[#111827]/40">
@@ -200,7 +250,7 @@ export default function ConnectionsPage() {
                 </div>
               )}
 
-              {activeTab === "connections" && (
+              {!loading && activeTab === "connections" && (
                 <div className="space-y-4">
                   {connections.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-16 text-center space-y-3 rounded-2xl border border-dashed border-[#1f2937] bg-[#111827]/40">
@@ -233,11 +283,7 @@ export default function ConnectionsPage() {
                               <MessageSquare size={14} /> Message
                             </button>
                             <button
-                              onClick={() => {
-                                // Remove from connections
-                                setConnections(connections.filter((c) => c.id !== user.id));
-                                setSuggestions([user, ...suggestions]);
-                              }}
+                              onClick={() => handleUnfriend(user.id)}
                               className="bg-slate-800 hover:bg-red-500/10 text-red-400 border border-red-500/10 px-3 py-2 rounded-xl text-xs transition"
                             >
                               Remove
