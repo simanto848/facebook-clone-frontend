@@ -11,6 +11,7 @@ import PollPost from "./PollPost";
 import PostGallery from "./PostGallery";
 import PostVideo from "./PostVideo";
 import PostComments from "./PostComments";
+import { Button } from "@/components/ui";
 
 interface Props {
   post: PostType;
@@ -299,13 +300,14 @@ export default function PostCard({ post }: Props) {
 
         {/* Comment Action Toggle */}
         <div className="flex-1 flex justify-center">
-          <button
+          <Button
+            variant="ghost"
+            fullWidth
+            leftIcon={<MessageSquare size={18} />}
             onClick={() => setShowComments(!showComments)}
-            className="flex w-full items-center justify-center gap-2 rounded-xl py-2 text-sm font-medium transition hover:bg-[#1f2937] hover:text-white"
           >
-            <MessageSquare size={18} />
-            <span>Comment</span>
-          </button>
+            Comment
+          </Button>
         </div>
 
         {/* Save/Bookmark Action Button */}
@@ -319,24 +321,26 @@ export default function PostCard({ post }: Props) {
 
         {/* Share Modal Action Trigger */}
         <div className="flex-1 flex justify-center">
-          <button
+          <Button
+            variant="ghost"
+            fullWidth
+            leftIcon={<Share2 size={18} />}
             onClick={() => setShareModalOpen(true)}
-            className="flex w-full items-center justify-center gap-2 rounded-xl py-2 text-sm font-medium transition hover:bg-[#1f2937] hover:text-white"
           >
-            <Share2 size={18} />
-            <span>Share</span>
-          </button>
+            Share
+          </Button>
         </div>
 
         {/* Send Action */}
         <div className="flex-1 flex justify-center">
-          <button
+          <Button
+            variant="ghost"
+            fullWidth
+            leftIcon={<Send size={18} />}
             onClick={() => alert("Shared to Direct message!")}
-            className="flex w-full items-center justify-center gap-2 rounded-xl py-2 text-sm font-medium transition hover:bg-[#1f2937] hover:text-white"
           >
-            <Send size={18} />
-            <span>Send</span>
-          </button>
+            Send
+          </Button>
         </div>
       </div>
 

@@ -20,6 +20,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useChatStore } from "@/store/chatStore";
 import { notificationService } from "@/services/notificationService";
+import { Input } from "@/components/ui";
 
 export default function Navbar() {
   const [activeDropdown, setActiveDropdown] = useState<"profile" | "notifications" | "messages" | "theme" | null>(null);
@@ -157,22 +158,21 @@ export default function Navbar() {
 
         {/* Search */}
         <div ref={searchContainerRef} className="relative hidden w-105 md:block">
-          <div className="flex w-full items-center rounded-full border border-[#374151] bg-[#1f2937] px-4 py-2">
-            <Search size={18} className="text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search people, posts, topics..."
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setShowSearchSuggestions(e.target.value.length > 0);
-              }}
-              onFocus={() => {
-                if (searchQuery.length > 0) setShowSearchSuggestions(true);
-              }}
-              className="ml-3 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
-            />
-          </div>
+          <Input
+            placeholder="Search people, posts, topics..."
+            value={searchQuery}
+            leftIcon={<Search size={16} />}
+            clearable
+            onChange={(e) => {
+              const val = e.target.value;
+              setSearchQuery(val);
+              setShowSearchSuggestions(val.length > 0);
+            }}
+            onFocus={() => {
+              if (searchQuery.length > 0) setShowSearchSuggestions(true);
+            }}
+            className="rounded-full bg-[#1f2937] border-[#374151]"
+          />
 
           {showSearchSuggestions && (
             <div className="absolute left-0 right-0 top-12 z-50 rounded-2xl border border-[#1f2937] bg-[#111827] shadow-2xl p-3 animate-in fade-in slide-in-from-top-2 duration-150">

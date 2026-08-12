@@ -2,8 +2,9 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { useUsers, followUser, unfollowUser } from "@/hooks/useUsers";
 import { useRouter } from "next/navigation";
-import { UserPlus, UserCheck, Flag, Shield, Check } from "lucide-react";
+import { UserPlus, UserCheck } from "lucide-react";
 import Link from "next/link";
+import { Button } from "@/components/ui";
 
 export interface ProfileCardProps {
   userId?: string;
@@ -38,7 +39,7 @@ export const ProfileCard = ({
   }
 
   if (error) {
-    return <div className="text-sm text-red-400">Error loading profile</div>;
+    return <div className="text-sm text-red-400 font-medium">Error loading profile</div>;
   }
 
   const user = profile?.user;
@@ -88,46 +89,28 @@ export const ProfileCard = ({
 
       {/* Follow/Unfollow buttons */}
       {showFollowToggle && !isCurrentUser && userId && !isFollowing && (
-        <button
-          onClick={() => followUser(userId).then(() => setIsFollowing(true))}
-          className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition
-            bg-blue-600 text-white hover:bg-blue-700`}
-        >
-          <UserPlus size={14} className="text-white" />
-          Follow
-        </button>
+        <div className="mt-4">
+          <Button
+            size="sm"
+            variant="primary"
+            leftIcon={<UserPlus size={14} />}
+            onClick={() => followUser(userId).then(() => setIsFollowing(true))}
+          >
+            Follow
+          </Button>
+        </div>
       )}
 
       {showFollowToggle && !isCurrentUser && userId && isFollowing && (
-        <button
-          onClick={() => unfollowUser(userId).then(() => setIsFollowing(false))}
-          className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition
-            border border-[#1f2937] text-slate-300 hover:bg-[#111827]`}
-        >
-          <UserCheck size={14} className="text-slate-300" />
-          Following
-        </button>
-      )}
-
-      {/* Action menu (more options) */}
-      {(!isCurrentUser && showFollowToggle) && (
-        <div
-          onClick={(e) => e.stopPropagation()}
-          className="absolute right-2 top-2 rounded-lg border border-[#1f2937] bg-[#111827] p-1 shadow-xs cursor-pointer"
-        >
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            className="text-slate-400 hover:text-white"
+        <div className="mt-4">
+          <Button
+            size="sm"
+            variant="secondary"
+            leftIcon={<UserCheck size={14} />}
+            onClick={() => unfollowUser(userId).then(() => setIsFollowing(false))}
           >
-            <circle cx="9" cy="9" r="2" />
-            <circle cx="20" cy="20" r="2" />
-            <path d="M6 18L18 6M6 6l12 12" />
-          </svg>
+            Following
+          </Button>
         </div>
       )}
     </div>

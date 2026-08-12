@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { UserX, ShieldOff } from "lucide-react";
 import Image from "next/image";
 import { blockService } from "@/services/blockService";
+import { Button } from "@/components/ui";
 
 interface BlockedUser {
   id: string;
@@ -73,12 +74,15 @@ export default function BlockedUsersSection() {
                 </div>
                 <span className="text-xs font-semibold text-white">{user.name}</span>
               </div>
-              <button
+
+              <Button
+                size="sm"
+                variant="secondary"
+                leftIcon={<ShieldOff size={13} />}
                 onClick={() => handleUnblock(user.id)}
-                className="flex items-center gap-1 text-xs font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-full transition"
               >
-                <ShieldOff size={13} /> Unblock
-              </button>
+                Unblock
+              </Button>
             </div>
           ))}
         </div>
