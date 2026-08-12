@@ -5,6 +5,8 @@ import { usePostStore, StoryType } from "@/store/postStore";
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
+import { storyService } from "@/services/storyService";
+
 export default function Stories() {
   const { stories, addStory, viewStory, reactStory } = usePostStore();
   const [activeStoryIndex, setActiveStoryIndex] = useState<number | null>(null);
@@ -16,10 +18,20 @@ export default function Stories() {
 
   const activeStory = activeStoryIndex !== null ? stories[activeStoryIndex] : null;
 
-  const handleCreateStory = (e: React.FormEvent) => {
+  const handleCreateStory = async (e: React.FormEvent) => {
     e.preventDefault();
     const content = newStoryType === "text" ? newStoryText : newStoryMedia;
     if (!content.trim()) return;
+
+    try {
+      await storyService.createStory({
+        mediaUrl: content,
+        mediaType: newStoryType === "video" ? "VIDEO" : "IMAGE",
+        caption: newStoryText,
+      });
+    } catch (err) {
+      console.error("Story API error, fallback to local state:", err);
+    }
 
     addStory({
       author: {
