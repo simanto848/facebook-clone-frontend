@@ -46,6 +46,7 @@ export default function PostComments({ postId, comments }: Props) {
             src="https://images.unsplash.com/photo-1779040622687-42bb00790c67?w=100"
             alt="Alex Morgan"
             fill
+            sizes="36px"
             className="object-cover"
           />
         </div>

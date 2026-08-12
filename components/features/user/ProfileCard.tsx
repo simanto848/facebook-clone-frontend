@@ -54,9 +54,10 @@ export const ProfileCard = ({
       <div className="flex items-center gap-3">
         <div className="relative h-16 w-16 rounded-full overflow-hidden shrink-0">
           <Image
-            src=user.avatar
+            src={user.avatar}
             alt={user.name}
             fill
+            sizes="64px"
             className="object-cover"
           />
           {showFollowToggle && !isCurrentUser && (

@@ -39,6 +39,7 @@ export default function ChatInfoPanel({ onClose }: Props) {
             src={activeConversation.avatar}
             alt={activeConversation.name}
             fill
+            sizes="80px"
             className="object-cover"
           />
         </div>
@@ -91,6 +92,7 @@ export default function ChatInfoPanel({ onClose }: Props) {
                   src={src}
                   alt=""
                   fill
+                  sizes="80px"
                   className="object-cover transition duration-350 group-hover:scale-110"
                 />
               </div>

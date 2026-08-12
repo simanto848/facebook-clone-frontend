@@ -79,6 +79,7 @@ export default function ChatWindow() {
                 src={activeConversation.avatar}
                 alt={activeConversation.name}
                 fill
+                sizes="44px"
                 className="object-cover"
               />
 
@@ -146,6 +147,7 @@ export default function ChatWindow() {
                         src={activeConversation.avatar}
                         alt=""
                         fill
+                        sizes="32px"
                         className="object-cover"
                       />
                     </div>

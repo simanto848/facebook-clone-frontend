@@ -46,6 +46,7 @@ export default function CommentItem({ comment, onLike, onReply, onEdit, onDelete
             src={comment.author.avatar || "https://images.unsplash.com/photo-1779040622687-42bb00790c67?w=100"}
             alt={comment.author.name}
             fill
+            sizes="40px"
             className="object-cover"
           />
         </div>

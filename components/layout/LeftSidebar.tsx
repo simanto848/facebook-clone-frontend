@@ -26,6 +26,7 @@ const LeftSidebar = () => {
             src="https://images.unsplash.com/photo-1779040622687-42bb00790c67?w=500"
             alt="Alex"
             fill
+            sizes="48px"
             className="object-cover"
           />
         </div>

@@ -110,7 +110,7 @@ function ChatTab({ box }: { box: ChatBox }) {
           title="View profile"
         >
           <div className="relative h-7 w-7 rounded-full overflow-hidden shrink-0 border border-[#1f2937]">
-            <Image src={box.avatar} fill className="object-cover" alt={box.name} />
+            <Image src={box.avatar} fill sizes="28px" className="object-cover" alt={box.name} />
           </div>
           <span className="text-xs font-bold text-white truncate max-w-[80px]">{box.name}</span>
           <div className="h-1.5 w-1.5 rounded-full bg-green-500 shrink-0" />
@@ -173,7 +173,7 @@ function ChatTab({ box }: { box: ChatBox }) {
                 >
                   {!isMe && (
                     <div className="relative h-5 w-5 rounded-full overflow-hidden border border-[#1f2937] shrink-0">
-                      <Image src={box.avatar} fill className="object-cover" alt={box.name} />
+                      <Image src={box.avatar} fill sizes="20px" className="object-cover" alt={box.name} />
                     </div>
                   )}
 

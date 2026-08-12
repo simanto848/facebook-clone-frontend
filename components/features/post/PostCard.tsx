@@ -90,6 +90,7 @@ export default function PostCard({ post }: Props) {
               src={post.author.avatar}
               alt={post.author.name}
               fill
+              sizes="44px"
               className="object-cover"
             />
           </Link>
@@ -192,6 +193,7 @@ export default function PostCard({ post }: Props) {
                   src={post.article.thumbnail}
                   alt={post.article.title}
                   fill
+                  sizes="(max-width: 768px) 100vw, 600px"
                   className="object-cover transition-transform duration-300 group-hover/article:scale-105"
                 />
               </div>
@@ -224,6 +226,7 @@ export default function PostCard({ post }: Props) {
                   src={post.sharedPost.author.avatar}
                   alt={post.sharedPost.author.name}
                   fill
+                  sizes="24px"
                   className="object-cover"
                 />
               </div>

@@ -136,7 +136,7 @@ export default function CreatePost() {
                 <div className="grid grid-cols-5 gap-2">
                   {images.map((img, idx) => (
                     <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border border-[#1f2937]">
-                      <Image src={img} alt={`Mock upload ${idx}`} fill className="object-cover" />
+                      <Image src={img} alt={`Mock upload ${idx}`} fill sizes="80px" className="object-cover" />
                       <button
                         type="button"
                         onClick={() => setImages(images.filter((_, i) => i !== idx))}
