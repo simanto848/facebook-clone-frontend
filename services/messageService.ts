@@ -1,0 +1,38 @@
+import useAxios from "@/lib/useAxios";
+
+export interface SendMessagePayload {
+  content: string;
+  mediaUrl?: string;
+}
+
+export const messageService = {
+  getConversations: async () => {
+    const axios = useAxios();
+    const response = await axios.get("/messages/conversations");
+    return response.data;
+  },
+
+  createConversation: async (recipientId: string) => {
+    const axios = useAxios();
+    const response = await axios.post("/messages/conversations", { recipientId });
+    return response.data;
+  },
+
+  getMessages: async (conversationId: string, page = 1, limit = 50) => {
+    const axios = useAxios();
+    const response = await axios.get(`/messages/${conversationId}?page=${page}&limit=${limit}`);
+    return response.data;
+  },
+
+  sendMessage: async (conversationId: string, payload: SendMessagePayload) => {
+    const axios = useAxios();
+    const response = await axios.post(`/messages/${conversationId}`, payload);
+    return response.data;
+  },
+
+  markRead: async (conversationId: string) => {
+    const axios = useAxios();
+    const response = await axios.post(`/messages/${conversationId}/read`);
+    return response.data;
+  },
+};

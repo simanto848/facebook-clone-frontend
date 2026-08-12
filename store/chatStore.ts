@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { messageService } from "@/services/messageService";
 
 export interface Message {
   sender: "me" | "them";
@@ -152,7 +153,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
     if (!text.trim()) return;
     const timeString = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-    // Add user's message
+    // Call API async
+    messageService.sendMessage(id, { content: text }).catch((err) => {
+      console.error("Message send API error, keeping optimistic update", err);
+    });
+
+    // Add user's message optimistically
     set((state) => ({
       conversations: state.conversations.map((conv) => {
         if (conv.id !== id) return conv;
@@ -163,7 +169,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       }),
     }));
 
-    // Trigger mock automated reply after 1.2 seconds
+    // Trigger response simulation fallback
     setTimeout(() => {
       const answers = [
         "That's awesome! Let's talk more about it later.",
