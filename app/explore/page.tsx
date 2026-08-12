@@ -1,51 +1,61 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
 import { usePostStore } from "@/store/postStore";
-import { useChatStore, useUsers } from "@/hooks";
-import { Search, Hash, Users, UserPlus, UserCheck, MessageSquare, Flame, BookOpen, Compass, Shield } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
+import { useChatStore } from "@/store/chatStore";
+import { Search, Hash, Flame } from "lucide-react";
+import { searchService } from "@/services/searchService";
+import { hashtagService } from "@/services/hashtagService";
 
-const popularTags = ["design", "webgl", "react", "brutalism", "tokyo", "security"];
+const defaultPopularTags = ["design", "webgl", "react", "brutalism", "tokyo", "security"];
 
 export default function ExplorePage() {
   const { posts } = usePostStore();
   const { openChat } = useChatStore();
-  const { data: profile, refetch } = useUsers("/me");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<"all" | "posts" | "people" | "groups" | "pages">("all");
-  const [followingStates, setFollowingStates] = useState<Record<string, boolean>>({});
-  const [joinedGuilds, setJoinedGuilds] = useState<Record<string, boolean>>({});
+  const [popularTags, setPopularTags] = useState<string[]>(defaultPopularTags);
 
-  const toggleFollow = (username: string) => {
-    setFollowingStates((prev) => ({
-      ...prev,
-      [username]: !prev[username],
-    }));
-  };
+  useEffect(() => {
+    const fetchTrending = async () => {
+      try {
+        const res = await hashtagService.getTrending();
+        const items = res.data || res || [];
+        if (Array.isArray(items) && items.length > 0) {
+          setPopularTags(items.map((t: any) => t.name || t.tag || t));
+        }
+      } catch (err) {
+        console.error("Using default trending tags fallback:", err);
+      }
+    };
+    fetchTrending();
+  }, []);
 
-  const toggleJoinGuild = (guildId: string) => {
-    setJoinedGuilds((prev) => ({
-      ...prev,
-      [guildId]: !prev[guildId],
-    }));
-  };
+  useEffect(() => {
+    if (!searchQuery.trim()) return;
+    const delayDebounceFn = setTimeout(async () => {
+      try {
+        const res = await searchService.search(searchQuery, activeCategory === "all" ? "all" : (activeCategory as any));
+        // Search API return parsed
+      } catch (err) {
+        console.error("Search API error:", err);
+      }
+    }, 400);
 
-  // 1. FILTER POSTS
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery, activeCategory]);
+
   const getFilteredPosts = () => {
     let list = [...posts];
 
-    // Filter by tag if selected
     if (selectedTag) {
       list = list.filter((p) => p.content.toLowerCase().includes(`#${selectedTag}`) || p.content.toLowerCase().includes(selectedTag));
     }
 
-    // Filter by search query
     if (searchQuery.trim() !== "") {
       const q = searchQuery.toLowerCase();
       list = list.filter(
@@ -56,7 +66,6 @@ export default function ExplorePage() {
       );
     }
 
-    // Filter by category: pages -> only show article post types
     if (activeCategory === "pages") {
       list = list.filter((p) => p.type === "article");
     }
@@ -65,37 +74,6 @@ export default function ExplorePage() {
   };
 
   const filteredPosts = getFilteredPosts();
-
-  // Fetch suggestions when profile loads
-  useEffect(() => {
-    if (profile) {
-      refetch("/users/suggestions").then((data) => {
-        // suggestions now available via useUsers hook state
-      });
-    }
-  }, [profile, refetch]);
-
-  // 2. FILTER PEOPLE
-  const getFilteredPeople = () => {
-    if (searchQuery.trim() !== "") {
-      const q = searchQuery.toLowerCase();
-      return /* filtered from API */;
-    }
-    return [];
-  };
-
-  const filteredPeople = getFilteredPeople();
-
-  // 3. FILTER GROUPS
-  const getFilteredGroups = () => {
-    if (searchQuery.trim() !== "") {
-      const q = searchQuery.toLowerCase();
-      return [];
-    }
-    return [];
-  };
-
-  const filteredGroups = getFilteredGroups();
 
   const categories = [
     { id: "all", label: "All" },
@@ -193,119 +171,28 @@ export default function ExplorePage() {
               })}
             </div>
 
-            {/* 1. RENDER PEOPLE SECTION */}
-            {(activeCategory === "people" || (activeCategory === "all" && searchQuery)) && filteredPeople.length > 0 && (
-              <div className="rounded-2xl border border-[#1f2937] bg-[#111827] p-5 shadow-xl space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-bold tracking-wider uppercase text-slate-400 block">People</span>
-                  {activeCategory === "all" && (
-                    <button onClick={() => setActiveCategory("people")} className="text-[10px] text-blue-400 font-bold hover:underline">
-                      See All
-                    </button>
-                  )}
-                </div>
-                <div className="divide-y divide-[#1f2937]">
-                  {filteredPeople.map((person) => {
-                    const following = !!followingStates[person.id];
-                    return (
-                      <div key={person.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
-                        <Link href={`/profile/${person.id}`} className="flex items-center gap-3 hover:opacity-85 transition">
-                          <div className="relative h-10 w-10 overflow-hidden rounded-full border border-[#1f2937] bg-[#0f172a]">
-                            <Image src={person.avatar} fill className="object-cover" alt={person.name} />
-                          </div>
-                          <div>
-                            <p className="text-sm font-semibold text-white">{person.name}</p>
-                            <p className="text-[10px] text-slate-400 mt-0.5">@{person.id} • {person.bio}</p>
-                          </div>
-                        </Link>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => toggleFollow(person.id)}
-                            className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[10px] font-bold transition ${
-                              following ? "bg-slate-800 text-slate-300" : "bg-blue-600 text-white"
-                            }`}
-                          >
-                            {following ? <UserCheck size={12} /> : <UserPlus size={12} />}
-                            <span>{following ? "Following" : "Follow"}</span>
-                          </button>
-                          <button
-                            onClick={() => openChat({ id: person.id, name: person.name, avatar: person.avatar })}
-                            className="bg-slate-800 border border-[#1f2937] text-slate-300 hover:bg-slate-700 rounded-full p-1.5 transition"
-                          >
-                            <MessageSquare size={12} />
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+            {/* RENDER POSTS & PAGES FEED */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 border-b border-[#1f2937] pb-3">
+                <Flame size={16} className="text-blue-400" />
+                <span className="text-xs font-bold tracking-wider uppercase text-slate-400">
+                  {activeCategory === "pages" ? "Articles & Pages" : "Trending Feed"}
+                </span>
               </div>
-            )}
 
-            {/* 2. RENDER GROUPS / GUILDS SECTION */}
-            {(activeCategory === "groups" || (activeCategory === "all" && searchQuery)) && filteredGroups.length > 0 && (
-              <div className="rounded-2xl border border-[#1f2937] bg-[#111827] p-5 shadow-xl space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-bold tracking-wider uppercase text-slate-400 block">Suggested Guilds</span>
-                  {activeCategory === "all" && (
-                    <button onClick={() => setActiveCategory("groups")} className="text-[10px] text-blue-400 font-bold hover:underline">
-                      See All
-                    </button>
-                  )}
+              {filteredPosts.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-center space-y-3 rounded-2xl border border-dashed border-[#1f2937] bg-[#111827]/40">
+                  <p className="text-slate-400 font-semibold text-sm">No matches found</p>
+                  <p className="text-xs text-slate-500 max-w-xs">Try selecting a different topic or category.</p>
                 </div>
-                <div className="divide-y divide-[#1f2937]">
-                  {filteredGroups.map((guild) => {
-                    const joined = !!joinedGuilds[guild.id];
-                    return (
-                      <div key={guild.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
-                        <div className="flex items-center gap-3">
-                          <div className="relative h-10 w-10 overflow-hidden rounded-xl border border-[#1f2937] bg-[#0f172a]">
-                            <Image src={guild.avatar} fill className="object-cover" alt={guild.name} />
-                          </div>
-                          <div>
-                            <p className="text-sm font-semibold text-white">{guild.name}</p>
-                            <p className="text-[10px] text-slate-400 mt-0.5">{guild.category} • {guild.members}</p>
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => toggleJoinGuild(guild.id)}
-                          className={`rounded-full px-3.5 py-1.5 text-[10px] font-bold transition ${
-                            joined ? "bg-slate-800 text-slate-300" : "bg-blue-600 text-white"
-                          }`}
-                        >
-                          {joined ? "Joined" : "Join"}
-                        </button>
-                      </div>
-                    );
-                  })}
+              ) : (
+                <div className="space-y-6">
+                  {filteredPosts.map((post) => (
+                    <PostCard key={post.id} post={post} />
+                  ))}
                 </div>
-              </div>
-            )}
-
-            {/* 3. RENDER POSTS & PAGES FEED */}
-            {(activeCategory === "all" || activeCategory === "posts" || activeCategory === "pages") && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 border-b border-[#1f2937] pb-3">
-                  <Flame size={16} className="text-blue-400" />
-                  <span className="text-xs font-bold tracking-wider uppercase text-slate-400">
-                    {activeCategory === "pages" ? "Articles & Pages" : "Trending Feed"}
-                  </span>
-                </div>
-
-                {filteredPosts.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-16 text-center space-y-3 rounded-2xl border border-dashed border-[#1f2937] bg-[#111827]/40">
-                    <p className="text-slate-400 font-semibold text-sm">No matches found</p>
-                    <p className="text-xs text-slate-500 max-w-xs">Try selecting a different topic or category.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    {filteredPosts.map((post) => (
-                      <PostCard key={post.id} post={post} />
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </main>
 
