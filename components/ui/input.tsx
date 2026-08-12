@@ -97,8 +97,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             required={required}
             className={cn(
               inputVariants({ variant: effectiveVariant, size }),
-              leftIcon && "pl-10",
-              (rightIcon || isPasswordType || clearable) && "pr-10",
+              Boolean(leftIcon) && "pl-10",
+              Boolean(rightIcon || isPasswordType || clearable) && "pr-10",
               className
             )}
             {...props}
