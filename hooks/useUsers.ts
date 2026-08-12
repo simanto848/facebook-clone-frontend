@@ -1,4 +1,5 @@
 import axios from "axios";
+import { useState, useEffect, useCallback } from "react";
 
 const baseURL = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api/v1";
 
@@ -76,7 +77,7 @@ export async function getUserByUsername(username: string): Promise<UserProfile> 
 /**
  * Search users (GET /api/v1/users/search?q=...)
  */
-export async function searchUsers(query: string, page = 1, pageSize = 20): Promise {
+export async function searchUsers(query: string, page = 1, pageSize = 20): Promise<any> {
   const res = await axios.get(`${baseURL}/users/search`, {
     params: { q: query, page, pageSize },
     withCredentials: true,
@@ -98,7 +99,7 @@ export async function getUserSuggestions(page = 1, pageSize = 20): Promise<UserS
 /**
  * Follow a user (POST /api/v1/users/:id/follow)
  */
-export async function followUser(userId: string): Promise {
+export async function followUser(userId: string): Promise<any> {
   const res = await axios.post(`${baseURL}/users/${userId}/follow`, {}, {
     withCredentials: true,
   });
@@ -108,7 +109,7 @@ export async function followUser(userId: string): Promise {
 /**
  * Unfollow a user (POST /api/v1/users/:id/unfollow)
  */
-export async function unfollowUser(userId: string): Promise {
+export async function unfollowUser(userId: string): Promise<any> {
   const res = await axios.post(`${baseURL}/users/${userId}/unfollow`, {}, {
     withCredentials: true,
   });
@@ -118,7 +119,7 @@ export async function unfollowUser(userId: string): Promise {
 /**
  * Block a user (POST /api/v1/users/:id/block)
  */
-export async function blockUser(userId: string): Promise {
+export async function blockUser(userId: string): Promise<any> {
   const res = await axios.post(`${baseURL}/users/${userId}/block`, {}, {
     withCredentials: true,
   });
@@ -128,9 +129,60 @@ export async function blockUser(userId: string): Promise {
 /**
  * Unblock a user (POST /api/v1/users/:id/unblock)
  */
-export async function unblockUser(userId: string): Promise {
+export async function unblockUser(userId: string): Promise<any> {
   const res = await axios.post(`${baseURL}/users/${userId}/unblock`, {}, {
     withCredentials: true,
   });
   return res.data;
+}
+
+/**
+ * React hook for user queries
+ */
+export function useUsers(endpoint?: string) {
+  const [data, setData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<any>(null);
+
+  const fetchData = useCallback(async (customEndpoint?: string) => {
+    const target = customEndpoint || endpoint;
+    if (!target) {
+      setIsLoading(false);
+      return null;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    try {
+      let result;
+      if (target === "/me") {
+        result = await getCurrentUser();
+      } else if (target.startsWith("/username/")) {
+        const username = target.replace("/username/", "");
+        result = await getUserByUsername(username);
+      } else if (target.startsWith("/suggestions")) {
+        result = await getUserSuggestions();
+      } else if (target.startsWith("/search")) {
+        const urlParams = new URLSearchParams(target.split("?")[1] || "");
+        const q = urlParams.get("q") || "";
+        result = await searchUsers(q);
+      } else {
+        const id = target.replace(/^\//, "");
+        result = await getUserById(id);
+      }
+      setData(result);
+      return result;
+    } catch (err) {
+      setError(err);
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [endpoint]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  return { data, isLoading, error, refetch: fetchData };
 }
