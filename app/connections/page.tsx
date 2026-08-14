@@ -4,10 +4,20 @@ import React, { useState, useEffect } from "react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import { useChatStore } from "@/store/chatStore";
-import { Users, UserPlus, UserCheck, MessageSquare, Check, X } from "lucide-react";
-import Image from "next/image";
+import { Users, UserPlus, MessageSquare, Check, X, UserX } from "lucide-react";
 import Link from "next/link";
 import { friendshipService } from "@/services/friendshipService";
+import {
+  PageHeader,
+  Tabs,
+  Card,
+  CardContent,
+  Avatar,
+  Button,
+  Badge,
+  EmptyState,
+  Loader,
+} from "@/components/ui";
 
 export interface DisplayUser {
   id: string;
@@ -22,7 +32,7 @@ export default function ConnectionsPage() {
   const [requests, setRequests] = useState<DisplayUser[]>([]);
   const [suggestions, setSuggestions] = useState<DisplayUser[]>([]);
   const [connections, setConnections] = useState<DisplayUser[]>([]);
-  const [activeTab, setActiveTab] = useState<"requests" | "suggestions" | "connections">("requests");
+  const [activeTab, setActiveTab] = useState<string>("requests");
   const [loading, setLoading] = useState(false);
 
   const loadData = async () => {
@@ -111,6 +121,12 @@ export default function ConnectionsPage() {
     }
   };
 
+  const tabItems = [
+    { id: "requests", label: "Requests", badge: requests.length },
+    { id: "suggestions", label: "Suggestions", badge: suggestions.length },
+    { id: "connections", label: "Your Connections", badge: connections.length },
+  ];
+
   return (
     <div className="min-h-screen bg-[#0f172a] text-white">
       <div className="flex">
@@ -119,87 +135,78 @@ export default function ConnectionsPage() {
           <LeftSidebar />
         </aside>
 
-        {/* MAIN FEED */}
+        {/* MAIN CONTENT */}
         <main className="flex-1 flex justify-center">
           <div className="w-full max-w-3xl px-6 py-6 space-y-6">
-            {/* Header */}
-            <div className="flex items-center gap-3 border-b border-[#1f2937] pb-4">
-              <div className="h-10 w-10 rounded-full bg-blue-600/10 flex items-center justify-center text-blue-400">
-                <Users size={20} />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold">Connections Hub</h1>
-                <p className="text-xs text-slate-400">Manage your developer network and connection invites</p>
-              </div>
-            </div>
+            <PageHeader
+              title="Connections Hub"
+              description="Manage your developer network, pending invites, and community connections."
+              icon={<Users size={22} />}
+            />
 
-            {/* Tabs */}
-            <div className="border-b border-[#1f2937]/60 flex gap-6">
-              {[
-                { id: "requests", label: "Requests", count: requests.length },
-                { id: "suggestions", label: "Suggestions", count: suggestions.length },
-                { id: "connections", label: "Your Connections", count: connections.length },
-              ].map((tab) => {
-                const isActive = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id as any)}
-                    className={`
-                      pb-3 px-1 text-xs font-bold transition-all relative border-b-2 flex items-center gap-1.5
-                      ${isActive ? "border-blue-500 text-blue-400 font-extrabold" : "border-transparent text-slate-400 hover:text-slate-200"}
-                    `}
-                  >
-                    <span>{tab.label}</span>
-                    <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${isActive ? "bg-blue-600/20 text-blue-400" : "bg-slate-800 text-slate-400"}`}>
-                      {tab.count}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+            <Tabs
+              tabs={tabItems}
+              activeTab={activeTab}
+              onChange={setActiveTab}
+              variant="line"
+            />
 
             {/* Content Lists */}
-            <div className="space-y-4">
-              {loading && <p className="text-xs text-slate-400 text-center py-8">Loading network...</p>}
+            <div className="space-y-4 pt-2">
+              {loading && (
+                <div className="py-16 text-center">
+                  <Loader label="Loading developer network..." />
+                </div>
+              )}
 
               {!loading && activeTab === "requests" && (
-                <div className="space-y-4">
+                <div>
                   {requests.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-16 text-center space-y-3 rounded-2xl border border-dashed border-[#1f2937] bg-[#111827]/40">
-                      <p className="text-slate-400 font-semibold text-sm">No pending connection requests</p>
-                      <p className="text-xs text-slate-500 max-w-xs">When people invite you to connect, they will show up here.</p>
-                    </div>
+                    <EmptyState
+                      icon={<Users size={32} className="text-slate-400" />}
+                      title="No pending requests"
+                      description="When developers send you connection requests, they will show up here."
+                    />
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {requests.map((user) => (
-                        <div key={user.id} className="rounded-2xl border border-[#1f2937] bg-[#111827] p-4 flex flex-col justify-between space-y-4">
-                          <Link href={`/profile/${user.id}`} className="flex items-start gap-3 hover:opacity-90 transition">
-                            <div className="relative h-12 w-12 rounded-full overflow-hidden shrink-0 border border-[#1f2937] bg-[#0f172a]">
-                              <Image src={user.avatar} fill sizes="48px" className="object-cover" alt={user.name} />
-                            </div>
-                            <div>
-                              <p className="text-sm font-bold text-white leading-tight">{user.name}</p>
-                              <p className="text-[10px] text-slate-400 mt-1">{user.role}</p>
-                              <p className="text-[9px] text-slate-500 mt-1 font-semibold">{user.mutual} mutual connections</p>
-                            </div>
-                          </Link>
+                        <Card key={user.id} hover>
+                          <CardContent className="space-y-4">
+                            <Link href={`/profile/${user.id}`} className="flex items-start gap-3 group">
+                              <Avatar src={user.avatar} name={user.name} size="lg" />
+                              <div className="space-y-0.5 flex-1 min-w-0">
+                                <p className="text-sm font-bold text-white group-hover:text-blue-400 transition truncate">
+                                  {user.name}
+                                </p>
+                                <p className="text-xs text-slate-400 truncate">{user.role}</p>
+                                <Badge variant="secondary" size="sm">
+                                  {user.mutual} mutual connections
+                                </Badge>
+                              </div>
+                            </Link>
 
-                          <div className="flex gap-2 pt-2">
-                            <button
-                              onClick={() => handleAcceptRequest(user)}
-                              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-xl text-xs transition flex items-center justify-center gap-1.5 shadow-lg shadow-blue-600/10"
-                            >
-                              <Check size={14} /> Accept
-                            </button>
-                            <button
-                              onClick={() => handleDeclineRequest(user.id)}
-                              className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-[#1f2937] font-bold py-2 rounded-xl text-xs transition flex items-center justify-center gap-1.5"
-                            >
-                              <X size={14} /> Ignore
-                            </button>
-                          </div>
-                        </div>
+                            <div className="flex gap-2 pt-2 border-t border-[#1f2937]/60">
+                              <Button
+                                variant="primary"
+                                fullWidth
+                                size="sm"
+                                leftIcon={<Check size={14} />}
+                                onClick={() => handleAcceptRequest(user)}
+                              >
+                                Accept
+                              </Button>
+                              <Button
+                                variant="secondary"
+                                fullWidth
+                                size="sm"
+                                leftIcon={<X size={14} />}
+                                onClick={() => handleDeclineRequest(user.id)}
+                              >
+                                Ignore
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
                       ))}
                     </div>
                   )}
@@ -207,43 +214,52 @@ export default function ConnectionsPage() {
               )}
 
               {!loading && activeTab === "suggestions" && (
-                <div className="space-y-4">
+                <div>
                   {suggestions.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-16 text-center space-y-3 rounded-2xl border border-dashed border-[#1f2937] bg-[#111827]/40">
-                      <p className="text-slate-400 font-semibold text-sm">No new suggestions</p>
-                      <p className="text-xs text-slate-500 max-w-xs">We couldn't find any suggestions for you right now.</p>
-                    </div>
+                    <EmptyState
+                      icon={<Users size={32} className="text-slate-400" />}
+                      title="No new suggestions"
+                      description="Check back later for new recommended connections."
+                    />
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {suggestions.map((user) => (
-                        <div key={user.id} className="rounded-2xl border border-[#1f2937] bg-[#111827] p-4 flex flex-col justify-between space-y-4">
-                          <Link href={`/profile/${user.id}`} className="flex items-start gap-3 hover:opacity-90 transition">
-                            <div className="relative h-12 w-12 rounded-full overflow-hidden shrink-0 border border-[#1f2937] bg-[#0f172a]">
-                              <Image src={user.avatar} fill sizes="48px" className="object-cover" alt={user.name} />
-                            </div>
-                            <div>
-                              <p className="text-sm font-bold text-white leading-tight">{user.name}</p>
-                              <p className="text-[10px] text-slate-400 mt-1">{user.role}</p>
-                              <p className="text-[9px] text-slate-500 mt-1 font-semibold">{user.mutual} mutual connections</p>
-                            </div>
-                          </Link>
+                        <Card key={user.id} hover>
+                          <CardContent className="space-y-4">
+                            <Link href={`/profile/${user.id}`} className="flex items-start gap-3 group">
+                              <Avatar src={user.avatar} name={user.name} size="lg" />
+                              <div className="space-y-0.5 flex-1 min-w-0">
+                                <p className="text-sm font-bold text-white group-hover:text-blue-400 transition truncate">
+                                  {user.name}
+                                </p>
+                                <p className="text-xs text-slate-400 truncate">{user.role}</p>
+                                <Badge variant="outline" size="sm">
+                                  {user.mutual} mutual connections
+                                </Badge>
+                              </div>
+                            </Link>
 
-                          <div className="flex gap-2 pt-2">
-                            <button
-                              onClick={() => handleAddFriend(user)}
-                              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-xl text-xs transition flex items-center justify-center gap-1.5 shadow-lg shadow-blue-600/10"
-                            >
-                              <UserPlus size={14} /> Connect
-                            </button>
-                            <button
-                              onClick={() => openChat({ id: user.id, name: user.name, avatar: user.avatar })}
-                              className="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-[#1f2937] p-2 rounded-xl transition flex items-center justify-center shrink-0"
-                              title="Send Message"
-                            >
-                              <MessageSquare size={14} />
-                            </button>
-                          </div>
-                        </div>
+                            <div className="flex gap-2 pt-2 border-t border-[#1f2937]/60">
+                              <Button
+                                variant="primary"
+                                fullWidth
+                                size="sm"
+                                leftIcon={<UserPlus size={14} />}
+                                onClick={() => handleAddFriend(user)}
+                              >
+                                Connect
+                              </Button>
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => openChat({ id: user.id, name: user.name, avatar: user.avatar })}
+                                title="Message"
+                              >
+                                <MessageSquare size={14} />
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
                       ))}
                     </div>
                   )}
@@ -251,45 +267,52 @@ export default function ConnectionsPage() {
               )}
 
               {!loading && activeTab === "connections" && (
-                <div className="space-y-4">
+                <div>
                   {connections.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-16 text-center space-y-3 rounded-2xl border border-dashed border-[#1f2937] bg-[#111827]/40">
-                      <p className="text-slate-400 font-semibold text-sm">No connections yet</p>
-                      <p className="text-xs text-slate-500 max-w-xs">Start connecting with other developers to build your network.</p>
-                    </div>
+                    <EmptyState
+                      icon={<Users size={32} className="text-slate-400" />}
+                      title="No connections yet"
+                      description="Start connecting with other developers to build your network."
+                    />
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {connections.map((user) => (
-                        <div key={user.id} className="rounded-2xl border border-[#1f2937] bg-[#111827] p-4 flex flex-col justify-between space-y-4">
-                          <Link href={`/profile/${user.id}`} className="flex items-start gap-3 hover:opacity-90 transition">
-                            <div className="relative h-12 w-12 rounded-full overflow-hidden shrink-0 border border-[#1f2937] bg-[#0f172a]">
-                              <Image src={user.avatar} fill sizes="48px" className="object-cover" alt={user.name} />
-                            </div>
-                            <div>
-                              <p className="text-sm font-bold text-white leading-tight">{user.name}</p>
-                              <p className="text-[10px] text-slate-400 mt-1">{user.role}</p>
-                              <div className="flex items-center gap-1.5 mt-1.5 text-[9px] text-green-400 font-semibold">
-                                <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
-                                <span>Connected</span>
+                        <Card key={user.id} hover>
+                          <CardContent className="space-y-4">
+                            <Link href={`/profile/${user.id}`} className="flex items-start gap-3 group">
+                              <Avatar src={user.avatar} name={user.name} size="lg" online />
+                              <div className="space-y-0.5 flex-1 min-w-0">
+                                <p className="text-sm font-bold text-white group-hover:text-blue-400 transition truncate">
+                                  {user.name}
+                                </p>
+                                <p className="text-xs text-slate-400 truncate">{user.role}</p>
+                                <Badge variant="success" size="sm" pulse>
+                                  Connected
+                                </Badge>
                               </div>
-                            </div>
-                          </Link>
+                            </Link>
 
-                          <div className="flex gap-2 pt-2">
-                            <button
-                              onClick={() => openChat({ id: user.id, name: user.name, avatar: user.avatar })}
-                              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-xl text-xs transition flex items-center justify-center gap-1.5 shadow-lg shadow-blue-600/10"
-                            >
-                              <MessageSquare size={14} /> Message
-                            </button>
-                            <button
-                              onClick={() => handleUnfriend(user.id)}
-                              className="bg-slate-800 hover:bg-red-500/10 text-red-400 border border-red-500/10 px-3 py-2 rounded-xl text-xs transition"
-                            >
-                              Remove
-                            </button>
-                          </div>
-                        </div>
+                            <div className="flex gap-2 pt-2 border-t border-[#1f2937]/60">
+                              <Button
+                                variant="primary"
+                                fullWidth
+                                size="sm"
+                                leftIcon={<MessageSquare size={14} />}
+                                onClick={() => openChat({ id: user.id, name: user.name, avatar: user.avatar })}
+                              >
+                                Message
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleUnfriend(user.id)}
+                                title="Remove connection"
+                              >
+                                <UserX size={14} className="text-slate-400 hover:text-red-400" />
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
                       ))}
                     </div>
                   )}
