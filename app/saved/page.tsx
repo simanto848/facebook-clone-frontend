@@ -6,6 +6,7 @@ import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
 import { Bookmark } from "lucide-react";
 import { bookmarkService } from "@/services/bookmarkService";
+import { PageHeader, Badge, EmptyState, Loader } from "@/components/ui";
 
 export default function SavedPostsPage() {
   const [savedPosts, setSavedPosts] = useState<any[]>([]);
@@ -16,7 +17,6 @@ export default function SavedPostsPage() {
     try {
       const res = await bookmarkService.getUserBookmarks();
       const items = res.data || res || [];
-      // Transform bookmarks if backend wraps post inside bookmark item
       const posts = items.map((b: any) => (b.post ? { ...b.post, bookmarkId: b.id, saved: true } : { ...b, saved: true }));
       setSavedPosts(posts);
     } catch (err) {
@@ -41,28 +41,23 @@ export default function SavedPostsPage() {
         {/* MAIN CONTENT */}
         <main className="flex-1 flex justify-center">
           <div className="w-full max-w-3xl px-6 py-6 space-y-6">
-            <div className="flex items-center gap-3 border-b border-[#1f2937] pb-4">
-              <div className="h-10 w-10 rounded-full bg-yellow-500/10 flex items-center justify-center text-yellow-400">
-                <Bookmark size={20} className="fill-yellow-400" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold">Saved Posts</h1>
-                <p className="text-xs text-slate-400">Your bookmarked and saved content</p>
-              </div>
-            </div>
+            <PageHeader
+              title="Saved Posts"
+              description="Access your bookmarked articles, discussions, and saved timeline posts."
+              icon={<Bookmark size={22} className="fill-yellow-400 text-yellow-400" />}
+              badge={<Badge variant="warning">{savedPosts.length} Saved</Badge>}
+            />
 
             {loading ? (
-              <p className="text-xs text-slate-400 text-center py-8">Loading bookmarks...</p>
-            ) : savedPosts.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-center space-y-4 rounded-2xl border border-dashed border-[#1f2937] bg-[#111827]/30">
-                <Bookmark size={40} className="text-slate-500" />
-                <div>
-                  <h3 className="font-semibold text-white">No bookmarked posts</h3>
-                  <p className="text-xs text-slate-500 mt-1 max-w-xs">
-                    Save posts from your feed to access them quickly here anytime.
-                  </p>
-                </div>
+              <div className="py-16 text-center">
+                <Loader label="Loading bookmarked posts..." />
               </div>
+            ) : savedPosts.length === 0 ? (
+              <EmptyState
+                icon={<Bookmark size={36} className="text-yellow-400 fill-yellow-400/20" />}
+                title="No bookmarked posts"
+                description="Save posts from your main feed or community channels to access them quickly anytime."
+              />
             ) : (
               <div className="space-y-6">
                 {savedPosts.map((post) => (
