@@ -32,6 +32,15 @@ export type AvatarProps = VariantProps<typeof avatarVariants> & {
   onClick?: () => void;
 };
 
+const pixelSizes: Record<string, string> = {
+  xs: "24px",
+  sm: "32px",
+  md: "40px",
+  lg: "48px",
+  xl: "64px",
+  "2xl": "96px",
+};
+
 export function Avatar({
   src,
   alt = "Avatar",
@@ -50,14 +59,8 @@ export function Avatar({
     return n.slice(0, 2).toUpperCase();
   };
 
-  const pixelSizes = {
-    xs: "24px",
-    sm: "32px",
-    md: "40px",
-    lg: "48px",
-    xl: "64px",
-    "2xl": "96px",
-  };
+  const currentSizeKey = String(size || "md");
+  const computedSizes = pixelSizes[currentSizeKey] || "40px";
 
   return (
     <div className="relative inline-block shrink-0" onClick={onClick}>
@@ -67,7 +70,7 @@ export function Avatar({
             src={src}
             alt={alt || name || "Avatar"}
             fill
-            sizes={pixelSizes[size || "md"]}
+            sizes={computedSizes}
             className="object-cover"
           />
         ) : (
