@@ -6,6 +6,15 @@ import RightSidebar from "@/components/layout/RightSidebar";
 import { Sparkles, Calendar, Share2 } from "lucide-react";
 import Image from "next/image";
 import { memoryService } from "@/services/memoryService";
+import {
+  PageHeader,
+  Card,
+  CardContent,
+  Button,
+  Badge,
+  EmptyState,
+  Loader,
+} from "@/components/ui";
 
 interface MemoryItem {
   id: string;
@@ -72,46 +81,53 @@ export default function MemoriesPage() {
         {/* MAIN FEED */}
         <main className="flex-1 flex justify-center">
           <div className="w-full max-w-3xl px-6 py-6 space-y-6">
-            <div className="flex items-center gap-3 border-b border-[#1f2937] pb-4">
-              <div className="h-10 w-10 rounded-full bg-purple-600/10 flex items-center justify-center text-purple-400">
-                <Sparkles size={20} />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold">On This Day - Memories</h1>
-                <p className="text-xs text-slate-400">Look back on moments and posts from previous years</p>
-              </div>
-            </div>
+            <PageHeader
+              title="On This Day - Memories"
+              description="Look back on special moments, technical achievements, and posts from previous years."
+              icon={<Sparkles size={22} className="text-purple-400" />}
+              badge={<Badge variant="primary">{memories.length} Memories</Badge>}
+            />
 
             {loading ? (
-              <p className="text-xs text-slate-400 text-center py-8">Looking up memories...</p>
-            ) : memories.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-center space-y-3 rounded-2xl border border-dashed border-[#1f2937] bg-[#111827]/40">
-                <p className="text-slate-400 font-semibold text-sm">No memories today</p>
-                <p className="text-xs text-slate-500 max-w-xs">Check back tomorrow to see your past activity and posts!</p>
+              <div className="py-16 text-center">
+                <Loader label="Looking up memories..." />
               </div>
+            ) : memories.length === 0 ? (
+              <EmptyState
+                icon={<Sparkles size={36} className="text-purple-400" />}
+                title="No memories today"
+                description="Check back tomorrow to see your past activity and timeline posts!"
+              />
             ) : (
               <div className="space-y-6">
                 {memories.map((m) => (
-                  <div key={m.id} className="rounded-2xl border border-[#1f2937] bg-[#111827] p-5 shadow-xl space-y-4">
-                    <div className="flex items-center justify-between border-b border-[#1f2937] pb-3">
-                      <div className="flex items-center gap-2">
-                        <Calendar size={16} className="text-purple-400" />
-                        <span className="text-xs font-bold text-purple-400">{m.yearsAgo} Years Ago Today</span>
-                        <span className="text-[10px] text-slate-500">• {m.dateStr}</span>
+                  <Card key={m.id} hover>
+                    <CardContent className="space-y-4">
+                      <div className="flex items-center justify-between border-b border-[#1f2937]/60 pb-3">
+                        <div className="flex items-center gap-2">
+                          <Calendar size={15} className="text-purple-400" />
+                          <span className="text-xs font-bold text-purple-400">{m.yearsAgo} Years Ago Today</span>
+                          <span className="text-xs text-slate-500">• {m.dateStr}</span>
+                        </div>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          leftIcon={<Share2 size={13} />}
+                          onClick={() => alert("Shared memory to feed!")}
+                        >
+                          Share Memory
+                        </Button>
                       </div>
-                      <button className="flex items-center gap-1 bg-purple-600/20 text-purple-300 hover:bg-purple-600/30 px-3 py-1 rounded-full text-xs font-bold transition">
-                        <Share2 size={12} /> Share Memory
-                      </button>
-                    </div>
 
-                    <p className="text-sm text-slate-200 leading-relaxed">{m.content}</p>
+                      <p className="text-sm text-slate-200 leading-relaxed">{m.content}</p>
 
-                    {m.mediaUrl && (
-                      <div className="relative h-64 rounded-xl overflow-hidden border border-[#1f2937]">
-                        <Image src={m.mediaUrl} fill sizes="100vw" className="object-cover" alt="Memory media" />
-                      </div>
-                    )}
-                  </div>
+                      {m.mediaUrl && (
+                        <div className="relative h-64 rounded-xl overflow-hidden border border-[#1f2937] shadow-md">
+                          <Image src={m.mediaUrl} fill sizes="100vw" className="object-cover" alt="Memory media" />
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
             )}

@@ -3,9 +3,20 @@
 import React, { useState, useEffect } from "react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
-import { Flag, Plus, Heart, ThumbsUp, Globe, X } from "lucide-react";
+import { Flag, Plus, ThumbsUp } from "lucide-react";
 import Image from "next/image";
 import { pageService } from "@/services/pageService";
+import {
+  PageHeader,
+  Card,
+  CardContent,
+  Button,
+  Badge,
+  Dialog,
+  Input,
+  Select,
+  Avatar,
+} from "@/components/ui";
 
 interface BrandPage {
   id: string;
@@ -121,61 +132,57 @@ export default function PagesHubPage() {
         {/* MAIN FEED */}
         <main className="flex-1 flex justify-center">
           <div className="w-full max-w-3xl px-6 py-6 space-y-6">
-            <div className="flex items-center justify-between border-b border-[#1f2937] pb-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-blue-600/10 flex items-center justify-center text-blue-400">
-                  <Flag size={20} />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold">Pages & Brands Hub</h1>
-                  <p className="text-xs text-slate-400">Discover and manage official tech pages</p>
-                </div>
-              </div>
-
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="flex items-center gap-1.5 rounded-full bg-blue-600 px-4 py-2 text-xs font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-600/10"
-              >
-                <Plus size={14} />
-                <span>Create Page</span>
-              </button>
-            </div>
+            <PageHeader
+              title="Pages & Brands Hub"
+              description="Discover official developer pages, technology blogs, and brand channels."
+              icon={<Flag size={22} />}
+              actions={
+                <Button
+                  variant="primary"
+                  size="sm"
+                  leftIcon={<Plus size={14} />}
+                  onClick={() => setShowCreateModal(true)}
+                >
+                  Create Page
+                </Button>
+              }
+            />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {pages.map((p) => {
                 const isLiked = likedMap[p.id] ?? p.isLiked;
                 return (
-                  <div key={p.id} className="rounded-2xl border border-[#1f2937] bg-[#111827] overflow-hidden flex flex-col justify-between">
-                    <div className="relative h-24 w-full">
+                  <Card key={p.id} hover className="flex flex-col justify-between">
+                    <div className="relative h-24 w-full overflow-hidden">
                       <Image src={p.cover} fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" alt="cover" />
-                      <div className="absolute inset-0 bg-black/30" />
+                      <div className="absolute inset-0 bg-black/40" />
                     </div>
-                    <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
-                      <div className="flex gap-3 items-start">
-                        <div className="relative h-10 w-10 rounded-xl overflow-hidden shrink-0 border border-white/20 bg-[#0f172a] -mt-7 z-10">
-                          <Image src={p.avatar} fill sizes="40px" className="object-cover" alt="avatar" />
-                        </div>
-                        <div>
-                          <h3 className="text-sm font-bold text-white">{p.name}</h3>
-                          <span className="text-[9px] text-blue-400 font-semibold">{p.category}</span>
-                        </div>
-                      </div>
-                      <p className="text-[11px] text-slate-400 line-clamp-2">{p.description}</p>
 
-                      <div className="flex items-center justify-between pt-2 border-t border-[#1f2937]/50">
-                        <span className="text-[10px] text-slate-500">{(p.likes + (isLiked ? 1 : 0)).toLocaleString()} likes</span>
-                        <button
-                          onClick={() => handleToggleLike(p.id)}
-                          className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold transition ${
-                            isLiked ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-300 border border-[#1f2937]"
-                          }`}
-                        >
-                          <ThumbsUp size={12} />
-                          <span>{isLiked ? "Liked" : "Like Page"}</span>
-                        </button>
+                    <CardContent className="p-4 flex-1 flex flex-col justify-between space-y-3">
+                      <div className="flex gap-3 items-start">
+                        <div className="-mt-8 z-10">
+                          <Avatar src={p.avatar} name={p.name} size="lg" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-sm font-bold text-white truncate">{p.name}</h3>
+                          <Badge variant="primary" size="sm" className="mt-0.5">{p.category}</Badge>
+                        </div>
                       </div>
-                    </div>
-                  </div>
+                      <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">{p.description}</p>
+
+                      <div className="flex items-center justify-between pt-2 border-t border-[#1f2937]/60">
+                        <span className="text-xs text-slate-400 font-semibold">{(p.likes + (isLiked ? 1 : 0)).toLocaleString()} likes</span>
+                        <Button
+                          variant={isLiked ? "primary" : "secondary"}
+                          size="sm"
+                          leftIcon={<ThumbsUp size={13} />}
+                          onClick={() => handleToggleLike(p.id)}
+                        >
+                          {isLiked ? "Liked" : "Like Page"}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
                 );
               })}
             </div>
@@ -188,56 +195,56 @@ export default function PagesHubPage() {
         </aside>
       </div>
 
-      {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-xs" onClick={() => setShowCreateModal(false)} />
-          <form onSubmit={handleCreatePage} className="relative z-10 w-full max-w-md rounded-2xl border border-[#1f2937] bg-[#111827] p-6 shadow-2xl space-y-4 text-white">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-bold">Create Brand Page</h3>
-              <button type="button" onClick={() => setShowCreateModal(false)} className="rounded-full p-1 text-slate-400 hover:bg-[#1f2937]">
-                <X size={20} />
-              </button>
-            </div>
-            <div className="space-y-3 text-xs">
-              <div>
-                <label className="text-slate-300">Page Name</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. NextJS Developers"
-                  className="w-full mt-1 rounded-xl border border-[#1f2937] bg-[#0f172a] px-3.5 py-2.5 outline-none focus:border-blue-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="text-slate-300">Category</label>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full h-11 mt-1 rounded-xl border border-[#1f2937] bg-[#0f172a] px-3.5 outline-none focus:border-blue-500"
-                >
-                  <option value="Software & Technology">Software & Technology</option>
-                  <option value="Design & Arts">Design & Arts</option>
-                  <option value="Community">Community</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-slate-300">Description</label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="About this page..."
-                  className="w-full h-20 mt-1 rounded-xl border border-[#1f2937] bg-[#0f172a] p-3 outline-none resize-none focus:border-blue-500"
-                />
-              </div>
-            </div>
-            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl text-xs transition">
+      <Dialog
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        title="Create Brand Page"
+      >
+        <form onSubmit={handleCreatePage} className="space-y-4">
+          <Input
+            label="Page Name"
+            placeholder="e.g. NextJS Developers"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
+
+          <Select
+            label="Category"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            options={[
+              { label: "Software & Technology", value: "Software & Technology" },
+              { label: "Design & Arts", value: "Design & Arts" },
+              { label: "Community", value: "Community" },
+            ]}
+          />
+
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-slate-300 block">Description</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="About this page..."
+              className="w-full h-24 rounded-xl border border-[#374151] bg-[#1f2937] p-3 text-xs text-white outline-none resize-none focus:border-blue-500 transition"
+              required
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2 border-t border-[#1f2937]">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setShowCreateModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" variant="primary">
               Create Page
-            </button>
-          </form>
-        </div>
-      )}
+            </Button>
+          </div>
+        </form>
+      </Dialog>
     </div>
   );
 }

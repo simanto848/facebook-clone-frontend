@@ -6,9 +6,17 @@ import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
 import { usePostStore } from "@/store/postStore";
 import { useChatStore } from "@/store/chatStore";
-import { Search, Hash, Flame } from "lucide-react";
+import { Search, Hash, Compass } from "lucide-react";
 import { searchService } from "@/services/searchService";
 import { hashtagService } from "@/services/hashtagService";
+import {
+  PageHeader,
+  Input,
+  Tabs,
+  Badge,
+  EmptyState,
+  Button,
+} from "@/components/ui";
 
 const defaultPopularTags = ["design", "webgl", "react", "brutalism", "tokyo", "security"];
 
@@ -17,7 +25,7 @@ export default function ExplorePage() {
   const { openChat } = useChatStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
-  const [activeCategory, setActiveCategory] = useState<"all" | "posts" | "people" | "groups" | "pages">("all");
+  const [activeCategory, setActiveCategory] = useState<string>("all");
   const [popularTags, setPopularTags] = useState<string[]>(defaultPopularTags);
 
   useEffect(() => {
@@ -39,8 +47,7 @@ export default function ExplorePage() {
     if (!searchQuery.trim()) return;
     const delayDebounceFn = setTimeout(async () => {
       try {
-        const res = await searchService.search(searchQuery, activeCategory === "all" ? "all" : (activeCategory as any));
-        // Search API return parsed
+        await searchService.search(searchQuery, activeCategory === "all" ? "all" : (activeCategory as any));
       } catch (err) {
         console.error("Search API error:", err);
       }
@@ -75,13 +82,13 @@ export default function ExplorePage() {
 
   const filteredPosts = getFilteredPosts();
 
-  const categories = [
-    { id: "all", label: "All" },
+  const categoryTabs = [
+    { id: "all", label: "All Feed" },
     { id: "posts", label: "Posts" },
     { id: "people", label: "People" },
     { id: "groups", label: "Groups" },
     { id: "pages", label: "Pages" },
-  ] as const;
+  ];
 
   return (
     <div className="min-h-screen bg-[#0f172a] text-white">
@@ -91,100 +98,74 @@ export default function ExplorePage() {
           <LeftSidebar />
         </aside>
 
-        {/* MAIN FEED */}
+        {/* MAIN CONTENT */}
         <main className="flex-1 flex justify-center">
           <div className="w-full max-w-3xl px-6 py-6 space-y-6">
-            {/* Search Input */}
-            <div className="relative flex items-center rounded-2xl border border-[#1f2937] bg-[#111827] px-4 py-3 shadow-xl">
-              <Search size={18} className="text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search posts, people, topics..."
+            <PageHeader
+              title="Explore & Discover"
+              description="Search discussions, developer topics, trending hashtags, and community posts."
+              icon={<Compass size={22} />}
+            />
+
+            {/* Search Bar */}
+            <div className="space-y-4">
+              <Input
+                placeholder="Search posts, developers, topics..."
+                leftIcon={<Search size={18} />}
+                clearable
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
                   setSelectedTag(null);
                 }}
-                className="ml-3 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
+                className="bg-[#111827] border-[#1f2937] text-sm py-3"
               />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="text-slate-400 hover:text-white text-xs font-bold px-1"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
 
-            {/* Popular Topics / Tags */}
-            <div className="space-y-2">
-              <span className="text-xs font-bold tracking-wider uppercase text-slate-400 block">Popular Topics</span>
-              <div className="flex flex-wrap gap-2">
-                {popularTags.map((tag) => {
-                  const isActive = selectedTag === tag;
-                  return (
-                    <button
-                      key={tag}
-                      onClick={() => {
-                        if (isActive) {
-                          setSelectedTag(null);
-                          setSearchQuery("");
-                        } else {
-                          setSelectedTag(tag);
-                          setSearchQuery("");
-                        }
-                      }}
-                      className={`
-                        flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition
-                        ${
-                          isActive
-                            ? "bg-blue-600 border-blue-500 text-white"
-                            : "border-[#1f2937] bg-[#111827]/40 text-slate-300 hover:border-slate-600 hover:text-white"
-                        }
-                      `}
-                    >
-                      <Hash size={12} className={isActive ? "text-white" : "text-slate-400"} />
-                      <span>{tag}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Category Filter Tabs */}
-            <div className="border-b border-[#1f2937]/60 flex gap-6">
-              {categories.map((cat) => {
-                const isActive = activeCategory === cat.id;
-                return (
-                  <button
-                    key={cat.id}
-                    onClick={() => setActiveCategory(cat.id)}
-                    className={`
-                      pb-3 px-1 text-xs font-bold transition-all relative border-b-2
-                      ${isActive ? "border-blue-500 text-blue-400 font-extrabold" : "border-transparent text-slate-400 hover:text-slate-200"}
-                    `}
-                  >
-                    {cat.label}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* RENDER POSTS & PAGES FEED */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 border-b border-[#1f2937] pb-3">
-                <Flame size={16} className="text-blue-400" />
-                <span className="text-xs font-bold tracking-wider uppercase text-slate-400">
-                  {activeCategory === "pages" ? "Articles & Pages" : "Trending Feed"}
-                </span>
-              </div>
-
-              {filteredPosts.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-center space-y-3 rounded-2xl border border-dashed border-[#1f2937] bg-[#111827]/40">
-                  <p className="text-slate-400 font-semibold text-sm">No matches found</p>
-                  <p className="text-xs text-slate-500 max-w-xs">Try selecting a different topic or category.</p>
+              {/* Popular Topics */}
+              <div className="space-y-2">
+                <span className="text-xs font-bold tracking-wider uppercase text-slate-400 block">Popular Topics</span>
+                <div className="flex flex-wrap gap-2">
+                  {popularTags.map((tag) => {
+                    const isActive = selectedTag === tag;
+                    return (
+                      <Button
+                        key={tag}
+                        variant={isActive ? "primary" : "secondary"}
+                        size="sm"
+                        leftIcon={<Hash size={12} />}
+                        onClick={() => {
+                          if (isActive) {
+                            setSelectedTag(null);
+                            setSearchQuery("");
+                          } else {
+                            setSelectedTag(tag);
+                            setSearchQuery("");
+                          }
+                        }}
+                      >
+                        {tag}
+                      </Button>
+                    );
+                  })}
                 </div>
+              </div>
+            </div>
+
+            <Tabs
+              tabs={categoryTabs}
+              activeTab={activeCategory}
+              onChange={setActiveCategory}
+              variant="line"
+            />
+
+            {/* Posts & Search Results Feed */}
+            <div className="space-y-4">
+              {filteredPosts.length === 0 ? (
+                <EmptyState
+                  icon={<Search size={36} className="text-slate-400" />}
+                  title="No matches found"
+                  description="Try selecting a different topic tag or adjusting your search phrase."
+                />
               ) : (
                 <div className="space-y-6">
                   {filteredPosts.map((post) => (
