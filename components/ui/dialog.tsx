@@ -9,6 +9,7 @@ export interface DialogProps {
   onClose: () => void;
   title?: ReactNode;
   description?: ReactNode;
+  showHeader?: boolean;
   children?: ReactNode;
   footer?: ReactNode;
   className?: string;
@@ -20,6 +21,7 @@ export function Dialog({
   onClose,
   title,
   description,
+  showHeader = true,
   children,
   footer,
   className,
@@ -67,7 +69,7 @@ export function Dialog({
         )}
       >
         {/* Header */}
-        {(title || description) && (
+        {showHeader && (title || description) && (
           <div className="flex items-start justify-between border-b border-[#1f2937] pb-3">
             <div>
               {title && <h3 className="font-bold text-base text-white">{title}</h3>}
