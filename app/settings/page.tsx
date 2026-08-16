@@ -11,6 +11,7 @@ import AppearanceSection from "@/components/features/settings/sections/Appearanc
 import LanguageSection from "@/components/features/settings/sections/LanguageSection";
 import FeedSection from "@/components/features/settings/sections/FeedSection";
 import ActivityLogSection from "@/components/features/settings/sections/ActivityLogSection";
+import { Loader } from "@/components/ui";
 
 function SettingsContent() {
   const searchParams = useSearchParams();
@@ -64,7 +65,7 @@ function SettingsContent() {
         <SettingsSidebar activeTab={activeTab} setActiveTab={handleTabChange} />
       </div>
 
-      {/* Content */}
+      {/* Section Content */}
       <div className="col-span-12 md:col-span-8 lg:col-span-9 space-y-6">
         <div className="transition-all duration-300 ease-in-out">
           {renderSection()}
@@ -76,13 +77,8 @@ function SettingsContent() {
 
 export default function SettingsPage() {
   return (
-    <div className="min-h-screen bg-[#0f172a] p-6">
-      <div className="mx-auto max-w-7xl">
-        <h1 className="mb-8 text-4xl font-bold text-white">Settings</h1>
-        <Suspense fallback={<div className="text-slate-400 text-sm">Loading settings...</div>}>
-          <SettingsContent />
-        </Suspense>
-      </div>
-    </div>
+    <Suspense fallback={<Loader label="Loading settings..." />}>
+      <SettingsContent />
+    </Suspense>
   );
 }
