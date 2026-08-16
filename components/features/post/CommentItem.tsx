@@ -1,7 +1,9 @@
+"use client";
+
 import React, { useState } from "react";
-import Image from "next/image";
-import { Heart, MessageSquare, Pencil, Trash2, ShieldAlert, Check, CornerDownRight } from "lucide-react";
+import { Heart, MessageSquare, Check, CornerDownRight, Trash2, Edit2 } from "lucide-react";
 import { CommentType } from "@/store/postStore";
+import { Avatar, Button, Input } from "@/components/ui";
 
 interface Props {
   comment: CommentType;
@@ -33,47 +35,34 @@ export default function CommentItem({ comment, onLike, onReply, onEdit, onDelete
   };
 
   return (
-    <div className="group/item relative mt-4">
+    <div className="group/item relative mt-4 select-none">
       {/* Connector Line for nested comments */}
       {comment.replies && comment.replies.length > 0 && (
         <div className="absolute left-5 top-12 bottom-4 w-0.5 bg-[#1f2937]" />
       )}
 
       <div className="flex gap-3">
-        {/* Profile Image */}
-        <div className="relative h-10 w-10 overflow-hidden rounded-full shrink-0 border border-[#1f2937]">
-          <Image
-            src={comment.author.avatar || "https://images.unsplash.com/photo-1779040622687-42bb00790c67?w=100"}
-            alt={comment.author.name}
-            fill
-            sizes="40px"
-            className="object-cover"
-          />
-        </div>
+        <Avatar src={comment.author.avatar} name={comment.author.name} size="md" />
 
         {/* Comment Bubble Content */}
         <div className="flex-1">
           <div className="rounded-2xl bg-[#0f172a]/60 px-4 py-3 border border-[#1f2937]">
             <div className="flex justify-between items-center">
-              <h5 className="text-xs font-semibold text-white">{comment.author.name}</h5>
+              <h5 className="text-xs font-bold text-white">{comment.author.name}</h5>
               <span className="text-[10px] text-slate-500">{comment.createdAt}</span>
             </div>
 
             {isEditing ? (
               <form onSubmit={handleEditSubmit} className="mt-2 flex gap-2">
-                <input
-                  type="text"
+                <Input
                   value={editText}
                   onChange={(e) => setEditText(e.target.value)}
-                  className="flex-1 bg-[#111827] border border-[#374151] rounded-xl px-3 py-1.5 text-xs text-white outline-none"
+                  className="h-8 text-xs bg-[#111827]"
                   autoFocus
                 />
-                <button
-                  type="submit"
-                  className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl p-1.5 flex items-center justify-center transition"
-                >
+                <Button variant="primary" size="sm" type="submit" className="h-8 px-2.5">
                   <Check size={14} />
-                </button>
+                </Button>
               </form>
             ) : (
               <p className="mt-1 text-xs text-slate-300 leading-relaxed">{comment.content}</p>
@@ -104,45 +93,34 @@ export default function CommentItem({ comment, onLike, onReply, onEdit, onDelete
               <>
                 <button
                   onClick={() => setIsEditing(!isEditing)}
-                  className="hover:text-yellow-500 transition"
+                  className="hover:text-yellow-400 transition"
                 >
                   Edit
                 </button>
                 <button
                   onClick={() => onDelete(comment.id)}
-                  className="hover:text-red-500 transition"
+                  className="hover:text-red-400 transition"
                 >
                   Delete
                 </button>
               </>
             )}
-
-            <button
-              onClick={() => alert("Reported comment!")}
-              className="hover:text-slate-200 transition text-[10px]"
-            >
-              Report
-            </button>
           </div>
 
           {/* Reply Form */}
           {isReplying && (
-            <form onSubmit={handleReplySubmit} className="mt-3 flex gap-2">
-              <CornerDownRight size={16} className="text-slate-500 mt-2 ml-1" />
-              <input
-                type="text"
+            <form onSubmit={handleReplySubmit} className="mt-3 flex gap-2 items-center">
+              <CornerDownRight size={16} className="text-slate-500 shrink-0 ml-1" />
+              <Input
                 placeholder={`Reply to ${comment.author.name}...`}
                 value={replyText}
                 onChange={(e) => setReplyText(e.target.value)}
-                className="flex-1 bg-[#0f172a] border border-[#1f2937] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-blue-500"
+                className="h-9 text-xs bg-[#0f172a]"
                 autoFocus
               />
-              <button
-                type="submit"
-                className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-4 py-2 text-xs font-semibold transition"
-              >
+              <Button variant="primary" size="sm" type="submit" className="h-9 px-3 shrink-0">
                 Reply
-              </button>
+              </Button>
             </form>
           )}
 
