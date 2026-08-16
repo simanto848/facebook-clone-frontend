@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { X, Minimize2, Maximize2, Send, Phone, Video, MoreVertical, BellOff, Search, Trash2, Ban, User } from "lucide-react";
+import { X, Minimize2, Maximize2, Send, Phone, Video, MoreVertical, BellOff, Trash2, User } from "lucide-react";
 import { useChatStore, ChatBox } from "@/store/chatStore";
 import { Avatar, Button, Input } from "@/components/ui";
 import { CallModal } from "./CallModal";
@@ -145,9 +145,9 @@ function ChatTab({ box }: { box: ChatBox }) {
         {!box.isCollapsed && (
           <>
             <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
-              {box.messages.map((msg) => (
+              {box.messages.map((msg, idx) => (
                 <div
-                  key={msg.id}
+                  key={idx}
                   className={`flex flex-col ${msg.sender === "me" ? "items-end" : "items-start"}`}
                 >
                   <div
@@ -197,13 +197,13 @@ function ChatTab({ box }: { box: ChatBox }) {
 }
 
 export default function ChatTabsContainer() {
-  const { activeChats } = useChatStore();
+  const { openChatBoxes } = useChatStore();
 
-  if (activeChats.length === 0) return null;
+  if (!openChatBoxes || openChatBoxes.length === 0) return null;
 
   return (
     <div className="fixed bottom-0 right-6 z-50 flex items-end gap-3 pointer-events-none">
-      {activeChats.map((box) => (
+      {openChatBoxes.map((box: ChatBox) => (
         <ChatTab key={box.id} box={box} />
       ))}
     </div>
