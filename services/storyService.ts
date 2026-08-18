@@ -13,6 +13,12 @@ export const storyService = {
     return response.data;
   },
 
+  getStories: async () => {
+    const axios = await useAxios();
+    const response = await axios.get("/stories/feed");
+    return response.data;
+  },
+
   createStory: async (data: CreateStoryInput) => {
     const axios = await useAxios();
     const response = await axios.post("/stories", data);

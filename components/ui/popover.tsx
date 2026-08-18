@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 export interface PopoverProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  trigger?: ReactNode;
   children: ReactNode;
   className?: string;
   onEscape?: () => void;
@@ -17,6 +18,7 @@ export interface PopoverProps {
 export function Popover({
   open: controlledOpen,
   onOpenChange,
+  trigger,
   children,
   className,
   onEscape,
@@ -57,6 +59,17 @@ export function Popover({
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [isOpen]);
+
+  if (trigger) {
+    return (
+      <div ref={popoverRef} className={cn("relative inline-block text-left", className)}>
+        <PopoverTrigger isOpen={isOpen} handleToggle={handleToggle} disabled={disabled}>
+          {trigger}
+        </PopoverTrigger>
+        <PopoverContent isOpen={isOpen}>{children}</PopoverContent>
+      </div>
+    );
+  }
 
   return (
     <div ref={popoverRef} className={cn("relative inline-block text-left w-full", className)}>

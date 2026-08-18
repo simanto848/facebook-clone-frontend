@@ -77,6 +77,8 @@ export interface StoryType {
   createdAt: string;
   views: number;
   reactions: number;
+  likes?: number;
+  hasLiked?: boolean;
 }
 
 export interface ConnectionUser {
@@ -105,7 +107,7 @@ interface PostState {
   toggleLikeComment: (postId: string, commentId: string) => void;
   deleteComment: (postId: string, commentId: string) => void;
   editComment: (postId: string, commentId: string, newText: string) => void;
-  addStory: (story: Omit<StoryType, "id" | "createdAt" | "views" | "reactions">) => void;
+  addStory: (story: Partial<StoryType> & Omit<StoryType, "id" | "createdAt" | "views" | "reactions"> & { id?: string }) => void;
   viewStory: (storyId: string) => void;
   reactStory: (storyId: string) => void;
   acceptRequest: (id: string) => void;
@@ -531,8 +533,8 @@ export const usePostStore = create<PostState>((set) => ({
   addStory: (story) =>
     set((state) => {
       const newStory: StoryType = {
+        id: story.id || Math.random().toString(36).substring(7),
         ...story,
-        id: Math.random().toString(36).substring(7),
         createdAt: "Just now",
         views: 0,
         reactions: 0,
