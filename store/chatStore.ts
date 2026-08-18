@@ -143,32 +143,47 @@ export const useChatStore = create<ChatState>((set, get) => ({
   fetchMessagesForUser: async (userId: string) => {
     try {
       const res = await messageService.getMessages(userId);
-      const items = res.data || res || [];
-      if (Array.isArray(items)) {
-        const parsedMsgs: Message[] = items.map((m: any) => ({
-          sender: m.senderId === userId ? "them" : "me",
-          text: m.content || m.text || "",
-          time: new Date(m.createdAt || Date.now()).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        }));
+      const dataObj = res?.data || res || {};
+      const rawList = Array.isArray(dataObj)
+        ? dataObj
+        : Array.isArray(dataObj.messages)
+        ? dataObj.messages
+        : Array.isArray(res?.messages)
+        ? res.messages
+        : [];
 
-        set((state) => ({
-          conversations: state.conversations.map((c) =>
-            c.id === userId ? { ...c, messages: parsedMsgs } : c
-          ),
-        }));
-      }
+      const parsedMsgs: Message[] = rawList.map((m: any) => ({
+        sender: m.senderId === userId ? "them" : "me",
+        text: m.content || m.text || "",
+        time: new Date(m.createdAt || Date.now()).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      }));
+
+      // Sort messages chronologically (oldest first, newest at bottom)
+      parsedMsgs.reverse();
+
+      set((state) => ({
+        conversations: state.conversations.map((c) =>
+          c.id === userId ? { ...c, messages: parsedMsgs } : c
+        ),
+        openChatBoxes: state.openChatBoxes.map((b) =>
+          b.id === userId ? { ...b, messages: parsedMsgs } : b
+        ),
+      }));
     } catch {
       // Keep optimistic state
     }
   },
 
   openChat: (person) => {
+    const conv = get().conversations.find((c) => c.id === person.id);
+    const initialMsgs = conv ? conv.messages : [];
+
     set((state) => {
       const existing = state.openChatBoxes.find((box) => box.id === person.id);
       if (existing) {
         return {
           openChatBoxes: state.openChatBoxes.map((box) =>
-            box.id === person.id ? { ...box, isCollapsed: false } : box
+            box.id === person.id ? { ...box, isCollapsed: false, messages: conv ? conv.messages : box.messages } : box
           ),
         };
       }
@@ -183,11 +198,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
         name: person.name,
         avatar: person.avatar,
         isCollapsed: false,
-        messages: [],
+        messages: initialMsgs,
       };
 
       return { openChatBoxes: [...currentBoxes, newBox] };
     });
+
+    get().fetchMessagesForUser(person.id);
   },
 
   closeChat: (id) =>
@@ -203,12 +220,21 @@ export const useChatStore = create<ChatState>((set, get) => ({
     })),
 
   sendMessage: (id, text) => {
+    const timeString = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
     set((state) => ({
       openChatBoxes: state.openChatBoxes.map((box) => {
         if (box.id !== id) return box;
         return {
           ...box,
-          messages: [...box.messages, { sender: "me", text, time: "Just now" }],
+          messages: [...box.messages, { sender: "me", text, time: timeString }],
+        };
+      }),
+      conversations: state.conversations.map((conv) => {
+        if (conv.id !== id) return conv;
+        return {
+          ...conv,
+          messages: [...conv.messages, { sender: "me", text, time: timeString }],
         };
       }),
     }));
@@ -224,6 +250,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       ),
     }));
     if (id) {
+      get().fetchMessagesForUser(id);
       messageService.markRead(id).catch(() => {});
     }
   },
@@ -250,6 +277,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
           ...conv,
           hasUnread: false,
           messages: [...conv.messages, { sender: "me", text, time: timeString }],
+        };
+      }),
+      openChatBoxes: state.openChatBoxes.map((box) => {
+        if (box.id !== id) return box;
+        return {
+          ...box,
+          messages: [...box.messages, { sender: "me", text, time: timeString }],
         };
       }),
     }));
