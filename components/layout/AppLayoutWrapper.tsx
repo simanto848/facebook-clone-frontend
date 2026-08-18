@@ -1,10 +1,20 @@
 "use client";
 
 import React, { useState } from "react";
+import { usePathname } from "next/navigation";
 import Navbar from "@/components/layout/Navbar";
 import ChatTabsContainer from "@/components/features/chat/ChatTabsContainer";
 import MobileNavigation from "./MobileNavigation";
 import MobileDrawer from "./MobileDrawer";
+
+const AUTH_ROUTES = [
+  "/login",
+  "/signup",
+  "/register",
+  "/verify-email",
+  "/forgot-password",
+  "/reset-password",
+];
 
 interface AppLayoutWrapperProps {
   children: React.ReactNode;
@@ -12,6 +22,13 @@ interface AppLayoutWrapperProps {
 
 export default function AppLayoutWrapper({ children }: AppLayoutWrapperProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const pathname = usePathname();
+
+  const isAuthPage = AUTH_ROUTES.some((route) => pathname?.startsWith(route));
+
+  if (isAuthPage) {
+    return <>{children}</>;
+  }
 
   return (
     <>
