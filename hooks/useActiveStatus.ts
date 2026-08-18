@@ -3,16 +3,21 @@
 import { useEffect } from "react";
 import { callService } from "@/services/callService";
 
-export function useActiveStatus() {
+export function useActiveStatus(enabled = true) {
   useEffect(() => {
-    // Send initial heartbeat
-    callService.pingActiveStatus().catch((err) => console.error("Active status heartbeat error:", err));
+    if (!enabled) return;
 
-    // Periodic heartbeat every 60 seconds
-    const interval = setInterval(() => {
-      callService.pingActiveStatus().catch((err) => console.error("Active status heartbeat error:", err));
-    }, 60000);
+    const sendHeartbeat = async () => {
+      try {
+        await callService.pingActiveStatus();
+      } catch (err) {
+        // Silent fallback for status ping
+      }
+    };
+
+    sendHeartbeat();
+    const interval = setInterval(sendHeartbeat, 30000); // 30s heartbeat
 
     return () => clearInterval(interval);
-  }, []);
+  }, [enabled]);
 }
