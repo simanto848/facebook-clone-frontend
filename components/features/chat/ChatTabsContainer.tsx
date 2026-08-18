@@ -8,13 +8,31 @@ import { Avatar, Button, Input } from "@/components/ui";
 import { CallModal } from "./CallModal";
 import { messageService } from "@/services/messageService";
 
+import { useSocketContext } from "@/components/providers/SocketProvider";
+
 function ChatTab({ box }: { box: ChatBox }) {
   const router = useRouter();
   const { closeChat, toggleCollapse, sendMessage } = useChatStore();
+  const { socket, typingUsers } = useSocketContext();
   const [inputText, setInputText] = useState("");
   const [showMenu, setShowMenu] = useState(false);
   const [activeCall, setActiveCall] = useState<"audio" | "video" | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setInputText(value);
+
+    if (socket && box.id) {
+      socket.emit("typing_start", { conversationId: box.id, recipientId: box.id });
+
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = setTimeout(() => {
+        socket.emit("typing_stop", { conversationId: box.id, recipientId: box.id });
+      }, 2000);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,6 +40,10 @@ function ChatTab({ box }: { box: ChatBox }) {
     const text = inputText;
     sendMessage(box.id, text);
     setInputText("");
+
+    if (socket && box.id) {
+      socket.emit("typing_stop", { conversationId: box.id, recipientId: box.id });
+    }
 
     try {
       await messageService.sendMessage(box.id, { content: text });
@@ -162,6 +184,15 @@ function ChatTab({ box }: { box: ChatBox }) {
                   <span className="text-[9px] text-slate-500 mt-1 px-1">{msg.time}</span>
                 </div>
               ))}
+
+              {typingUsers[box.id] && (
+                <div className="flex items-center gap-1.5 px-3.5 py-2 bg-[#1f2937] text-slate-400 rounded-2xl rounded-bl-xs text-xs w-fit">
+                  <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                  <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                  <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" />
+                </div>
+              )}
+
               <div ref={messagesEndRef} />
             </div>
 
@@ -171,7 +202,7 @@ function ChatTab({ box }: { box: ChatBox }) {
                 <Input
                   placeholder="Type a message..."
                   value={inputText}
-                  onChange={(e) => setInputText(e.target.value)}
+                  onChange={handleInputChange}
                   className="h-9 text-xs bg-[#1f2937]"
                 />
                 <Button variant="primary" size="sm" type="submit" className="h-9 px-3 shrink-0">
