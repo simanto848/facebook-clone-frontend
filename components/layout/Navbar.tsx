@@ -395,90 +395,107 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Profile Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => toggleDropdown("profile")}
-              className={`flex items-center gap-2 rounded-full py-1.5 pl-2 pr-3 transition ${
-                activeDropdown === "profile" ? "bg-blue-600/25" : "bg-[#1f2937] hover:bg-[#2a3447]"
-              }`}
-            >
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-linear-to-r from-[#7aa2ff] to-[#ffb088]">
-                <CircleUserRound size={20} className="text-white" />
-              </div>
-              <div className="hidden text-left lg:block">
-                <p className="text-sm font-medium text-white">{user?.displayName || user?.username || "Simanto"}</p>
-                <p className="text-xs text-slate-400">Online</p>
-              </div>
-            </button>
-
-            {activeDropdown === "profile" && (
-              <div className="absolute right-0 top-14 z-50 w-72 overflow-hidden rounded-2xl border border-[#1f2937] bg-[#111827] shadow-2xl shadow-black/40 animate-in fade-in slide-in-from-top-2 duration-150">
-                {/* User Info */}
-                <div className="border-b border-[#1f2937] p-4">
-                  <p className="font-semibold text-white">{user?.displayName || user?.username || "Account User"}</p>
-                  <p className="text-sm text-slate-400">{user?.email || "user@example.com"}</p>
+          {/* Profile Dropdown or Auth Actions */}
+          {user ? (
+            <div className="relative">
+              <button
+                onClick={() => toggleDropdown("profile")}
+                className={`flex items-center gap-2 rounded-full py-1.5 pl-2 pr-3 transition ${
+                  activeDropdown === "profile" ? "bg-blue-600/25" : "bg-[#1f2937] hover:bg-[#2a3447]"
+                }`}
+              >
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-linear-to-r from-[#7aa2ff] to-[#ffb088]">
+                  <CircleUserRound size={20} className="text-white" />
                 </div>
-
-                {/* Menu */}
-                <div className="p-2">
-                  <Link
-                    href="/profile"
-                    className="flex items-center gap-3 rounded-xl px-3 py-3 text-slate-300 transition hover:bg-[#1f2937]"
-                  >
-                    <User size={18} />
-                    My Profile
-                  </Link>
-
-                  <Link
-                    href="/saved"
-                    className="flex items-center gap-3 rounded-xl px-3 py-3 text-slate-300 transition hover:bg-[#1f2937]"
-                  >
-                    <Bookmark size={18} />
-                    Saved Posts
-                  </Link>
-
-                  <Link
-                    href="/settings"
-                    className="flex items-center gap-3 rounded-xl px-3 py-3 text-slate-300 transition hover:bg-[#1f2937]"
-                  >
-                    <Settings size={18} />
-                    Settings
-                  </Link>
-
-                  <Link
-                    href="/privacy"
-                    className="flex items-center gap-3 rounded-xl px-3 py-3 text-slate-300 transition hover:bg-[#1f2937]"
-                  >
-                    <Shield size={18} />
-                    Privacy & Security
-                  </Link>
-
-                  <Link
-                    href="/support"
-                    className="flex items-center gap-3 rounded-xl px-3 py-3 text-slate-300 transition hover:bg-[#1f2937]"
-                  >
-                    <HelpCircle size={18} />
-                    Help & Support
-                  </Link>
-
-                  <hr className="my-2 border-[#1f2937]" />
-
-                  <button
-                    onClick={async () => {
-                      setActiveDropdown(null);
-                      await logout();
-                      router.push("/login");
-                    }}
-                    className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-red-400 transition hover:bg-red-500/10 cursor-pointer"
-                  >
-                    <LogOut size={18} />
-                    Logout
-                  </button>
+                <div className="hidden text-left lg:block">
+                  <p className="text-sm font-medium text-white">{user.displayName || user.username}</p>
+                  <p className="text-xs text-green-400">Online</p>
                 </div>
-              </div>
-            )}
-          </div>
+              </button>
+
+              {activeDropdown === "profile" && (
+                <div className="absolute right-0 top-14 z-50 w-72 overflow-hidden rounded-2xl border border-[#1f2937] bg-[#111827] shadow-2xl shadow-black/40 animate-in fade-in slide-in-from-top-2 duration-150">
+                  {/* User Info */}
+                  <div className="border-b border-[#1f2937] p-4">
+                    <p className="font-semibold text-white">{user.displayName || user.username}</p>
+                    <p className="text-sm text-slate-400">{user.email}</p>
+                  </div>
+
+                  {/* Menu */}
+                  <div className="p-2">
+                    <Link
+                      href="/profile"
+                      className="flex items-center gap-3 rounded-xl px-3 py-3 text-slate-300 transition hover:bg-[#1f2937]"
+                    >
+                      <User size={18} />
+                      My Profile
+                    </Link>
+
+                    <Link
+                      href="/saved"
+                      className="flex items-center gap-3 rounded-xl px-3 py-3 text-slate-300 transition hover:bg-[#1f2937]"
+                    >
+                      <Bookmark size={18} />
+                      Saved Posts
+                    </Link>
+
+                    <Link
+                      href="/settings"
+                      className="flex items-center gap-3 rounded-xl px-3 py-3 text-slate-300 transition hover:bg-[#1f2937]"
+                    >
+                      <Settings size={18} />
+                      Settings
+                    </Link>
+
+                    <Link
+                      href="/privacy"
+                      className="flex items-center gap-3 rounded-xl px-3 py-3 text-slate-300 transition hover:bg-[#1f2937]"
+                    >
+                      <Shield size={18} />
+                      Privacy & Security
+                    </Link>
+
+                    <Link
+                      href="/support"
+                      className="flex items-center gap-3 rounded-xl px-3 py-3 text-slate-300 transition hover:bg-[#1f2937]"
+                    >
+                      <HelpCircle size={18} />
+                      Help & Support
+                    </Link>
+
+                    <hr className="my-2 border-[#1f2937]" />
+
+                    <button
+                      onClick={async () => {
+                        setActiveDropdown(null);
+                        await logout();
+                        router.push("/login");
+                      }}
+                      className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-red-400 transition hover:bg-red-500/10 cursor-pointer"
+                    >
+                      <LogOut size={18} />
+                      Logout
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Link
+                href="/login"
+                className="rounded-xl bg-[#1f2937] hover:bg-slate-700 px-4 py-2 text-xs font-semibold text-white transition"
+              >
+                Log In
+              </Link>
+              <Link
+                href="/signup"
+                className="rounded-xl bg-blue-600 hover:bg-blue-700 px-4 py-2 text-xs font-semibold text-white transition"
+              >
+                Sign Up
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </nav>
