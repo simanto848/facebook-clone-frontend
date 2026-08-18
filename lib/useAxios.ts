@@ -7,14 +7,12 @@ async function resolveLocale() {
 }
 
 /**
- * Create an authenticated API instance for server-side requests
- * This should be used in server components and server actions
+ * Create an authenticated API instance for client & server requests
  */
 export async function useAxios(token?: string) {
 	const authToken = token || await getAnyAuthToken();
 	const userInfo = await getUserIdAndType();
 	const language = await resolveLocale();
-	// console.log(authToken)
 
 	const headers: Record<string, string> = {
 		platform: 'web',
@@ -23,7 +21,6 @@ export async function useAxios(token?: string) {
 		...(authToken && { Authorization: `Bearer ${authToken}` }),
 	};
 
-	// Add user_id and user_type headers if user is authenticated
 	if (userInfo) {
 		headers['user_id'] = String(userInfo.user_id);
 		headers['user_type'] = userInfo.user_type;
@@ -33,38 +30,71 @@ export async function useAxios(token?: string) {
 
 	const api = axios.create({
 		baseURL,
-		timeout: 30000, // 30 seconds - prevents indefinite hanging
+		timeout: 30000,
 		headers,
 		...(process.env.NEXT_PUBLIC_HTTPS_AGENT_V6_ENABLED === 'true' && {
 			httpsAgent: new https.Agent({
-				family: 6, // 🔥 THIS is the fix
+				family: 6,
 			}),
 		}),
 		withCredentials: true,
-		// maxBodyLength: Infinity, // Remove body size limit for file uploads
-		// maxContentLength: Infinity, // Remove content size limit for file uploads
 	});
 
 	// Request interceptor to handle FormData
 	api.interceptors.request.use(
 		(config) => {
-			// If data is FormData, remove Content-Type header to let browser set it with boundary
 			if (config.data instanceof FormData) {
 				delete config.headers['Content-Type'];
 			}
 			return config;
 		},
-		(error) => {
-			return Promise.reject(error)
-		}
+		(error) => Promise.reject(error)
 	);
 
-	// Response interceptor
+	// Response interceptor with auto 401 token refresh retry
 	api.interceptors.response.use(
 		(response) => response?.data,
-		(error) => {
+		async (error) => {
+			const originalRequest = error?.config || error?.response?.config;
+			const status = error?.status || error?.response?.status;
+
+			// If 401 Unauthorized and not already retried
+			if (status === 401 && originalRequest && !originalRequest._retry) {
+				originalRequest._retry = true;
+
+				try {
+					const refreshRes = await axios.post(
+						`${baseURL}/auth/refresh-token`,
+						{},
+						{ withCredentials: true }
+					);
+
+					const newAccessToken =
+						refreshRes.data?.data?.accessToken ||
+						refreshRes.data?.accessToken;
+
+					if (newAccessToken) {
+						if (typeof window !== 'undefined') {
+							localStorage.setItem('accessToken', newAccessToken);
+						}
+
+						originalRequest.headers = originalRequest.headers || {};
+						originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+
+						const retryRes = await axios(originalRequest);
+						return retryRes?.data || retryRes;
+					}
+				} catch (refreshErr) {
+					if (typeof window !== 'undefined') {
+						localStorage.removeItem('accessToken');
+						window.location.href = '/login';
+					}
+				}
+			}
+
 			return Promise.reject(error?.response || error);
 		}
 	);
+
 	return api;
 }
