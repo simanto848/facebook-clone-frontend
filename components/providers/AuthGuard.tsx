@@ -5,7 +5,29 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { Loader } from "@/components/ui";
 
-const PUBLIC_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password"];
+// Pages that guests can view without logging in
+const PUBLIC_ROUTES = [
+  "/",
+  "/login",
+  "/register",
+  "/signup",
+  "/verify-email",
+  "/forgot-password",
+  "/reset-password",
+  "/explore",
+  "/privacy",
+  "/support",
+];
+
+// Auth form routes (logged-in users will be redirected to / if they attempt to view these)
+const AUTH_FORM_ROUTES = [
+  "/login",
+  "/register",
+  "/signup",
+  "/verify-email",
+  "/forgot-password",
+  "/reset-password",
+];
 
 export function AuthGuard({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -19,14 +41,17 @@ export function AuthGuard({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!initialized) return;
 
-    const isPublicRoute = PUBLIC_ROUTES.some((route) => pathname?.startsWith(route));
+    const isPublicRoute =
+      pathname === "/" ||
+      PUBLIC_ROUTES.some((route) => route !== "/" && pathname?.startsWith(route));
+    const isAuthFormRoute = AUTH_FORM_ROUTES.some((route) => pathname?.startsWith(route));
     const isAuthenticated = Boolean(user || accessToken);
 
     if (!isAuthenticated && !isPublicRoute) {
-      // Redirect unauthenticated user to /login
+      // Redirect unauthenticated visitors away from protected pages (e.g. /settings, /messages) to /login
       router.push("/login");
-    } else if (isAuthenticated && isPublicRoute) {
-      // Redirect authenticated user away from login/register to feed
+    } else if (isAuthenticated && isAuthFormRoute) {
+      // Redirect logged-in users away from login/signup forms to home feed /
       router.push("/");
     }
   }, [initialized, user, accessToken, pathname, router]);
