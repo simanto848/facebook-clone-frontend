@@ -19,6 +19,18 @@ export const callService = {
     return response.data;
   },
 
+  endCall: async (callId: string) => {
+    const axios = await useAxios();
+    const response = await axios.post(`/audio-calls/${callId}/end`);
+    return response.data;
+  },
+
+  answerCall: async (callId: string) => {
+    const axios = await useAxios();
+    const response = await axios.post(`/audio-calls/${callId}/answer`);
+    return response.data;
+  },
+
   pingActiveStatus: async () => {
     const axios = await useAxios();
     const response = await axios.post("/active-status/heartbeat");
