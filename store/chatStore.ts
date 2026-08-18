@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { messageService } from "@/services/messageService";
+import { friendshipService } from "@/services/friendshipService";
 
 export interface Message {
   sender: "me" | "them";
@@ -39,42 +40,8 @@ interface ChatState {
 
 export const useChatStore = create<ChatState>((set, get) => ({
   openChatBoxes: [],
-  activeConversationId: "1",
-  conversations: [
-    {
-      id: "1",
-      name: "Sarah Wilson",
-      avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300",
-      online: true,
-      messages: [
-        { sender: "them", text: "Hi Alex! How's the social media app going?", time: "10:30 AM" },
-        { sender: "me", text: "Going great 🚀. Just finished the profile page.", time: "10:31 AM" },
-        { sender: "them", text: "Nice! Did you implement the messaging page yet?", time: "10:32 AM" },
-        { sender: "me", text: "Working on it now 😄", time: "10:32 AM" },
-        { sender: "them", text: "Can't wait to see it 🔥", time: "10:33 AM" },
-      ],
-    },
-    {
-      id: "2",
-      name: "Alex Johnson",
-      avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300",
-      online: false,
-      messages: [
-        { sender: "them", text: "Hey! Are you working today?", time: "Yesterday" },
-        { sender: "me", text: "Yeah, mostly frontend updates.", time: "Yesterday" },
-        { sender: "them", text: "Working on it.", time: "Yesterday" },
-      ],
-    },
-    {
-      id: "3",
-      name: "Emma Brown",
-      avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=300",
-      online: true,
-      messages: [
-        { sender: "them", text: "That's awesome 🔥", time: "2 hours ago" },
-      ],
-    },
-  ],
+  activeConversationId: null,
+  conversations: [],
 
   fetchConversations: async () => {
     try {
@@ -83,8 +50,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
       if (Array.isArray(items) && items.length > 0) {
         const parsedConvs: Conversation[] = items.map((item: any) => ({
           id: item.otherUser?.id || item.user?.id || item.id,
-          name: item.otherUser?.displayName || item.otherUser?.username || item.user?.username || "Chat Partner",
-          avatar: item.otherUser?.avatarUrl || item.otherUser?.profilePicture || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
+          name: `${item.otherUser?.firstName || ""} ${item.otherUser?.lastName || ""}`.trim() || item.otherUser?.displayName || item.otherUser?.username || item.user?.username || "User",
+          avatar: item.otherUser?.avatarUrl || item.otherUser?.profilePicture || item.user?.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
           online: Boolean(item.otherUser?.isOnline),
           messages: item.messages
             ? item.messages.map((m: any) => ({
@@ -107,9 +74,53 @@ export const useChatStore = create<ChatState>((set, get) => ({
         if (parsedConvs.length > 0 && !get().activeConversationId) {
           set({ activeConversationId: parsedConvs[0].id });
         }
+        return;
       }
-    } catch {
-      // Retain active conversation list
+
+      // Fallback: If 0 existing message threads, fetch real friends to populate connections!
+      const friendsRes = await friendshipService.getFriends();
+      const friendItems = friendsRes.data || friendsRes || [];
+      if (Array.isArray(friendItems) && friendItems.length > 0) {
+        const parsedFriends: Conversation[] = friendItems.map((f: any) => {
+          const u = f.user || f;
+          return {
+            id: u.id,
+            name: `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.displayName || u.username || "Friend",
+            avatar: u.avatarUrl || u.profilePicture || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
+            online: Boolean(u.isOnline),
+            messages: [],
+          };
+        });
+
+        set({ conversations: parsedFriends });
+        if (parsedFriends.length > 0 && !get().activeConversationId) {
+          set({ activeConversationId: parsedFriends[0].id });
+        }
+        return;
+      }
+
+      // Secondary Fallback: If 0 friends, fetch user suggestions!
+      const sugRes = await friendshipService.getSuggestions();
+      const sugItems = sugRes.data || sugRes || [];
+      if (Array.isArray(sugItems) && sugItems.length > 0) {
+        const parsedSugs: Conversation[] = sugItems.map((u: any) => ({
+          id: u.id,
+          name: `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.displayName || u.username || "Suggested User",
+          avatar: u.avatarUrl || u.profilePicture || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
+          online: Boolean(u.isOnline),
+          messages: [],
+        }));
+
+        set({ conversations: parsedSugs });
+        if (parsedSugs.length > 0 && !get().activeConversationId) {
+          set({ activeConversationId: parsedSugs[0].id });
+        }
+      } else {
+        set({ conversations: [], activeConversationId: null });
+      }
+    } catch (err) {
+      console.error("Failed to load real conversations:", err);
+      set({ conversations: [], activeConversationId: null });
     }
   },
 
@@ -117,7 +128,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     try {
       const res = await messageService.getMessages(userId);
       const items = res.data || res || [];
-      if (Array.isArray(items) && items.length > 0) {
+      if (Array.isArray(items)) {
         const parsedMsgs: Message[] = items.map((m: any) => ({
           sender: m.senderId === userId ? "them" : "me",
           text: m.content || m.text || "",
@@ -156,9 +167,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         name: person.name,
         avatar: person.avatar,
         isCollapsed: false,
-        messages: [
-          { sender: "them", text: `Hey there! How's it going?`, time: "Just now" },
-        ],
+        messages: [],
       };
 
       return { openChatBoxes: [...currentBoxes, newBox] };

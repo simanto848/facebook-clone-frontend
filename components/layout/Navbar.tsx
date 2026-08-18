@@ -36,7 +36,11 @@ export default function Navbar() {
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
-  const { openChat } = useChatStore();
+  const { conversations, openChat, fetchConversations } = useChatStore();
+
+  useEffect(() => {
+    fetchConversations();
+  }, [fetchConversations]);
 
   const [liveNotifications, setLiveNotifications] = useState<any[]>([
     {
@@ -415,9 +419,11 @@ export default function Navbar() {
               }`}
             >
               <Mail size={18} />
-              <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#7aa2ff] text-[10px] font-semibold text-white">
-                2
-              </span>
+              {conversations.length > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#7aa2ff] text-[10px] font-semibold text-white">
+                  {conversations.length}
+                </span>
+              )}
             </button>
 
             {activeDropdown === "messages" && (
@@ -430,36 +436,40 @@ export default function Navbar() {
                 </div>
 
                 <div className="max-h-80 overflow-y-auto divide-y divide-[#1f2937] custom-scrollbar">
-                  {messages.map((msg) => (
-                    <div
-                      key={msg.id}
-                      onClick={() => {
-                        openChat({
-                          id: msg.id.toString(),
-                          name: msg.sender,
-                          avatar: msg.avatar,
-                        });
-                        setActiveDropdown(null);
-                      }}
-                      className={`flex gap-3 p-3.5 hover:bg-[#1f2937]/50 transition cursor-pointer ${
-                        msg.unread ? "bg-blue-500/5" : ""
-                      }`}
-                    >
-                      <div className="relative h-9 w-9 rounded-full overflow-hidden shrink-0 border border-[#1f2937]">
-                        <Image src={msg.avatar} fill className="object-cover" alt={msg.sender} />
-                      </div>
-                      <div className="flex-1 space-y-1">
-                        <div className="flex justify-between items-center">
-                          <span className="font-bold text-white text-xs">{msg.sender}</span>
-                          <span className="text-[9px] text-slate-500 font-medium">{msg.time}</span>
+                  {conversations.length === 0 ? (
+                    <div className="p-4 text-center text-xs text-slate-400">No active conversations yet</div>
+                  ) : (
+                    conversations.map((conv) => {
+                      const lastMsg = conv.messages[conv.messages.length - 1];
+                      return (
+                        <div
+                          key={conv.id}
+                          onClick={() => {
+                            openChat({
+                              id: conv.id,
+                              name: conv.name,
+                              avatar: conv.avatar,
+                            });
+                            setActiveDropdown(null);
+                          }}
+                          className="flex gap-3 p-3.5 hover:bg-[#1f2937]/50 transition cursor-pointer"
+                        >
+                          <div className="relative h-9 w-9 rounded-full overflow-hidden shrink-0 border border-[#1f2937]">
+                            <Image src={conv.avatar} fill className="object-cover" alt={conv.name} />
+                          </div>
+                          <div className="flex-1 space-y-1">
+                            <div className="flex justify-between items-center">
+                              <span className="font-bold text-white text-xs">{conv.name}</span>
+                              <span className="text-[9px] text-slate-500 font-medium">{lastMsg?.time || "Active"}</span>
+                            </div>
+                            <p className="text-[11px] text-slate-400 line-clamp-1 leading-normal">
+                              {lastMsg ? lastMsg.text : "Click to start chatting"}
+                            </p>
+                          </div>
                         </div>
-                        <p className="text-[11px] text-slate-400 line-clamp-1 leading-normal">{msg.text}</p>
-                      </div>
-                      {msg.unread && (
-                        <div className="h-2 w-2 rounded-full bg-[#7aa2ff] shrink-0 self-center" />
-                      )}
-                    </div>
-                  ))}
+                      );
+                    })
+                  )}
                 </div>
 
                 <div className="border-t border-[#1f2937] bg-[#1f2937]/20 p-2.5 text-center">
