@@ -1,18 +1,23 @@
 "use client";
 
-import { useEffect, ReactNode } from "react";
+import React, { useEffect, type ReactNode } from "react";
 import { useAuthStore } from "../store/authStore";
+import { useActiveStatus } from "@/hooks/useActiveStatus";
+import { GlobalToastProvider } from "@/components/providers/GlobalToastProvider";
 
 interface AuthProviderProps {
   children: ReactNode;
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const checkSession = useAuthStore((state) => state.checkSession);
+  const initAuth = useAuthStore((state) => state.initAuth);
+  const user = useAuthStore((state) => state.user);
 
   useEffect(() => {
-    checkSession();
-  }, [checkSession]);
+    initAuth();
+  }, [initAuth]);
 
-  return <>{children}</>;
+  useActiveStatus(Boolean(user));
+
+  return <GlobalToastProvider>{children}</GlobalToastProvider>;
 }

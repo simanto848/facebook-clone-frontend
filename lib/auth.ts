@@ -1,10 +1,10 @@
 /**
- * Mock helper functions for authenticated session tokens.
- * Currently returns null as we do register/login actions.
+ * Session token management and retrieval utilities.
  */
 
 export async function getAnyAuthToken(): Promise<string | null> {
-  return null;
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken");
 }
 
 export interface UserInfo {
@@ -13,5 +13,16 @@ export interface UserInfo {
 }
 
 export async function getUserIdAndType(): Promise<UserInfo | null> {
-  return null;
+  if (typeof window === "undefined") return null;
+  const userJson = localStorage.getItem("authUser");
+  if (!userJson) return null;
+  try {
+    const user = JSON.parse(userJson);
+    return {
+      user_id: user.id || user._id,
+      user_type: user.role || "USER",
+    };
+  } catch {
+    return null;
+  }
 }
