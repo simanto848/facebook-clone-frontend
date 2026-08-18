@@ -1,9 +1,21 @@
+"use client";
+
+import React, { useEffect, useState } from "react";
 import { Search } from "lucide-react";
 import Image from "next/image";
 import { useChatStore } from "@/store/chatStore";
 
 export default function ConversationList() {
-  const { conversations, activeConversationId, setActiveConversationId } = useChatStore();
+  const { conversations, activeConversationId, setActiveConversationId, fetchConversations } = useChatStore();
+  const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    fetchConversations();
+  }, [fetchConversations]);
+
+  const filteredConversations = conversations.filter((c) =>
+    c.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="h-full">
@@ -14,14 +26,16 @@ export default function ConversationList() {
           <Search size={18} className="text-slate-400" />
 
           <input
-            placeholder="Search..."
-            className="h-11 flex-1 bg-transparent px-3 text-white outline-none"
+            placeholder="Search messages..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-11 flex-1 bg-transparent px-3 text-white outline-none text-xs"
           />
         </div>
       </div>
 
       <div className="space-y-1 px-3">
-        {conversations.map((user) => {
+        {filteredConversations.map((user) => {
           const isActive = user.id === activeConversationId;
           const lastMsg = user.messages[user.messages.length - 1];
 

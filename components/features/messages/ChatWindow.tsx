@@ -31,11 +31,18 @@ export default function ChatWindow() {
     activeConversationId,
     setActiveConversationId,
     sendDirectMessage,
+    fetchMessagesForUser,
   } = useChatStore();
 
   const activeConversation = conversations.find(
     (c) => c.id === activeConversationId
   );
+
+  useEffect(() => {
+    if (activeConversationId) {
+      fetchMessagesForUser(activeConversationId);
+    }
+  }, [activeConversationId, fetchMessagesForUser]);
 
   // Auto scroll to bottom when messages change
   useEffect(() => {

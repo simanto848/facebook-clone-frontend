@@ -27,6 +27,8 @@ interface ChatState {
   openChatBoxes: ChatBox[];
   conversations: Conversation[];
   activeConversationId: string | null;
+  fetchConversations: () => Promise<void>;
+  fetchMessagesForUser: (userId: string) => Promise<void>;
   openChat: (person: { id: string; name: string; avatar: string }) => void;
   closeChat: (id: string) => void;
   toggleCollapse: (id: string) => void;
@@ -37,7 +39,7 @@ interface ChatState {
 
 export const useChatStore = create<ChatState>((set, get) => ({
   openChatBoxes: [],
-  activeConversationId: "1", // Default to Sarah Wilson
+  activeConversationId: "1",
   conversations: [
     {
       id: "1",
@@ -73,11 +75,70 @@ export const useChatStore = create<ChatState>((set, get) => ({
       ],
     },
   ],
+
+  fetchConversations: async () => {
+    try {
+      const res = await messageService.getConversations();
+      const items = res.data || res || [];
+      if (Array.isArray(items) && items.length > 0) {
+        const parsedConvs: Conversation[] = items.map((item: any) => ({
+          id: item.otherUser?.id || item.user?.id || item.id,
+          name: item.otherUser?.displayName || item.otherUser?.username || item.user?.username || "Chat Partner",
+          avatar: item.otherUser?.avatarUrl || item.otherUser?.profilePicture || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
+          online: Boolean(item.otherUser?.isOnline),
+          messages: item.messages
+            ? item.messages.map((m: any) => ({
+                sender: m.isMe ? "me" : "them",
+                text: m.content || m.text || "",
+                time: new Date(m.createdAt || Date.now()).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+              }))
+            : item.lastMessage
+            ? [
+                {
+                  sender: item.lastMessage.isMe ? "me" : "them",
+                  text: item.lastMessage.content || "",
+                  time: new Date(item.lastMessage.createdAt || Date.now()).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+                },
+              ]
+            : [],
+        }));
+
+        set({ conversations: parsedConvs });
+        if (parsedConvs.length > 0 && !get().activeConversationId) {
+          set({ activeConversationId: parsedConvs[0].id });
+        }
+      }
+    } catch {
+      // Retain active conversation list
+    }
+  },
+
+  fetchMessagesForUser: async (userId: string) => {
+    try {
+      const res = await messageService.getMessages(userId);
+      const items = res.data || res || [];
+      if (Array.isArray(items) && items.length > 0) {
+        const parsedMsgs: Message[] = items.map((m: any) => ({
+          sender: m.senderId === userId ? "them" : "me",
+          text: m.content || m.text || "",
+          time: new Date(m.createdAt || Date.now()).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        }));
+
+        set((state) => ({
+          conversations: state.conversations.map((c) =>
+            c.id === userId ? { ...c, messages: parsedMsgs } : c
+          ),
+        }));
+      }
+    } catch {
+      // Keep optimistic state
+    }
+  },
+
   openChat: (person) => {
     set((state) => {
       const existing = state.openChatBoxes.find((box) => box.id === person.id);
       if (existing) {
-        // Bring it to focus, and make sure it is expanded
         return {
           openChatBoxes: state.openChatBoxes.map((box) =>
             box.id === person.id ? { ...box, isCollapsed: false } : box
@@ -85,7 +146,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
         };
       }
 
-      // Limit to 3 open chat boxes maximum, remove the oldest one if exceeded
       const currentBoxes = [...state.openChatBoxes];
       if (currentBoxes.length >= 3) {
         currentBoxes.shift();
@@ -104,18 +164,20 @@ export const useChatStore = create<ChatState>((set, get) => ({
       return { openChatBoxes: [...currentBoxes, newBox] };
     });
   },
+
   closeChat: (id) =>
     set((state) => ({
       openChatBoxes: state.openChatBoxes.filter((box) => box.id !== id),
     })),
+
   toggleCollapse: (id) =>
     set((state) => ({
       openChatBoxes: state.openChatBoxes.map((box) =>
         box.id === id ? { ...box, isCollapsed: !box.isCollapsed } : box
       ),
     })),
+
   sendMessage: (id, text) => {
-    // Add user's message
     set((state) => ({
       openChatBoxes: state.openChatBoxes.map((box) => {
         if (box.id !== id) return box;
@@ -126,39 +188,17 @@ export const useChatStore = create<ChatState>((set, get) => ({
       }),
     }));
 
-    // Trigger mock automated reply after 1.2 seconds
-    setTimeout(() => {
-      const answers = [
-        "That's awesome! Let's talk more about it later.",
-        "Interesting. Can you send me the link?",
-        "Sounds good to me!",
-        "Awesome! I am working on the spatial layouts right now.",
-        "Haha nice! Talk to you soon.",
-      ];
-      const randomAnswer = answers[Math.floor(Math.random() * answers.length)];
-
-      set((state) => ({
-        openChatBoxes: state.openChatBoxes.map((box) => {
-          if (box.id !== id) return box;
-          return {
-            ...box,
-            messages: [...box.messages, { sender: "them", text: randomAnswer, time: "Just now" }],
-          };
-        }),
-      }));
-    }, 1200);
+    messageService.sendMessage(id, { content: text }).catch(() => {});
   },
+
   setActiveConversationId: (id) => set({ activeConversationId: id }),
+
   sendDirectMessage: (id, text) => {
     if (!text.trim()) return;
     const timeString = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-    // Call API async
-    messageService.sendMessage(id, { content: text }).catch((err) => {
-      console.error("Message send API error, keeping optimistic update", err);
-    });
+    messageService.sendMessage(id, { content: text }).catch(() => {});
 
-    // Add user's message optimistically
     set((state) => ({
       conversations: state.conversations.map((conv) => {
         if (conv.id !== id) return conv;
@@ -168,28 +208,5 @@ export const useChatStore = create<ChatState>((set, get) => ({
         };
       }),
     }));
-
-    // Trigger response simulation fallback
-    setTimeout(() => {
-      const answers = [
-        "That's awesome! Let's talk more about it later.",
-        "Interesting. Can you send me the link?",
-        "Sounds good to me!",
-        "Awesome! I am working on the messaging features right now.",
-        "Haha nice! Talk to you soon.",
-      ];
-      const randomAnswer = answers[Math.floor(Math.random() * answers.length)];
-      const responseTime = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-
-      set((state) => ({
-        conversations: state.conversations.map((conv) => {
-          if (conv.id !== id) return conv;
-          return {
-            ...conv,
-            messages: [...conv.messages, { sender: "them", text: randomAnswer, time: responseTime }],
-          };
-        }),
-      }));
-    }, 1200);
   },
 }));
