@@ -33,8 +33,8 @@ export default function Stories() {
           });
         });
       }
-    } catch (err) {
-      console.error("Story API error, using fallback state:", err);
+    } catch {
+      // Fall back to clean default state when API is unavailable
     }
   };
 
@@ -53,8 +53,8 @@ export default function Stories() {
         mediaType: newStoryType === "video" ? "VIDEO" : "IMAGE",
         caption: newStoryText,
       });
-    } catch (err) {
-      console.error("Story API error, fallback to local state:", err);
+    } catch {
+      // Fall back to local state
     }
 
     addStory({
