@@ -40,91 +40,104 @@ interface ChatState {
   markConversationAsRead: (id: string) => void;
 }
 
+let activeFetchPromise: Promise<void> | null = null;
+let lastFetchTimestamp = 0;
+
 export const useChatStore = create<ChatState>((set, get) => ({
   openChatBoxes: [],
   activeConversationId: null,
   conversations: [],
 
   fetchConversations: async () => {
-    try {
-      const res = await messageService.getConversations();
-      const items = res.data || res || [];
-      if (Array.isArray(items) && items.length > 0) {
-        const parsedConvs: Conversation[] = items.map((item: any) => ({
-          id: item.otherUser?.id || item.user?.id || item.id,
-          name: `${item.otherUser?.firstName || ""} ${item.otherUser?.lastName || ""}`.trim() || item.otherUser?.displayName || item.otherUser?.username || item.user?.username || "User",
-          avatar: item.otherUser?.avatarUrl || item.otherUser?.profilePicture || item.user?.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
-          online: Boolean(item.otherUser?.isOnline),
-          hasUnread: Boolean(item.hasUnread),
-          messages: item.messages
-            ? item.messages.map((m: any) => ({
-                sender: m.isMe ? "me" : "them",
-                text: m.content || m.text || "",
-                time: new Date(m.createdAt || Date.now()).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-              }))
-            : item.lastMessage
-            ? [
-                {
-                  sender: item.lastMessage.isMe ? "me" : "them",
-                  text: item.lastMessage.content || "",
-                  time: new Date(item.lastMessage.createdAt || Date.now()).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-                },
-              ]
-            : [],
-        }));
+    const now = Date.now();
+    if (activeFetchPromise) return activeFetchPromise;
+    if (now - lastFetchTimestamp < 3000 && get().conversations.length > 0) return;
 
-        set({ conversations: parsedConvs });
-        if (parsedConvs.length > 0 && !get().activeConversationId) {
-          set({ activeConversationId: parsedConvs[0].id });
+    lastFetchTimestamp = now;
+
+    activeFetchPromise = (async () => {
+      try {
+        const res = await messageService.getConversations();
+        const items = res.data || res || [];
+        if (Array.isArray(items) && items.length > 0) {
+          const parsedConvs: Conversation[] = items.map((item: any) => ({
+            id: item.otherUser?.id || item.user?.id || item.id,
+            name: `${item.otherUser?.firstName || ""} ${item.otherUser?.lastName || ""}`.trim() || item.otherUser?.displayName || item.otherUser?.username || item.user?.username || "User",
+            avatar: item.otherUser?.avatarUrl || item.otherUser?.profilePicture || item.user?.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
+            online: Boolean(item.otherUser?.isOnline),
+            hasUnread: Boolean(item.hasUnread),
+            messages: item.messages
+              ? item.messages.map((m: any) => ({
+                  sender: m.isMe ? "me" : "them",
+                  text: m.content || m.text || "",
+                  time: new Date(m.createdAt || Date.now()).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+                }))
+              : item.lastMessage
+              ? [
+                  {
+                    sender: item.lastMessage.isMe ? "me" : "them",
+                    text: item.lastMessage.content || "",
+                    time: new Date(item.lastMessage.createdAt || Date.now()).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+                  },
+                ]
+              : [],
+          }));
+
+          set({ conversations: parsedConvs });
+          if (parsedConvs.length > 0 && !get().activeConversationId) {
+            set({ activeConversationId: parsedConvs[0].id });
+          }
+          return;
         }
-        return;
-      }
 
-      // Fallback: If 0 existing message threads, fetch real friends to populate connections!
-      const friendsRes = await friendshipService.getFriends();
-      const friendItems = friendsRes.data || friendsRes || [];
-      if (Array.isArray(friendItems) && friendItems.length > 0) {
-        const parsedFriends: Conversation[] = friendItems.map((f: any) => {
-          const u = f.user || f;
-          return {
+        const friendsRes = await friendshipService.getFriends();
+        const friendItems = friendsRes.data || friendsRes || [];
+        if (Array.isArray(friendItems) && friendItems.length > 0) {
+          const parsedFriends: Conversation[] = friendItems.map((f: any) => {
+            const u = f.user || f;
+            return {
+              id: u.id,
+              name: `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.displayName || u.username || "Friend",
+              avatar: u.avatarUrl || u.profilePicture || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
+              online: Boolean(u.isOnline),
+              messages: [],
+            };
+          });
+
+          set({ conversations: parsedFriends });
+          if (parsedFriends.length > 0 && !get().activeConversationId) {
+            set({ activeConversationId: parsedFriends[0].id });
+          }
+          return;
+        }
+
+        const sugRes = await friendshipService.getSuggestions();
+        const sugItems = sugRes.data || sugRes || [];
+        if (Array.isArray(sugItems) && sugItems.length > 0) {
+          const parsedSugs: Conversation[] = sugItems.map((u: any) => ({
             id: u.id,
-            name: `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.displayName || u.username || "Friend",
+            name: `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.displayName || u.username || "Suggested User",
             avatar: u.avatarUrl || u.profilePicture || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
             online: Boolean(u.isOnline),
             messages: [],
-          };
-        });
+          }));
 
-        set({ conversations: parsedFriends });
-        if (parsedFriends.length > 0 && !get().activeConversationId) {
-          set({ activeConversationId: parsedFriends[0].id });
+          set({ conversations: parsedSugs });
+          if (parsedSugs.length > 0 && !get().activeConversationId) {
+            set({ activeConversationId: parsedSugs[0].id });
+          }
+        } else {
+          set({ conversations: [], activeConversationId: null });
         }
-        return;
-      }
-
-      // Secondary Fallback: If 0 friends, fetch user suggestions!
-      const sugRes = await friendshipService.getSuggestions();
-      const sugItems = sugRes.data || sugRes || [];
-      if (Array.isArray(sugItems) && sugItems.length > 0) {
-        const parsedSugs: Conversation[] = sugItems.map((u: any) => ({
-          id: u.id,
-          name: `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.displayName || u.username || "Suggested User",
-          avatar: u.avatarUrl || u.profilePicture || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
-          online: Boolean(u.isOnline),
-          messages: [],
-        }));
-
-        set({ conversations: parsedSugs });
-        if (parsedSugs.length > 0 && !get().activeConversationId) {
-          set({ activeConversationId: parsedSugs[0].id });
-        }
-      } else {
+      } catch (err) {
+        console.error("Failed to load real conversations:", err);
         set({ conversations: [], activeConversationId: null });
+      } finally {
+        activeFetchPromise = null;
       }
-    } catch (err) {
-      console.error("Failed to load real conversations:", err);
-      set({ conversations: [], activeConversationId: null });
-    }
+    })();
+
+    return activeFetchPromise;
   },
 
   fetchMessagesForUser: async (userId: string) => {

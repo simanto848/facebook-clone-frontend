@@ -11,7 +11,7 @@ export default function ConversationList() {
 
   useEffect(() => {
     fetchConversations();
-  }, [fetchConversations]);
+  }, []);
 
   const filteredConversations = conversations.filter((c) =>
     c.name.toLowerCase().includes(searchQuery.toLowerCase())
