@@ -7,6 +7,12 @@ export const notificationService = {
     return response.data;
   },
 
+  getUnreadCount: async () => {
+    const axios = await useAxios();
+    const response = await axios.get("/notifications/unread-count");
+    return response.data;
+  },
+
   markAsRead: async (notificationIds?: string[]) => {
     const axios = await useAxios();
     const response = await axios.post("/notifications/mark-read", { notificationIds });
