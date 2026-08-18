@@ -24,7 +24,7 @@ export default function ShareModal({ isOpen, onClose, postId, post }: ShareModal
     setSharing(true);
 
     try {
-      await shareService.sharePost(targetPostId, caption);
+      await shareService.sharePost({ postId: targetPostId, caption });
       setShared(true);
       setTimeout(() => {
         setShared(false);
