@@ -22,7 +22,12 @@ import { useChatStore } from "@/store/chatStore";
 import { notificationService } from "@/services/notificationService";
 import { Input } from "@/components/ui";
 
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
+
 export default function Navbar() {
+  const router = useRouter();
+  const { logout, user } = useAuth();
   const [activeDropdown, setActiveDropdown] = useState<"profile" | "notifications" | "messages" | "theme" | null>(null);
   const [currentTheme, setCurrentTheme] = useState<"dark" | "light" | "cyberpunk">("dark");
   const [searchQuery, setSearchQuery] = useState("");
@@ -402,7 +407,7 @@ export default function Navbar() {
                 <CircleUserRound size={20} className="text-white" />
               </div>
               <div className="hidden text-left lg:block">
-                <p className="text-sm font-medium text-white">Simanto</p>
+                <p className="text-sm font-medium text-white">{user?.displayName || user?.username || "Simanto"}</p>
                 <p className="text-xs text-slate-400">Online</p>
               </div>
             </button>
@@ -411,8 +416,8 @@ export default function Navbar() {
               <div className="absolute right-0 top-14 z-50 w-72 overflow-hidden rounded-2xl border border-[#1f2937] bg-[#111827] shadow-2xl shadow-black/40 animate-in fade-in slide-in-from-top-2 duration-150">
                 {/* User Info */}
                 <div className="border-b border-[#1f2937] p-4">
-                  <p className="font-semibold text-white">Simanto Hasan</p>
-                  <p className="text-sm text-slate-400">simanto@example.com</p>
+                  <p className="font-semibold text-white">{user?.displayName || user?.username || "Account User"}</p>
+                  <p className="text-sm text-slate-400">{user?.email || "user@example.com"}</p>
                 </div>
 
                 {/* Menu */}
@@ -459,7 +464,14 @@ export default function Navbar() {
 
                   <hr className="my-2 border-[#1f2937]" />
 
-                  <button className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-red-400 transition hover:bg-red-500/10">
+                  <button
+                    onClick={async () => {
+                      setActiveDropdown(null);
+                      await logout();
+                      router.push("/login");
+                    }}
+                    className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-red-400 transition hover:bg-red-500/10 cursor-pointer"
+                  >
                     <LogOut size={18} />
                     Logout
                   </button>

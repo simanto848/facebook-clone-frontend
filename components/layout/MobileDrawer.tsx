@@ -2,9 +2,10 @@
 
 import React, { useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { X, Bookmark, Settings, User, LogOut, HelpCircle, Shield, Calendar, Bell } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 interface MobileDrawerProps {
   isOpen: boolean;
@@ -13,6 +14,8 @@ interface MobileDrawerProps {
 
 export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { logout } = useAuth();
 
   // Close drawer on path change
   useEffect(() => {
@@ -146,7 +149,14 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
 
         {/* Footer / Logout */}
         <div className="pt-4 border-t border-[#1f2937]">
-          <button className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-red-400 transition hover:bg-red-500/10">
+          <button
+            onClick={async () => {
+              onClose();
+              await logout();
+              router.push("/login");
+            }}
+            className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-red-400 transition hover:bg-red-500/10 cursor-pointer"
+          >
             <LogOut size={18} />
             Logout
           </button>
