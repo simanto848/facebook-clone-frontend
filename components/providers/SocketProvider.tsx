@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState, type ReactNode }
 import { type Socket } from "socket.io-client";
 import { getSocket, disconnectSocket } from "@/lib/socket";
 import { useAuthStore } from "@/store/authStore";
+import { useChatStore } from "@/store/chatStore";
 import { useToast } from "@/components/ui";
 
 interface SocketContextType {
@@ -68,6 +69,30 @@ export function SocketProvider({ children }: { children: ReactNode }) {
           type: "info",
         });
       });
+
+      // Real-time incoming message append
+      activeSocket.on("message", (m: any) => {
+        const timeStr = new Date(m.createdAt || Date.now()).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        const senderId = m.senderId;
+        const convId = m.conversationId;
+
+        useChatStore.setState((state) => {
+          const updatedConvs = state.conversations.map((c) => {
+            if (c.id === senderId || c.id === convId) {
+              return {
+                ...c,
+                messages: [
+                  ...c.messages,
+                  { sender: "them" as const, text: m.content || "", time: timeStr },
+                ],
+              };
+            }
+            return c;
+          });
+
+          return { conversations: updatedConvs };
+        });
+      });
     };
 
     initSocketConnection();
@@ -78,6 +103,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         activeSocket.off("disconnect");
         activeSocket.off("user_typing");
         activeSocket.off("new_notification");
+        activeSocket.off("message");
       }
     };
   }, [user, toast]);
