@@ -79,8 +79,10 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         useChatStore.setState((state) => {
           const updatedConvs = state.conversations.map((c) => {
             if (c.id === senderId || c.id === convId) {
+              const isCurrentlyActive = state.activeConversationId === c.id;
               return {
                 ...c,
+                hasUnread: !isCurrentlyActive,
                 messages: [
                   ...c.messages,
                   { sender: "them" as const, text: m.content || "", time: timeStr },

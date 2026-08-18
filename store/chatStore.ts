@@ -22,6 +22,7 @@ export interface Conversation {
   avatar: string;
   online: boolean;
   messages: Message[];
+  hasUnread?: boolean;
 }
 
 interface ChatState {
@@ -36,6 +37,7 @@ interface ChatState {
   sendMessage: (id: string, text: string) => void;
   setActiveConversationId: (id: string | null) => void;
   sendDirectMessage: (id: string, text: string) => void;
+  markConversationAsRead: (id: string) => void;
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -53,6 +55,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
           name: `${item.otherUser?.firstName || ""} ${item.otherUser?.lastName || ""}`.trim() || item.otherUser?.displayName || item.otherUser?.username || item.user?.username || "User",
           avatar: item.otherUser?.avatarUrl || item.otherUser?.profilePicture || item.user?.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
           online: Boolean(item.otherUser?.isOnline),
+          hasUnread: Boolean(item.hasUnread),
           messages: item.messages
             ? item.messages.map((m: any) => ({
                 sender: m.isMe ? "me" : "them",
@@ -200,7 +203,26 @@ export const useChatStore = create<ChatState>((set, get) => ({
     messageService.sendMessage(id, { content: text }).catch(() => {});
   },
 
-  setActiveConversationId: (id) => set({ activeConversationId: id }),
+  setActiveConversationId: (id) => {
+    set((state) => ({
+      activeConversationId: id,
+      conversations: state.conversations.map((c) =>
+        c.id === id ? { ...c, hasUnread: false } : c
+      ),
+    }));
+    if (id) {
+      messageService.markRead(id).catch(() => {});
+    }
+  },
+
+  markConversationAsRead: (id) => {
+    set((state) => ({
+      conversations: state.conversations.map((c) =>
+        c.id === id ? { ...c, hasUnread: false } : c
+      ),
+    }));
+    messageService.markRead(id).catch(() => {});
+  },
 
   sendDirectMessage: (id, text) => {
     if (!text.trim()) return;
@@ -213,6 +235,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         if (conv.id !== id) return conv;
         return {
           ...conv,
+          hasUnread: false,
           messages: [...conv.messages, { sender: "me", text, time: timeString }],
         };
       }),

@@ -419,9 +419,9 @@ export default function Navbar() {
               }`}
             >
               <Mail size={18} />
-              {conversations.length > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#7aa2ff] text-[10px] font-semibold text-white">
-                  {conversations.length}
+              {conversations.filter((c) => c.hasUnread).length > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 text-[10px] font-semibold text-white">
+                  {conversations.filter((c) => c.hasUnread).length}
                 </span>
               )}
             </button>
@@ -452,7 +452,9 @@ export default function Navbar() {
                             });
                             setActiveDropdown(null);
                           }}
-                          className="flex gap-3 p-3.5 hover:bg-[#1f2937]/50 transition cursor-pointer"
+                          className={`flex gap-3 p-3.5 hover:bg-[#1f2937]/50 transition cursor-pointer ${
+                            conv.hasUnread ? "bg-blue-500/10" : ""
+                          }`}
                         >
                           <div className="relative h-9 w-9 rounded-full overflow-hidden shrink-0 border border-[#1f2937]">
                             <Image src={conv.avatar} fill className="object-cover" alt={conv.name} />
@@ -466,6 +468,9 @@ export default function Navbar() {
                               {lastMsg ? lastMsg.text : "Click to start chatting"}
                             </p>
                           </div>
+                          {conv.hasUnread && (
+                            <div className="h-2 w-2 rounded-full bg-blue-500 shrink-0 self-center" />
+                          )}
                         </div>
                       );
                     })
