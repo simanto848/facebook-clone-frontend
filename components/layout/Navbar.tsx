@@ -24,10 +24,12 @@ import { Input } from "@/components/ui";
 
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import { useSocketContext } from "@/components/providers/SocketProvider";
 
 export default function Navbar() {
   const router = useRouter();
   const { logout, user } = useAuth();
+  const { socket } = useSocketContext();
   const [activeDropdown, setActiveDropdown] = useState<"profile" | "notifications" | "messages" | "theme" | null>(null);
   const [currentTheme, setCurrentTheme] = useState<"dark" | "light" | "cyberpunk">("dark");
   const [searchQuery, setSearchQuery] = useState("");
@@ -35,6 +37,72 @@ export default function Navbar() {
   const containerRef = useRef<HTMLDivElement>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const { openChat } = useChatStore();
+
+  const [liveNotifications, setLiveNotifications] = useState<any[]>([
+    {
+      id: "1",
+      sender: "David Kim",
+      avatar: "https://images.unsplash.com/photo-1780764895105-ea3037466236?q=80&w=100&auto=format&fit=crop",
+      text: 'liked your photo: "Neon nights in the city."',
+      time: "5m ago",
+      unread: true,
+    },
+    {
+      id: "2",
+      sender: "Sarah Chen",
+      avatar: "https://images.unsplash.com/photo-1780570589435-059359e813cc?q=80&w=100&auto=format&fit=crop",
+      text: 'commented: "Wow, this looks incredible! What camera did..."',
+      time: "1h ago",
+      unread: true,
+    },
+  ]);
+
+  useEffect(() => {
+    const fetchRealNotifications = async () => {
+      try {
+        const res = await notificationService.getNotifications();
+        const items = res.data || res || [];
+        if (Array.isArray(items) && items.length > 0) {
+          const parsed = items.map((n: any) => ({
+            id: n.id,
+            sender: n.actor?.displayName || n.actor?.username || "System",
+            avatar: n.actor?.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
+            text: n.message || n.title || "sent a notification.",
+            time: new Date(n.createdAt || Date.now()).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            unread: !n.isRead,
+          }));
+          setLiveNotifications(parsed);
+        }
+      } catch {
+        // Fallback
+      }
+    };
+
+    fetchRealNotifications();
+  }, []);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleNewNotif = (data: { title?: string; message?: string }) => {
+      setLiveNotifications((prev) => [
+        {
+          id: String(Date.now()),
+          sender: data.title || "Notification",
+          avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
+          text: data.message || "You have a new update.",
+          time: "Just now",
+          unread: true,
+        },
+        ...prev,
+      ]);
+    };
+
+    socket.on("new_notification", handleNewNotif);
+    return () => {
+      socket.off("new_notification", handleNewNotif);
+    };
+  }, [socket]);
 
 
   useEffect(() => {
@@ -281,23 +349,31 @@ export default function Navbar() {
               }`}
             >
               <Bell size={18} />
-              <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-semibold text-white">
-                2
-              </span>
+              {liveNotifications.filter((n) => n.unread).length > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-semibold text-white">
+                  {liveNotifications.filter((n) => n.unread).length}
+                </span>
+              )}
             </button>
 
             {activeDropdown === "notifications" && (
               <div className="absolute right-0 top-14 z-50 w-80 rounded-2xl border border-[#1f2937] bg-[#111827] shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
                 <div className="flex items-center justify-between border-b border-[#1f2937] p-4 bg-[#111827]/80">
                   <p className="font-bold text-white text-sm">Notifications</p>
-                  <button className="flex items-center gap-1 text-[10px] text-blue-400 hover:text-blue-500 font-semibold transition">
+                  <button
+                    onClick={() => {
+                      setLiveNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
+                      notificationService.markAsRead().catch(() => {});
+                    }}
+                    className="flex items-center gap-1 text-[10px] text-blue-400 hover:text-blue-500 font-semibold transition"
+                  >
                     <CheckCheck size={12} />
                     Mark all read
                   </button>
                 </div>
 
                 <div className="max-h-80 overflow-y-auto divide-y divide-[#1f2937] custom-scrollbar">
-                  {notifications.map((notif) => (
+                  {liveNotifications.map((notif) => (
                     <div
                       key={notif.id}
                       className={`flex gap-3 p-3.5 hover:bg-[#1f2937]/50 transition cursor-pointer ${
