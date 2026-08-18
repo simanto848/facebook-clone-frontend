@@ -1,9 +1,16 @@
 import { useAxios } from "@/lib/useAxios";
 
+export interface SharePostInput {
+  postId: string;
+  caption?: string;
+  target?: "TIMELINE" | "MESSAGE";
+  recipientId?: string;
+}
+
 export const shareService = {
-  sharePost: async (postId: string, caption?: string, visibility = "PUBLIC") => {
+  sharePost: async (payload: SharePostInput) => {
     const axios = await useAxios();
-    const response = await axios.post(`/posts/${postId}/share`, { caption, visibility });
+    const response = await axios.post(`/posts/${payload.postId}/share`, payload);
     return response.data;
   },
 
