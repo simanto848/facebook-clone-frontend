@@ -124,14 +124,14 @@ function ChatTab({ box }: { box: ChatBox }) {
             {!box.isCollapsed && (
               <>
                 <button
-                  onClick={() => setActiveCall("audio")}
+                  onClick={() => useChatStore.getState().startCall({ id: box.id, name: box.name, avatar: box.avatar }, "audio")}
                   className="hover:text-blue-400 p-1 rounded-md transition"
                   title="Audio call"
                 >
                   <Phone size={14} />
                 </button>
                 <button
-                  onClick={() => setActiveCall("video")}
+                  onClick={() => useChatStore.getState().startCall({ id: box.id, name: box.name, avatar: box.avatar }, "video")}
                   className="hover:text-blue-400 p-1 rounded-md transition"
                   title="Video call"
                 >
@@ -228,16 +228,6 @@ function ChatTab({ box }: { box: ChatBox }) {
           </>
         )}
       </div>
-
-      {/* CALL MODAL */}
-      {activeCall && (
-        <CallModal
-          isOpen={Boolean(activeCall)}
-          onClose={() => setActiveCall(null)}
-          recipient={{ id: box.id, name: box.name, avatar: box.avatar }}
-          callType={activeCall}
-        />
-      )}
     </>
   );
 }

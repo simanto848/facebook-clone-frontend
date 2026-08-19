@@ -177,9 +177,22 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     setIncomingCall(null);
   };
 
+  const activeCall = useChatStore((state) => state.activeCall);
+  const endCallState = useChatStore((state) => state.endCallState);
+
   return (
     <SocketContext.Provider value={{ socket, isConnected, typingUsers }}>
       {children}
+
+      {/* OUTGOING ACTIVE CALL WEBRTC MODAL */}
+      {activeCall && (
+        <CallModal
+          isOpen={Boolean(activeCall)}
+          onClose={endCallState}
+          recipient={activeCall.recipient}
+          callType={activeCall.callType}
+        />
+      )}
 
       {/* INCOMING CALL POPUP MODAL */}
       {incomingCall && (

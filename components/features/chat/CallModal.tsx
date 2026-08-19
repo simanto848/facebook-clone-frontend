@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Mic, MicOff, Video, VideoOff, PhoneOff, Volume2, VolumeX, Maximize2, Minimize2 } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, PhoneOff, Volume2, VolumeX, Maximize2, Minimize2, GripVertical } from "lucide-react";
 import { Avatar, Badge } from "@/components/ui";
 import { useSocketContext } from "@/components/providers/SocketProvider";
 import { useChatStore } from "@/store/chatStore";
@@ -99,6 +99,11 @@ export function CallModal({
   const [isVideoOff, setIsVideoOff] = useState(callType === "audio");
   const [isSpeakerOn, setIsSpeakerOn] = useState(true);
   const [isMinimized, setIsMinimized] = useState(false);
+
+  // PIP Draggable Position
+  const [pipPos, setPipPos] = useState<{ x: number; y: number } | null>(null);
+  const isDraggingRef = useRef(false);
+  const dragOffsetRef = useRef({ x: 0, y: 0 });
 
   const [callStatus, setCallStatus] = useState<"calling" | "connecting" | "connected" | "ended">(
     isIncoming ? "connecting" : "calling"
@@ -396,15 +401,55 @@ export function CallModal({
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
+  const handlePipMouseDown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    isDraggingRef.current = true;
+    const defaultX = window.innerWidth - 340;
+    const defaultY = window.innerHeight - 120;
+    const currentX = pipPos?.x ?? defaultX;
+    const currentY = pipPos?.y ?? defaultY;
+
+    dragOffsetRef.current = {
+      x: e.clientX - currentX,
+      y: e.clientY - currentY,
+    };
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      if (!isDraggingRef.current) return;
+      const newX = Math.max(10, Math.min(window.innerWidth - 330, moveEvent.clientX - dragOffsetRef.current.x));
+      const newY = Math.max(10, Math.min(window.innerHeight - 80, moveEvent.clientY - dragOffsetRef.current.y));
+      setPipPos({ x: newX, y: newY });
+    };
+
+    const handleMouseUp = () => {
+      isDraggingRef.current = false;
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+  };
+
   if (!isOpen) return null;
 
-  // MINIMIZED FLOATING PIP WIDGET (allows browsing site while talking)
+  // MINIMIZED DRAGGABLE FLOATING PIP WIDGET (allows browsing site while talking)
   if (isMinimized) {
     return (
-      <div className="fixed bottom-20 right-6 z-50 flex items-center justify-between gap-3 w-80 p-3 bg-[#111827] border border-[#1f2937] rounded-2xl shadow-2xl animate-in slide-in-from-bottom-5 duration-200 pointer-events-auto">
+      <div
+        style={{
+          left: pipPos ? `${pipPos.x}px` : undefined,
+          top: pipPos ? `${pipPos.y}px` : undefined,
+        }}
+        className={`fixed z-50 flex items-center justify-between gap-3 w-80 p-3 bg-[#111827] border border-[#1f2937] rounded-2xl shadow-2xl animate-in slide-in-from-bottom-5 duration-200 pointer-events-auto cursor-grab active:cursor-grabbing select-none ${
+          !pipPos ? "bottom-20 right-6" : ""
+        }`}
+        onMouseDown={handlePipMouseDown}
+      >
         <audio ref={remoteAudioRef} autoPlay />
 
-        <div className="flex items-center gap-3 min-w-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <GripVertical size={16} className="text-slate-500 shrink-0 cursor-grab active:cursor-grabbing" />
           <Avatar src={recipient.avatar} name={recipient.name} size="md" online={isTargetOnline} />
           <div className="min-w-0">
             <p className="font-bold text-white text-xs truncate">{recipient.name}</p>
@@ -414,7 +459,7 @@ export function CallModal({
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0" onMouseDown={(e) => e.stopPropagation()}>
           <button
             onClick={toggleMute}
             className={`p-2 rounded-full transition cursor-pointer ${

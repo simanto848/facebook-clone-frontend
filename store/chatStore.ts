@@ -25,10 +25,16 @@ export interface Conversation {
   hasUnread?: boolean;
 }
 
+export interface ActiveCallState {
+  recipient: { id: string; name: string; avatar: string; isOnline?: boolean };
+  callType: "audio" | "video";
+}
+
 interface ChatState {
   openChatBoxes: ChatBox[];
   conversations: Conversation[];
   activeConversationId: string | null;
+  activeCall: ActiveCallState | null;
   fetchConversations: () => Promise<void>;
   fetchMessagesForUser: (userId: string) => Promise<void>;
   openChat: (person: { id: string; name: string; avatar: string }) => void;
@@ -38,6 +44,8 @@ interface ChatState {
   setActiveConversationId: (id: string | null) => void;
   sendDirectMessage: (id: string, text: string) => void;
   markConversationAsRead: (id: string) => void;
+  startCall: (recipient: { id: string; name: string; avatar: string; isOnline?: boolean }, callType: "audio" | "video") => void;
+  endCallState: () => void;
 }
 
 let activeFetchPromise: Promise<void> | null = null;
@@ -47,6 +55,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   openChatBoxes: [],
   activeConversationId: null,
   conversations: [],
+  activeCall: null,
 
   fetchConversations: async () => {
     const now = Date.now();
@@ -287,5 +296,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
         };
       }),
     }));
+  },
+
+  startCall: (recipient, callType) => {
+    set({ activeCall: { recipient, callType } });
+  },
+
+  endCallState: () => {
+    set({ activeCall: null });
   },
 }));

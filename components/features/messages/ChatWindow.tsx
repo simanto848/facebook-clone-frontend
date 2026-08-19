@@ -146,7 +146,17 @@ export default function ChatWindow() {
               </button>
 
               <button
-                onClick={() => setActiveCall("audio")}
+                onClick={() =>
+                  useChatStore.getState().startCall(
+                    {
+                      id: activeConversation.id,
+                      name: activeConversation.name,
+                      avatar: activeConversation.avatar,
+                      isOnline: activeConversation.online,
+                    },
+                    "audio"
+                  )
+                }
                 className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1f2937] text-slate-400 transition hover:bg-[#263247] hover:text-white cursor-pointer"
                 title="Voice Call"
               >
@@ -154,7 +164,17 @@ export default function ChatWindow() {
               </button>
 
               <button
-                onClick={() => setActiveCall("video")}
+                onClick={() =>
+                  useChatStore.getState().startCall(
+                    {
+                      id: activeConversation.id,
+                      name: activeConversation.name,
+                      avatar: activeConversation.avatar,
+                      isOnline: activeConversation.online,
+                    },
+                    "video"
+                  )
+                }
                 className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1f2937] text-slate-400 transition hover:bg-[#263247] hover:text-white cursor-pointer"
                 title="Video Call"
               >
@@ -306,20 +326,6 @@ export default function ChatWindow() {
           <ChatInfoPanel onClose={() => setShowInfoPanel(false)} />
         )}
       </div>
-
-      {/* WEBRTC CALL MODAL */}
-      {activeCall && (
-        <CallModal
-          isOpen={Boolean(activeCall)}
-          onClose={() => setActiveCall(null)}
-          recipient={{
-            id: activeConversation.id,
-            name: activeConversation.name,
-            avatar: activeConversation.avatar,
-          }}
-          callType={activeCall}
-        />
-      )}
     </>
   );
 }
