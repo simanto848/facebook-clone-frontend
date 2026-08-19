@@ -34,7 +34,7 @@ function ChatTab({ box }: { box: ChatBox }) {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputText.trim()) return;
     const text = inputText;
@@ -43,12 +43,6 @@ function ChatTab({ box }: { box: ChatBox }) {
 
     if (socket && box.id) {
       socket.emit("typing_stop", { conversationId: box.id, recipientId: box.id });
-    }
-
-    try {
-      await messageService.sendMessage(box.id, { content: text });
-    } catch (err) {
-      console.error("Message API error, fallback local state:", err);
     }
   };
 

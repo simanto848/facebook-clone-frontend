@@ -216,9 +216,14 @@ const playNotificationSound = () => {
   }
 };
 
-      // Real-time notification toast popups
-      activeSocket.on("new_notification", (data: { title?: string; message?: string }) => {
+      // Real-time notification toast popups & global event dispatch
+      activeSocket.on("new_notification", (data: any) => {
         playNotificationSound();
+
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("app:new_notification", { detail: data }));
+        }
+
         toast({
           title: data.title || "New Notification",
           description: data.message || "You have a new update.",

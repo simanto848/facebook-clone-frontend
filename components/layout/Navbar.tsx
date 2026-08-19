@@ -88,36 +88,57 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
-    if (!socket) return;
+    const handleNewNotif = (event: any) => {
+      const data = event.detail || event;
+      if (!data) return;
 
-    const handleNewNotif = (data: any) => {
+      const actorObj = data.actor || data.sender || {};
       const senderName =
-        data.actor
-          ? `${data.actor.firstName || ""} ${data.actor.lastName || ""}`.trim() ||
-            data.actor.displayName ||
-            data.actor.username
-          : data.title || "Notification";
+        `${actorObj.firstName || ""} ${actorObj.lastName || ""}`.trim() ||
+        actorObj.displayName ||
+        actorObj.username ||
+        data.title ||
+        "Community Member";
+
       const avatarUrl =
-        data.actor?.avatarUrl ||
-        data.actor?.profilePicture ||
+        actorObj.avatarUrl ||
+        actorObj.profilePicture ||
+        actorObj.avatar ||
         "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100";
 
-      setLiveNotifications((prev) => [
-        {
-          id: data.id || String(Date.now()),
-          sender: senderName,
-          avatar: avatarUrl,
-          text: data.message || "You have a new update.",
-          time: "Just now",
-          unread: true,
-        },
-        ...prev,
-      ]);
+      const textStr = data.message || data.text || "sent a notification.";
+
+      setLiveNotifications((prev) => {
+        if (data.id && prev.some((n) => n.id === data.id)) return prev;
+        return [
+          {
+            id: data.id || String(Date.now()),
+            sender: senderName,
+            avatar: avatarUrl,
+            text: textStr,
+            time: "Just now",
+            unread: true,
+          },
+          ...prev,
+        ];
+      });
     };
 
-    socket.on("new_notification", handleNewNotif);
+    if (typeof window !== "undefined") {
+      window.addEventListener("app:new_notification", handleNewNotif);
+    }
+
+    if (socket) {
+      socket.on("new_notification", handleNewNotif);
+    }
+
     return () => {
-      socket.off("new_notification", handleNewNotif);
+      if (typeof window !== "undefined") {
+        window.removeEventListener("app:new_notification", handleNewNotif);
+      }
+      if (socket) {
+        socket.off("new_notification", handleNewNotif);
+      }
     };
   }, [socket]);
 
