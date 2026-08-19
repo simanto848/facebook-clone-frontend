@@ -192,7 +192,7 @@ export function CreatePostModal({ isOpen, onClose, initialType = "gallery" }: Cr
                   {item.type === "video" ? (
                     <video src={item.previewUrl} className="h-full w-full object-cover" />
                   ) : (
-                    <Image src={item.previewUrl} fill className="object-cover" alt="Upload preview" />
+                    <Image src={item.previewUrl} fill sizes="100px" className="object-cover" alt="Upload preview" />
                   )}
 
                   <button
