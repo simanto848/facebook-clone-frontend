@@ -186,6 +186,19 @@ export default function ChatWindow() {
             <div className="space-y-4">
               {activeConversation.messages.map((msg, index) => {
                 const isMe = msg.sender === "me";
+                const isCallMsg = msg.text.startsWith("📞") || msg.text.startsWith("📹");
+
+                if (isCallMsg) {
+                  return (
+                    <div key={index} className="flex flex-col items-center justify-center my-2">
+                      <div className="flex items-center gap-2 rounded-full bg-[#1f2937]/80 border border-[#374151]/50 px-4 py-1.5 text-xs text-slate-300 shadow-xs">
+                        <span>{msg.text}</span>
+                        <span className="text-[10px] text-slate-500">• {msg.time}</span>
+                      </div>
+                    </div>
+                  );
+                }
+
                 return (
                   <div
                     key={index}

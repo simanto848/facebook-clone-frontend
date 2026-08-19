@@ -149,10 +149,31 @@ export function CallModal({
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const toneRef = useRef<CallAudioTone | null>(null);
+  const recordedHistoryRef = useRef<boolean>(false);
 
   // Determine if recipient is online
   const targetConv = conversations.find((c) => c.id === recipient.id);
   const isTargetOnline = recipient.isOnline ?? targetConv?.online ?? true;
+
+  const recordCallInChatHistory = (type: "ended" | "rejected" | "offline") => {
+    if (!recipient.id || recordedHistoryRef.current) return;
+    recordedHistoryRef.current = true;
+
+    const callName = callType === "video" ? "📹 Video Call" : "📞 Voice Call";
+    let text = "";
+
+    if (type === "ended") {
+      text = duration > 0 ? `${callName} ended • ${formatDuration(duration)}` : `${callName} ended`;
+    } else if (type === "rejected") {
+      text = `${callName} declined`;
+    } else if (type === "offline") {
+      text = `${callName} • User unavailable`;
+    }
+
+    if (text) {
+      useChatStore.getState().sendDirectMessage(recipient.id, text);
+    }
+  };
 
   // Duration Timer
   useEffect(() => {
@@ -179,6 +200,7 @@ export function CallModal({
       } else {
         setCallStatus("offline");
         toneRef.current.startBusyTone();
+        recordCallInChatHistory("offline");
 
         const autoHangup = setTimeout(() => {
           handleEndCall();
@@ -295,6 +317,7 @@ export function CallModal({
 
     const handleCallRejected = () => {
       toneRef.current?.stop();
+      recordCallInChatHistory("rejected");
       setCallStatus("ended");
       cleanup();
       setTimeout(onClose, 1000);
@@ -302,6 +325,7 @@ export function CallModal({
 
     const handleCallEnded = () => {
       toneRef.current?.stop();
+      recordCallInChatHistory("ended");
       setCallStatus("ended");
       cleanup();
       setTimeout(onClose, 500);
@@ -346,7 +370,8 @@ export function CallModal({
     }
   };
 
-  const toggleMute = () => {
+  const toggleMute = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     if (localStreamRef.current) {
       localStreamRef.current.getAudioTracks().forEach((t) => {
         t.enabled = isMuted;
@@ -355,7 +380,8 @@ export function CallModal({
     setIsMuted(!isMuted);
   };
 
-  const toggleVideo = () => {
+  const toggleVideo = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     if (localStreamRef.current) {
       localStreamRef.current.getVideoTracks().forEach((t) => {
         t.enabled = isVideoOff;
@@ -364,7 +390,8 @@ export function CallModal({
     setIsVideoOff(!isVideoOff);
   };
 
-  const toggleSpeaker = () => {
+  const toggleSpeaker = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     if (remoteAudioRef.current) {
       remoteAudioRef.current.muted = isSpeakerOn;
     }
@@ -374,8 +401,11 @@ export function CallModal({
     setIsSpeakerOn(!isSpeakerOn);
   };
 
-  const handleEndCall = () => {
+  const handleEndCall = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     toneRef.current?.stop();
+    recordCallInChatHistory("ended");
+
     const eventPrefix = callType === "video" ? "video-call" : "call";
     if (socket && recipient.id) {
       socket.emit(`${eventPrefix}:end`, {
@@ -400,7 +430,7 @@ export function CallModal({
   // MINIMIZED FLOATING PIP WIDGET (allows browsing site while talking)
   if (isMinimized) {
     return (
-      <div className="fixed bottom-20 right-6 z-50 flex items-center justify-between gap-3 w-80 p-3 bg.111827 bg-[#111827] border border-[#1f2937] rounded-2xl shadow-2xl animate-in slide-in-from-bottom-5 duration-200">
+      <div className="fixed bottom-20 right-6 z-50 flex items-center justify-between gap-3 w-80 p-3 bg-[#111827] border border-[#1f2937] rounded-2xl shadow-2xl animate-in slide-in-from-bottom-5 duration-200 pointer-events-auto">
         <audio ref={remoteAudioRef} autoPlay />
 
         <div className="flex items-center gap-3 min-w-0">
@@ -429,7 +459,10 @@ export function CallModal({
           </button>
 
           <button
-            onClick={() => setIsMinimized(false)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsMinimized(false);
+            }}
             className="p-2 rounded-full bg-[#1f2937] text-slate-300 hover:bg-[#374151] transition cursor-pointer"
             title="Expand call"
           >
@@ -455,7 +488,7 @@ export function CallModal({
       <div className="absolute inset-0 bg-black/70 backdrop-blur-xs transition-opacity" onClick={handleEndCall} />
 
       {/* Main Call Card */}
-      <div className="relative z-10 w-full max-w-md h-[520px] bg-linear-to-b from-[#1e293b] to-[#0f172a] border border-[#1f2937] rounded-3xl overflow-hidden flex flex-col justify-between p-6 text-center select-none shadow-2xl">
+      <div className="relative z-10 w-full max-w-md h-[520px] bg-linear-to-b from-[#1e293b] to-[#0f172a] border border-[#1f2937] rounded-3xl overflow-hidden flex flex-col justify-between p-6 text-center select-none shadow-2xl pointer-events-auto">
         <audio ref={remoteAudioRef} autoPlay />
 
         {/* Video Feeds */}
@@ -488,7 +521,10 @@ export function CallModal({
             </Badge>
 
             <button
-              onClick={() => setIsMinimized(true)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsMinimized(true);
+              }}
               className="p-1.5 rounded-full bg-white/10 text-white hover:bg-white/20 transition cursor-pointer"
               title="Minimize call to PIP"
             >

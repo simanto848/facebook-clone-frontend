@@ -167,23 +167,38 @@ function ChatTab({ box }: { box: ChatBox }) {
         {!box.isCollapsed && (
           <>
             <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
-              {box.messages.map((msg, idx) => (
-                <div
-                  key={idx}
-                  className={`flex flex-col ${msg.sender === "me" ? "items-end" : "items-start"}`}
-                >
+              {box.messages.map((msg, idx) => {
+                const isCallMsg = msg.text.startsWith("📞") || msg.text.startsWith("📹");
+
+                if (isCallMsg) {
+                  return (
+                    <div key={idx} className="flex flex-col items-center justify-center my-1.5">
+                      <div className="flex items-center gap-1.5 rounded-full bg-[#1f2937]/80 border border-[#374151]/50 px-3 py-1 text-[11px] text-slate-300 shadow-xs">
+                        <span>{msg.text}</span>
+                        <span className="text-[9px] text-slate-500">• {msg.time}</span>
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
                   <div
-                    className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-xs leading-relaxed ${
-                      msg.sender === "me"
-                        ? "bg-blue-600 text-white rounded-br-xs"
-                        : "bg-[#1f2937] text-slate-200 rounded-bl-xs"
-                    }`}
+                    key={idx}
+                    className={`flex flex-col ${msg.sender === "me" ? "items-end" : "items-start"}`}
                   >
-                    {msg.text}
+                    <div
+                      className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-xs leading-relaxed ${
+                        msg.sender === "me"
+                          ? "bg-blue-600 text-white rounded-br-xs"
+                          : "bg-[#1f2937] text-slate-200 rounded-bl-xs"
+                      }`}
+                    >
+                      {msg.text}
+                    </div>
+                    <span className="text-[9px] text-slate-500 mt-1 px-1">{msg.time}</span>
                   </div>
-                  <span className="text-[9px] text-slate-500 mt-1 px-1">{msg.time}</span>
-                </div>
-              ))}
+                );
+              })}
 
               {typingUsers[box.id] && (
                 <div className="flex items-center gap-1.5 px-3.5 py-2 bg-[#1f2937] text-slate-400 rounded-2xl rounded-bl-xs text-xs w-fit">
