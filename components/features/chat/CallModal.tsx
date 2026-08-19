@@ -28,7 +28,7 @@ const RTC_CONFIG: RTCConfiguration = {
   ],
 };
 
-// Web Audio API Ringtone & Busy Tone Generator
+// Web Audio API Ringtone Generator
 class CallAudioTone {
   private ctx: AudioContext | null = null;
   private timer: any = null;
@@ -69,42 +69,6 @@ class CallAudioTone {
     }
   }
 
-  startBusyTone() {
-    this.stop();
-    try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioCtx) return;
-      this.ctx = new AudioCtx();
-
-      const playPulse = () => {
-        if (!this.ctx || this.ctx.state === "closed") return;
-        const osc1 = this.ctx.createOscillator();
-        const osc2 = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-
-        osc1.frequency.value = 480;
-        osc2.frequency.value = 620;
-
-        gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.25);
-
-        osc1.connect(gain);
-        osc2.connect(gain);
-        gain.connect(this.ctx.destination);
-
-        osc1.start();
-        osc2.start();
-        osc1.stop(this.ctx.currentTime + 0.25);
-        osc2.stop(this.ctx.currentTime + 0.25);
-      };
-
-      playPulse();
-      this.timer = setInterval(playPulse, 500);
-    } catch {
-      // AudioContext blocked
-    }
-  }
-
   stop() {
     if (this.timer) {
       clearInterval(this.timer);
@@ -136,7 +100,7 @@ export function CallModal({
   const [isSpeakerOn, setIsSpeakerOn] = useState(true);
   const [isMinimized, setIsMinimized] = useState(false);
 
-  const [callStatus, setCallStatus] = useState<"calling" | "offline" | "connecting" | "connected" | "ended">(
+  const [callStatus, setCallStatus] = useState<"calling" | "connecting" | "connected" | "ended">(
     isIncoming ? "connecting" : "calling"
   );
   const [duration, setDuration] = useState(0);
@@ -151,11 +115,11 @@ export function CallModal({
   const toneRef = useRef<CallAudioTone | null>(null);
   const recordedHistoryRef = useRef<boolean>(false);
 
-  // Determine if recipient is online
+  // Target User Online Status
   const targetConv = conversations.find((c) => c.id === recipient.id);
   const isTargetOnline = recipient.isOnline ?? targetConv?.online ?? true;
 
-  const recordCallInChatHistory = (type: "ended" | "rejected" | "offline") => {
+  const recordCallInChatHistory = (type: "ended" | "rejected" | "missed") => {
     if (!recipient.id || recordedHistoryRef.current) return;
     recordedHistoryRef.current = true;
 
@@ -163,11 +127,11 @@ export function CallModal({
     let text = "";
 
     if (type === "ended") {
-      text = duration > 0 ? `${callName} ended • ${formatDuration(duration)}` : `${callName} ended`;
+      text = duration > 0 ? `${callName} ended • ${formatDuration(duration)}` : `Missed ${callName}`;
     } else if (type === "rejected") {
       text = `${callName} declined`;
-    } else if (type === "offline") {
-      text = `${callName} • User unavailable`;
+    } else if (type === "missed") {
+      text = `Missed ${callName}`;
     }
 
     if (text) {
@@ -186,35 +150,32 @@ export function CallModal({
     return () => clearInterval(interval);
   }, [callStatus]);
 
-  // Audio Tone Feedback (Ringing or Busy Tone)
+  // Ringtone Feedback & 30-Second Ringing Timeout
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || callStatus !== "calling") return;
 
     if (!toneRef.current) {
       toneRef.current = new CallAudioTone();
     }
 
-    if (callStatus === "calling") {
-      if (isTargetOnline) {
-        toneRef.current.startRinging();
-      } else {
-        setCallStatus("offline");
-        toneRef.current.startBusyTone();
-        recordCallInChatHistory("offline");
+    toneRef.current.startRinging();
 
-        const autoHangup = setTimeout(() => {
-          handleEndCall();
-        }, 3800);
-        return () => clearTimeout(autoHangup);
-      }
-    }
+    // Ring for 30 seconds standard call timeout
+    const ringTimeout = setTimeout(() => {
+      toneRef.current?.stop();
+      recordCallInChatHistory("missed");
+      setCallStatus("ended");
+      cleanup();
+      setTimeout(onClose, 1000);
+    }, 30000);
 
     return () => {
+      clearTimeout(ringTimeout);
       toneRef.current?.stop();
     };
-  }, [isOpen, callStatus, isTargetOnline]);
+  }, [isOpen, callStatus]);
 
-  // WebRTC Setup
+  // WebRTC Setup & Socket Events
   useEffect(() => {
     if (!isOpen || !recipient.id || !socket) return;
 
@@ -282,7 +243,8 @@ export function CallModal({
             answer,
           });
           setCallStatus("connected");
-        } else if (isTargetOnline) {
+        } else {
+          // CALLER: Create offer and emit initiate over socket (even if target is joining)
           const offer = await pc.createOffer();
           await pc.setLocalDescription(offer);
 
@@ -325,7 +287,11 @@ export function CallModal({
 
     const handleCallEnded = () => {
       toneRef.current?.stop();
-      recordCallInChatHistory("ended");
+      if (duration === 0) {
+        recordCallInChatHistory("missed");
+      } else {
+        recordCallInChatHistory("ended");
+      }
       setCallStatus("ended");
       cleanup();
       setTimeout(onClose, 500);
@@ -356,7 +322,7 @@ export function CallModal({
       socket.off(`${eventPrefix}:ice-candidate`, handleIceCandidate);
       cleanup();
     };
-  }, [isOpen, recipient.id, callType, isIncoming, incomingOffer, incomingCallId, socket, isTargetOnline]);
+  }, [isOpen, recipient.id, callType, isIncoming, incomingOffer, incomingCallId, socket]);
 
   const cleanup = () => {
     toneRef.current?.stop();
@@ -404,7 +370,12 @@ export function CallModal({
   const handleEndCall = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     toneRef.current?.stop();
-    recordCallInChatHistory("ended");
+
+    if (duration > 0) {
+      recordCallInChatHistory("ended");
+    } else {
+      recordCallInChatHistory("missed");
+    }
 
     const eventPrefix = callType === "video" ? "video-call" : "call";
     if (socket && recipient.id) {
@@ -438,11 +409,7 @@ export function CallModal({
           <div className="min-w-0">
             <p className="font-bold text-white text-xs truncate">{recipient.name}</p>
             <span className="text-[10px] text-green-400 font-semibold block">
-              {callStatus === "connected"
-                ? formatDuration(duration)
-                : callStatus === "offline"
-                ? "User Offline"
-                : "Calling..."}
+              {callStatus === "connected" ? formatDuration(duration) : "Calling..."}
             </span>
           </div>
         </div>
@@ -511,8 +478,6 @@ export function CallModal({
             <Badge variant={callStatus === "connected" ? "success" : "warning"} pulse>
               {callStatus === "calling"
                 ? "Ringing..."
-                : callStatus === "offline"
-                ? "User Offline"
                 : callStatus === "connecting"
                 ? "Connecting..."
                 : callStatus === "ended"
@@ -548,8 +513,6 @@ export function CallModal({
               <p className="text-xs text-slate-400">
                 {callStatus === "calling"
                   ? "Ringing recipient..."
-                  : callStatus === "offline"
-                  ? "User is currently offline / unavailable"
                   : callStatus === "connecting"
                   ? "Connecting..."
                   : callStatus === "ended"
