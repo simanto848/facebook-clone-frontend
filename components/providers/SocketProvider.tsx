@@ -1,11 +1,11 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import React, { createContext, useContext, useEffect, useState, useRef, type ReactNode } from "react";
 import { type Socket } from "socket.io-client";
 import { getSocket, disconnectSocket } from "@/lib/socket";
 import { useAuthStore } from "@/store/authStore";
 import { useChatStore } from "@/store/chatStore";
-import { useToast, Dialog, Avatar, Button } from "@/components/ui";
+import { useToast, Avatar } from "@/components/ui";
 import { CallModal } from "@/components/features/chat/CallModal";
 import { Phone, PhoneOff, Video } from "lucide-react";
 
@@ -27,6 +27,63 @@ interface SocketContextType {
   typingUsers: Record<string, boolean>;
 }
 
+// Web Audio API Synthetic Ringtone for Incoming Calls
+class IncomingAudioRingtone {
+  private ctx: AudioContext | null = null;
+  private timer: any = null;
+
+  startRingtone() {
+    this.stop();
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      this.ctx = new AudioCtx();
+
+      const playChime = () => {
+        if (!this.ctx || this.ctx.state === "closed") return;
+        // Standard pleasant incoming phone ringtone chime
+        const notes = [523.25, 659.25, 783.99, 1046.5];
+        notes.forEach((freq, index) => {
+          if (!this.ctx || this.ctx.state === "closed") return;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+
+          osc.type = "sine";
+          osc.frequency.value = freq;
+
+          const startTime = this.ctx.currentTime + index * 0.12;
+          gain.gain.setValueAtTime(0.12, startTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.35);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start(startTime);
+          osc.stop(startTime + 0.35);
+        });
+      };
+
+      playChime();
+      this.timer = setInterval(playChime, 2400);
+    } catch {
+      // AudioContext blocked
+    }
+  }
+
+  stop() {
+    if (this.timer) {
+      clearInterval(this.timer);
+      this.timer = null;
+    }
+    if (this.ctx) {
+      try {
+        this.ctx.close();
+      } catch {}
+      this.ctx = null;
+    }
+  }
+}
+
 const SocketContext = createContext<SocketContextType>({
   socket: null,
   isConnected: false,
@@ -43,8 +100,26 @@ export function SocketProvider({ children }: { children: ReactNode }) {
   const [incomingCall, setIncomingCall] = useState<IncomingCallInfo | null>(null);
   const [activeAcceptedCall, setActiveAcceptedCall] = useState<IncomingCallInfo | null>(null);
 
+  const ringtoneRef = useRef<IncomingAudioRingtone | null>(null);
+
   const user = useAuthStore((state) => state.user);
   const { toast } = useToast();
+
+  // Incoming Call Ringtone Effect
+  useEffect(() => {
+    if (incomingCall) {
+      if (!ringtoneRef.current) {
+        ringtoneRef.current = new IncomingAudioRingtone();
+      }
+      ringtoneRef.current.startRingtone();
+    } else {
+      ringtoneRef.current?.stop();
+    }
+
+    return () => {
+      ringtoneRef.current?.stop();
+    };
+  }, [incomingCall]);
 
   useEffect(() => {
     if (!user) {
@@ -163,12 +238,14 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 
   const handleAcceptIncomingCall = () => {
     if (!incomingCall) return;
+    ringtoneRef.current?.stop();
     setActiveAcceptedCall(incomingCall);
     setIncomingCall(null);
   };
 
   const handleDeclineIncomingCall = () => {
     if (!incomingCall || !socket) return;
+    ringtoneRef.current?.stop();
     const prefix = incomingCall.callType === "video" ? "video-call" : "call";
     socket.emit(`${prefix}:reject`, {
       callId: incomingCall.callId,
@@ -194,45 +271,43 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         />
       )}
 
-      {/* INCOMING CALL POPUP MODAL */}
+      {/* INCOMING CALL FLOATING MODAL */}
       {incomingCall && (
-        <Dialog isOpen={Boolean(incomingCall)} onClose={handleDeclineIncomingCall} size="sm" showHeader={false}>
-          <div className="flex flex-col items-center p-6 text-center space-y-4 bg-[#111827] rounded-2xl border border-[#1f2937] shadow-2xl">
-            <div className="relative">
-              <Avatar src={incomingCall.caller.avatar} name={incomingCall.caller.name} size="xl" online />
-              <span className="animate-ping absolute inset-0 rounded-full border-2 border-green-500 opacity-75" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 select-none">
+          <div className="absolute inset-0 bg-black/75 backdrop-blur-xs transition-opacity animate-in fade-in duration-200" onClick={handleDeclineIncomingCall} />
+
+          <div className="relative z-10 w-full max-w-sm rounded-3xl border border-white/10 bg-linear-to-b from-[#1e293b] to-[#0f172a] p-8 text-center text-white shadow-2xl space-y-6 animate-in zoom-in-95 duration-200">
+            <div className="relative inline-block">
+              <Avatar src={incomingCall.caller.avatar} name={incomingCall.caller.name} size="2xl" online />
+              <span className="animate-ping absolute inset-0 rounded-full border-2 border-emerald-400 opacity-75" />
             </div>
 
-            <div>
-              <h3 className="font-extrabold text-white text-lg">{incomingCall.caller.name}</h3>
-              <p className="text-xs text-slate-400">
+            <div className="space-y-1">
+              <h3 className="text-2xl font-extrabold text-white">{incomingCall.caller.name}</h3>
+              <p className="text-xs text-slate-400 font-medium">
                 Incoming {incomingCall.callType === "video" ? "HD Video Call..." : "Voice Call..."}
               </p>
             </div>
 
-            <div className="flex items-center gap-4 pt-2">
-              <Button
-                variant="danger"
-                size="lg"
-                className="rounded-full h-12 w-12 p-0 flex items-center justify-center"
+            <div className="flex items-center justify-center gap-6 pt-4 border-t border-white/10">
+              <button
                 onClick={handleDeclineIncomingCall}
+                className="flex h-14 w-14 items-center justify-center rounded-full bg-red-600 text-white hover:bg-red-500 shadow-lg shadow-red-600/30 hover:scale-105 transition-all cursor-pointer"
                 title="Decline Call"
               >
-                <PhoneOff size={20} />
-              </Button>
+                <PhoneOff size={22} />
+              </button>
 
-              <Button
-                variant="primary"
-                size="lg"
-                className="rounded-full h-12 w-12 p-0 flex items-center justify-center bg-green-600 hover:bg-green-500 shadow-lg shadow-green-600/30"
+              <button
                 onClick={handleAcceptIncomingCall}
+                className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500 text-white hover:bg-emerald-400 shadow-lg shadow-emerald-500/30 hover:scale-105 transition-all cursor-pointer"
                 title="Accept Call"
               >
-                {incomingCall.callType === "video" ? <Video size={20} /> : <Phone size={20} />}
-              </Button>
+                {incomingCall.callType === "video" ? <Video size={22} /> : <Phone size={22} />}
+              </button>
             </div>
           </div>
-        </Dialog>
+        </div>
       )}
 
       {/* ACCEPTED INCOMING CALL WEBRTC MODAL */}
