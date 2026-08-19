@@ -1,11 +1,16 @@
 "use client";
 
+import React, { useEffect } from "react";
 import ConversationList from "@/components/features/messages/ConversationList";
 import ChatWindow from "@/components/features/messages/ChatWindow";
 import { useChatStore } from "@/store/chatStore";
 
 export default function MessagesPage() {
-  const { activeConversationId } = useChatStore();
+  const { activeConversationId, fetchConversations } = useChatStore();
+
+  useEffect(() => {
+    fetchConversations();
+  }, [fetchConversations]);
 
   return (
     <div className="h-[calc(100vh-64px)] bg-[#0f172a] p-4 md:p-6">

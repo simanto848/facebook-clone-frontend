@@ -206,7 +206,10 @@ export default function ChatWindow() {
             <div className="space-y-4">
               {activeConversation.messages.map((msg, index) => {
                 const isMe = msg.sender === "me";
-                const isCallMsg = msg.text.startsWith("📞") || msg.text.startsWith("📹");
+                const isCallMsg =
+                  msg.text.includes("📞") ||
+                  msg.text.includes("📹") ||
+                  msg.text.toLowerCase().includes("call");
 
                 if (isCallMsg) {
                   return (

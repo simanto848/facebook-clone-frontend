@@ -168,7 +168,10 @@ function ChatTab({ box }: { box: ChatBox }) {
           <>
             <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
               {box.messages.map((msg, idx) => {
-                const isCallMsg = msg.text.startsWith("📞") || msg.text.startsWith("📹");
+                const isCallMsg =
+                  msg.text.includes("📞") ||
+                  msg.text.includes("📹") ||
+                  msg.text.toLowerCase().includes("call");
 
                 if (isCallMsg) {
                   return (

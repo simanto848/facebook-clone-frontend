@@ -35,45 +35,52 @@ export default function ConversationList() {
       </div>
 
       <div className="space-y-1 px-3">
-        {filteredConversations.map((user) => {
-          const isActive = user.id === activeConversationId;
-          const lastMsg = user.messages[user.messages.length - 1];
+        {filteredConversations.length === 0 ? (
+          <div className="p-8 text-center text-slate-400 space-y-2">
+            <p className="text-xs font-semibold text-slate-300">No conversations found</p>
+            <p className="text-[11px] text-slate-500">Search for friends or send a message to start chatting.</p>
+          </div>
+        ) : (
+          filteredConversations.map((user) => {
+            const isActive = user.id === activeConversationId;
+            const lastMsg = user.messages[user.messages.length - 1];
 
-          return (
-            <button
-              key={user.id}
-              onClick={() => setActiveConversationId(user.id)}
-              className={`flex w-full items-center gap-3 rounded-xl p-3 text-left transition ${
-                isActive ? "bg-[#1f2937]" : "hover:bg-[#1f2937]/50"
-              }`}
-            >
-              <div className="relative">
-                <Image
-                  src={user.avatar}
-                  alt={user.name}
-                  width={48}
-                  height={48}
-                  className="h-12 w-12 rounded-full object-cover"
-                />
+            return (
+              <button
+                key={user.id}
+                onClick={() => setActiveConversationId(user.id)}
+                className={`flex w-full items-center gap-3 rounded-xl p-3 text-left transition ${
+                  isActive ? "bg-[#1f2937]" : "hover:bg-[#1f2937]/50"
+                }`}
+              >
+                <div className="relative">
+                  <Image
+                    src={user.avatar}
+                    alt={user.name}
+                    width={48}
+                    height={48}
+                    className="h-12 w-12 rounded-full object-cover"
+                  />
 
-                {user.online && (
-                  <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-[#111827] bg-green-500" />
-                )}
-              </div>
-
-              <div className="flex-1">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-medium text-white">{user.name}</h3>
-                  {lastMsg && <span className="text-[10px] text-slate-500">{lastMsg.time}</span>}
+                  {user.online && (
+                    <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-[#111827] bg-green-500" />
+                  )}
                 </div>
 
-                <p className={`truncate text-sm ${isActive ? "text-slate-200" : "text-slate-400"}`}>
-                  {lastMsg ? `${lastMsg.sender === "me" ? "You: " : ""}${lastMsg.text}` : "No messages yet"}
-                </p>
-              </div>
-            </button>
-          );
-        })}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-medium text-white text-sm truncate">{user.name}</h3>
+                    {lastMsg && <span className="text-[10px] text-slate-500 shrink-0">{lastMsg.time}</span>}
+                  </div>
+
+                  <p className={`truncate text-xs ${isActive ? "text-slate-200" : "text-slate-400"}`}>
+                    {lastMsg ? `${lastMsg.sender === "me" ? "You: " : ""}${lastMsg.text}` : "No messages yet"}
+                  </p>
+                </div>
+              </button>
+            );
+          })
+        )}
       </div>
     </div>
   );
