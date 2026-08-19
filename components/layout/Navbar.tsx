@@ -42,43 +42,45 @@ export default function Navbar() {
     fetchConversations();
   }, [fetchConversations]);
 
-  const [liveNotifications, setLiveNotifications] = useState<any[]>([
-    {
-      id: "1",
-      sender: "David Kim",
-      avatar: "https://images.unsplash.com/photo-1780764895105-ea3037466236?q=80&w=100&auto=format&fit=crop",
-      text: 'liked your photo: "Neon nights in the city."',
-      time: "5m ago",
-      unread: true,
-    },
-    {
-      id: "2",
-      sender: "Sarah Chen",
-      avatar: "https://images.unsplash.com/photo-1780570589435-059359e813cc?q=80&w=100&auto=format&fit=crop",
-      text: 'commented: "Wow, this looks incredible! What camera did..."',
-      time: "1h ago",
-      unread: true,
-    },
-  ]);
+  const [liveNotifications, setLiveNotifications] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchRealNotifications = async () => {
       try {
         const res = await notificationService.getNotifications();
-        const items = res.data || res || [];
-        if (Array.isArray(items) && items.length > 0) {
-          const parsed = items.map((n: any) => ({
+        const dataObj = res?.data || res || {};
+        const items = Array.isArray(dataObj)
+          ? dataObj
+          : Array.isArray(dataObj.notifications)
+          ? dataObj.notifications
+          : Array.isArray(res?.notifications)
+          ? res.notifications
+          : [];
+
+        const parsed = items.map((n: any) => {
+          const senderName =
+            `${n.actor?.firstName || ""} ${n.actor?.lastName || ""}`.trim() ||
+            n.actor?.displayName ||
+            n.actor?.username ||
+            "System";
+          const avatarUrl =
+            n.actor?.avatarUrl ||
+            n.actor?.profilePicture ||
+            "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100";
+
+          return {
             id: n.id,
-            sender: n.actor?.displayName || n.actor?.username || "System",
-            avatar: n.actor?.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
+            sender: senderName,
+            avatar: avatarUrl,
             text: n.message || n.title || "sent a notification.",
             time: new Date(n.createdAt || Date.now()).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
             unread: !n.isRead,
-          }));
-          setLiveNotifications(parsed);
-        }
+          };
+        });
+
+        setLiveNotifications(parsed);
       } catch {
-        // Fallback
+        setLiveNotifications([]);
       }
     };
 
@@ -88,12 +90,23 @@ export default function Navbar() {
   useEffect(() => {
     if (!socket) return;
 
-    const handleNewNotif = (data: { title?: string; message?: string }) => {
+    const handleNewNotif = (data: any) => {
+      const senderName =
+        data.actor
+          ? `${data.actor.firstName || ""} ${data.actor.lastName || ""}`.trim() ||
+            data.actor.displayName ||
+            data.actor.username
+          : data.title || "Notification";
+      const avatarUrl =
+        data.actor?.avatarUrl ||
+        data.actor?.profilePicture ||
+        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100";
+
       setLiveNotifications((prev) => [
         {
-          id: String(Date.now()),
-          sender: data.title || "Notification",
-          avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
+          id: data.id || String(Date.now()),
+          sender: senderName,
+          avatar: avatarUrl,
           text: data.message || "You have a new update.",
           time: "Just now",
           unread: true,
@@ -377,28 +390,32 @@ export default function Navbar() {
                 </div>
 
                 <div className="max-h-80 overflow-y-auto divide-y divide-[#1f2937] custom-scrollbar">
-                  {liveNotifications.map((notif) => (
-                    <div
-                      key={notif.id}
-                      className={`flex gap-3 p-3.5 hover:bg-[#1f2937]/50 transition cursor-pointer ${
-                        notif.unread ? "bg-blue-500/5" : ""
-                      }`}
-                    >
-                      <div className="relative h-9 w-9 rounded-full overflow-hidden shrink-0 border border-[#1f2937]">
-                        <Image src={notif.avatar} fill className="object-cover" alt={notif.sender} />
+                  {liveNotifications.length === 0 ? (
+                    <div className="p-4 text-center text-xs text-slate-400">No notifications yet</div>
+                  ) : (
+                    liveNotifications.map((notif) => (
+                      <div
+                        key={notif.id}
+                        className={`flex gap-3 p-3.5 hover:bg-[#1f2937]/50 transition cursor-pointer ${
+                          notif.unread ? "bg-blue-500/5" : ""
+                        }`}
+                      >
+                        <div className="relative h-9 w-9 rounded-full overflow-hidden shrink-0 border border-[#1f2937]">
+                          <Image src={notif.avatar} fill className="object-cover" alt={notif.sender} />
+                        </div>
+                        <div className="flex-1 space-y-1">
+                          <p className="text-xs text-slate-200 leading-normal">
+                            <span className="font-bold text-white mr-1">{notif.sender}</span>
+                            {notif.text}
+                          </p>
+                          <span className="text-[10px] text-slate-500 font-medium block">{notif.time}</span>
+                        </div>
+                        {notif.unread && (
+                          <div className="h-2 w-2 rounded-full bg-blue-500 shrink-0 self-center" />
+                        )}
                       </div>
-                      <div className="flex-1 space-y-1">
-                        <p className="text-xs text-slate-200 leading-normal">
-                          <span className="font-bold text-white mr-1">{notif.sender}</span>
-                          {notif.text}
-                        </p>
-                        <span className="text-[10px] text-slate-500 font-medium block">{notif.time}</span>
-                      </div>
-                      {notif.unread && (
-                        <div className="h-2 w-2 rounded-full bg-blue-500 shrink-0 self-center" />
-                      )}
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
 
                 <div className="border-t border-[#1f2937] bg-[#1f2937]/20 p-2.5 text-center">
