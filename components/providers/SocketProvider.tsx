@@ -226,7 +226,7 @@ const playNotificationSound = () => {
         });
       });
 
-      // Real-time incoming message append
+      // Real-time incoming message append (NO toaster popup, NO notification dropdown)
       activeSocket.on("message", (m: any) => {
         playMessageSound();
         const timeStr = new Date(m.createdAt || Date.now()).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -234,8 +234,10 @@ const playNotificationSound = () => {
         const convId = m.conversationId;
 
         useChatStore.setState((state) => {
+          let found = false;
           const updatedConvs = state.conversations.map((c) => {
             if (c.id === senderId || c.id === convId) {
+              found = true;
               const isCurrentlyActive = state.activeConversationId === c.id;
               return {
                 ...c,
@@ -249,7 +251,28 @@ const playNotificationSound = () => {
             return c;
           });
 
-          return { conversations: updatedConvs };
+          // Also update floating open chat boxes
+          const updatedBoxes = state.openChatBoxes.map((b) => {
+            if (b.id === senderId || b.id === convId) {
+              return {
+                ...b,
+                messages: [
+                  ...b.messages,
+                  { sender: "them" as const, text: m.content || "", time: timeStr },
+                ],
+              };
+            }
+            return b;
+          });
+
+          if (!found) {
+            // Trigger background refetch of conversations to include newly messaged user
+            setTimeout(() => {
+              useChatStore.getState().fetchConversations();
+            }, 200);
+          }
+
+          return { conversations: updatedConvs, openChatBoxes: updatedBoxes };
         });
       });
 
