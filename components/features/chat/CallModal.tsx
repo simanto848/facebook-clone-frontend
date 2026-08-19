@@ -312,19 +312,29 @@ export function CallModal({
       }
     };
 
-    socket.on(`${eventPrefix}:initiated`, handleCallInitiated);
-    socket.on(`${eventPrefix}:accepted`, handleCallAccepted);
-    socket.on(`${eventPrefix}:rejected`, handleCallRejected);
-    socket.on(`${eventPrefix}:ended`, handleCallEnded);
-    socket.on(`${eventPrefix}:ice-candidate`, handleIceCandidate);
+    socket.on("call:initiated", handleCallInitiated);
+    socket.on("video-call:initiated", handleCallInitiated);
+    socket.on("call:accepted", handleCallAccepted);
+    socket.on("video-call:accepted", handleCallAccepted);
+    socket.on("call:rejected", handleCallRejected);
+    socket.on("video-call:rejected", handleCallRejected);
+    socket.on("call:ended", handleCallEnded);
+    socket.on("video-call:ended", handleCallEnded);
+    socket.on("call:ice-candidate", handleIceCandidate);
+    socket.on("video-call:ice-candidate", handleIceCandidate);
 
     return () => {
       isMounted = false;
-      socket.off(`${eventPrefix}:initiated`, handleCallInitiated);
-      socket.off(`${eventPrefix}:accepted`, handleCallAccepted);
-      socket.off(`${eventPrefix}:rejected`, handleCallRejected);
-      socket.off(`${eventPrefix}:ended`, handleCallEnded);
-      socket.off(`${eventPrefix}:ice-candidate`, handleIceCandidate);
+      socket.off("call:initiated", handleCallInitiated);
+      socket.off("video-call:initiated", handleCallInitiated);
+      socket.off("call:accepted", handleCallAccepted);
+      socket.off("video-call:accepted", handleCallAccepted);
+      socket.off("call:rejected", handleCallRejected);
+      socket.off("video-call:rejected", handleCallRejected);
+      socket.off("call:ended", handleCallEnded);
+      socket.off("video-call:ended", handleCallEnded);
+      socket.off("call:ice-candidate", handleIceCandidate);
+      socket.off("video-call:ice-candidate", handleIceCandidate);
       cleanup();
     };
   }, [isOpen, recipient.id, callType, isIncoming, incomingOffer, incomingCallId, socket]);
