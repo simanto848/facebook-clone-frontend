@@ -181,14 +181,14 @@ export default function ProfilePage() {
                 Media
               </button>
               <button
-                onClick={() => setActiveTab("reactions")}
+                onClick={() => setActiveTab("connections")}
                 className={
-                  activeTab === "reactions"
-                    ? "border-b-2 border-blue-600 text-blue-400"
+                  activeTab === "connections"
+                    ? "border-b-2 border-blue-600 text-blue-400 font-bold"
                     : "border-b-2 text-transparent"
                 }
               >
-                Reactions
+                Connections
               </button>
             </div>
           </div>
@@ -200,42 +200,49 @@ export default function ProfilePage() {
                 <PostCard key={post.id} post={post} />
               ))}
             </div>
-          ) : (
+          ) : activeTab === "posts" ? (
             <div className="p-8 text-center text-slate-400">
-              {activeTab === "posts" ? (
-                <p>No posts found</p>
-              ) : (
-                <p>No posts</p>
-              )}
-            </div>
-          )}
-
-          {/* Media Grid */}
-          {activeTab === "media" && userPosts.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {userPosts.map((post) => {
-                if (post.type === "image" || post.type === "video") {
-                  return <PostCard key={post.id} post={post} />;
-                }
-                return null;
-              })}
-            </div>
-          ) : (
-            <div className="p-8 text-center text-slate-400">
-              {activeTab === "media" ? (
-                <p>No images/videos found</p>
-              ) : (
-                <p>No media</p>
-              )}
-            </div>
-          )}
-
-          {/* Reactions */}
-          {activeTab === "reactions" ? (
-            <div className="p-8 text-center text-slate-400">
-              <p>Reaction stats not yet implemented</p>
+              <p>No posts found</p>
             </div>
           ) : null}
+
+          {/* Media Grid */}
+          {activeTab === "media" && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {userPosts
+                .filter((p) => p.type === "image" || p.type === "video")
+                .map((post) => (
+                  <PostCard key={post.id} post={post} />
+                ))}
+            </div>
+          )}
+
+          {/* Connections Tab */}
+          {activeTab === "connections" && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {[
+                { name: "Sarah Connor", avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100", handle: "sarahc" },
+                { name: "Elena Rostova", avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100", handle: "elena" },
+                { name: "David Kim", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100", handle: "davidk" },
+              ].map((friend, i) => (
+                <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-[#111827] border border-[#1f2937]">
+                  <div className="flex items-center gap-3">
+                    <img src={friend.avatar} className="h-10 w-10 rounded-full object-cover" alt="" />
+                    <div>
+                      <p className="text-xs font-bold text-white">{friend.name}</p>
+                      <p className="text-[10px] text-slate-400">@{friend.handle}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => router.push("/messages")}
+                    className="px-3 py-1 rounded-xl bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white border border-blue-500/30 text-xs font-bold transition cursor-pointer"
+                  >
+                    Message
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </main>
       </div>
     </div>
