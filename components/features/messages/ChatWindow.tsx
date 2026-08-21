@@ -10,6 +10,8 @@ import {
   Search,
   SendHorizontal,
   Video,
+  Mic,
+  X,
 } from "lucide-react";
 import Image from "next/image";
 import { useState, useEffect, useRef } from "react";
@@ -17,13 +19,36 @@ import ChatInfoPanel from "./ChatInfoPanel";
 import { useChatStore } from "@/store/chatStore";
 import { CallModal } from "../chat/CallModal";
 import { useSocketContext } from "@/components/providers/SocketProvider";
+import { AudioPlayer } from "@/components/ui/AudioPlayer";
+import { VoiceRecorder } from "../chat/VoiceRecorder";
 
 export default function ChatWindow() {
   const [showInfoPanel, setShowInfoPanel] = useState(false);
   const [messageText, setMessageText] = useState("");
   const [activeCall, setActiveCall] = useState<"audio" | "video" | null>(null);
+  const [showRecorder, setShowRecorder] = useState(false);
+  const [attachment, setAttachment] = useState<{ url: string; type: "image" | "video" | "file" } | null>(null);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onloadend = () => {
+      const result = reader.result as string;
+      const fileType = file.type.startsWith("image/")
+        ? "image"
+        : file.type.startsWith("video/")
+        ? "video"
+        : "file";
+      setAttachment({ url: result, type: fileType });
+    };
+  };
 
   const { socket, typingUsers } = useSocketContext();
   const {
@@ -71,7 +96,7 @@ export default function ChatWindow() {
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!messageText.trim() || !activeConversation) return;
+    if ((!messageText.trim() && !attachment) || !activeConversation) return;
 
     if (socket && activeConversationId) {
       socket.emit("typing_stop", {
@@ -80,8 +105,10 @@ export default function ChatWindow() {
       });
     }
 
-    sendDirectMessage(activeConversation.id, messageText);
+    const content = attachment ? attachment.url : messageText;
+    sendDirectMessage(activeConversation.id, content);
     setMessageText("");
+    setAttachment(null);
   };
 
   if (!activeConversation) {
@@ -240,15 +267,27 @@ export default function ChatWindow() {
                     )}
 
                     <div className="flex flex-col max-w-[70%] sm:max-w-md gap-1">
-                      <div
-                        className={`rounded-2xl px-4 py-2.5 text-sm text-white ${
-                          isMe
-                            ? "rounded-br-none bg-blue-600 shadow-md shadow-blue-600/10"
-                            : "rounded-bl-none bg-[#1f2937]"
-                        }`}
-                      >
-                        {msg.text}
-                      </div>
+                      {msg.text.startsWith("data:audio/") || msg.text.includes(".webm") || msg.text.includes("[Voice Note]") ? (
+                        <AudioPlayer src={msg.text} isMe={isMe} />
+                      ) : msg.text.startsWith("data:image/") || msg.text.match(/\.(png|jpg|jpeg|webp|gif)$/i) ? (
+                        <div className="relative rounded-2xl overflow-hidden max-w-xs border border-white/10 shadow-lg">
+                          <img src={msg.text} className="w-full max-h-60 object-cover" alt="Attachment" />
+                        </div>
+                      ) : msg.text.startsWith("data:video/") || msg.text.match(/\.(mp4|webm|mov)$/i) ? (
+                        <div className="relative rounded-2xl overflow-hidden max-w-xs border border-white/10 shadow-lg bg-black">
+                          <video src={msg.text} controls className="w-full max-h-60 object-cover" />
+                        </div>
+                      ) : (
+                        <div
+                          className={`rounded-2xl px-4 py-2.5 text-sm text-white ${
+                            isMe
+                              ? "rounded-br-none bg-blue-600 shadow-md shadow-blue-600/10"
+                              : "rounded-bl-none bg-[#1f2937]"
+                          }`}
+                        >
+                          {msg.text}
+                        </div>
+                      )}
                       <span
                         className={`text-[10px] text-slate-500 px-1 ${
                           isMe ? "text-right" : "text-left"
@@ -286,41 +325,97 @@ export default function ChatWindow() {
 
           {/* INPUT */}
           <div className="border-t border-[#1f2937] p-4 shrink-0 bg-[#111827]">
-            <form onSubmit={handleSendMessage} className="flex items-center gap-3 rounded-2xl bg-[#1f2937] p-2 md:p-3">
-              <button
-                type="button"
-                className="text-slate-400 transition hover:text-white p-1 cursor-pointer"
-              >
-                <Paperclip size={20} />
-              </button>
+            {/* Attachment Preview Banner */}
+            {attachment && (
+              <div className="mb-3 flex items-center justify-between p-2 rounded-xl bg-[#1f2937] border border-blue-500/30">
+                <div className="flex items-center gap-3 min-w-0">
+                  {attachment.type === "image" ? (
+                    <img src={attachment.url} className="h-10 w-10 object-cover rounded-lg" alt="" />
+                  ) : attachment.type === "video" ? (
+                    <video src={attachment.url} className="h-10 w-10 object-cover rounded-lg bg-black" />
+                  ) : (
+                    <div className="h-10 w-10 flex items-center justify-center rounded-lg bg-blue-600/20 text-blue-400">
+                      <Paperclip size={18} />
+                    </div>
+                  )}
+                  <span className="text-xs text-slate-300 font-medium truncate">Ready to send attachment</span>
+                </div>
+                <button
+                  onClick={() => setAttachment(null)}
+                  className="p-1 rounded-full text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition cursor-pointer"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            )}
 
-              <button
-                type="button"
-                className="text-slate-400 transition hover:text-white p-1 cursor-pointer"
-              >
-                <ImageIcon size={20} />
-              </button>
-
-              <input
-                type="text"
-                value={messageText}
-                onChange={handleInputChange}
-                placeholder="Type a message..."
-                className="flex-1 bg-transparent text-white outline-none placeholder:text-slate-500 text-sm px-2"
+            {/* Voice Recorder Inline Component */}
+            {showRecorder ? (
+              <VoiceRecorder
+                onSendVoiceNote={(audioUrl) => {
+                  sendDirectMessage(activeConversation.id, audioUrl);
+                  setShowRecorder(false);
+                }}
+                onCancel={() => setShowRecorder(false)}
               />
+            ) : (
+              <form onSubmit={handleSendMessage} className="flex items-center gap-2 md:gap-3 rounded-2xl bg-[#1f2937] p-2 md:p-3">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  accept="image/*,video/*,audio/*"
+                  className="hidden"
+                />
 
-              <button
-                type="submit"
-                disabled={!messageText.trim()}
-                className={`rounded-xl p-2 text-white transition ${
-                  messageText.trim()
-                    ? "bg-blue-500 hover:bg-blue-600 cursor-pointer"
-                    : "bg-blue-500/35 text-white/50 cursor-not-allowed"
-                }`}
-              >
-                <SendHorizontal size={18} />
-              </button>
-            </form>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="text-slate-400 transition hover:text-white p-1 cursor-pointer"
+                  title="Attach file"
+                >
+                  <Paperclip size={20} />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="text-slate-400 transition hover:text-white p-1 cursor-pointer"
+                  title="Attach photo/video"
+                >
+                  <ImageIcon size={20} />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowRecorder(true)}
+                  className="text-slate-400 transition hover:text-blue-400 p-1 cursor-pointer"
+                  title="Record voice note"
+                >
+                  <Mic size={20} />
+                </button>
+
+                <input
+                  type="text"
+                  value={messageText}
+                  onChange={handleInputChange}
+                  placeholder="Type a message..."
+                  className="flex-1 bg-transparent text-white outline-none placeholder:text-slate-500 text-sm px-2"
+                />
+
+                <button
+                  type="submit"
+                  disabled={!messageText.trim() && !attachment}
+                  className={`rounded-xl p-2 text-white transition ${
+                    messageText.trim() || attachment
+                      ? "bg-blue-500 hover:bg-blue-600 cursor-pointer"
+                      : "bg-blue-500/35 text-white/50 cursor-not-allowed"
+                  }`}
+                >
+                  <SendHorizontal size={18} />
+                </button>
+              </form>
+            )}
           </div>
         </div>
 

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Mic, MicOff, Video, VideoOff, PhoneOff, Volume2, VolumeX, Maximize2, Minimize2, GripVertical } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, PhoneOff, Volume2, VolumeX, Maximize2, Minimize2, GripVertical, ScreenShare, MonitorOff } from "lucide-react";
 import { Avatar, Badge } from "@/components/ui";
 import { useSocketContext } from "@/components/providers/SocketProvider";
 import { useChatStore } from "@/store/chatStore";
@@ -111,12 +111,15 @@ export function CallModal({
   const [duration, setDuration] = useState(0);
   const [activeCallId, setActiveCallId] = useState<string | null>(incomingCallId || null);
 
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
+
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const remoteAudioRef = useRef<HTMLAudioElement>(null);
 
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
+  const screenStreamRef = useRef<MediaStream | null>(null);
   const toneRef = useRef<CallAudioTone | null>(null);
   const recordedHistoryRef = useRef<boolean>(false);
 
@@ -382,6 +385,62 @@ export function CallModal({
     setIsSpeakerOn(!isSpeakerOn);
   };
 
+  const toggleScreenShare = async () => {
+    if (isScreenSharing) {
+      if (screenStreamRef.current) {
+        screenStreamRef.current.getTracks().forEach((track) => track.stop());
+        screenStreamRef.current = null;
+      }
+      setIsScreenSharing(false);
+
+      if (localStreamRef.current && pcRef.current) {
+        const webcamTrack = localStreamRef.current.getVideoTracks()[0];
+        const sender = pcRef.current.getSenders().find((s) => s.track?.kind === "video");
+        if (sender && webcamTrack) {
+          sender.replaceTrack(webcamTrack);
+        }
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = localStreamRef.current;
+        }
+      }
+    } else {
+      try {
+        const displayStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+        screenStreamRef.current = displayStream;
+        setIsScreenSharing(true);
+
+        const screenVideoTrack = displayStream.getVideoTracks()[0];
+
+        if (pcRef.current && screenVideoTrack) {
+          const sender = pcRef.current.getSenders().find((s) => s.track?.kind === "video");
+          if (sender) {
+            sender.replaceTrack(screenVideoTrack);
+          }
+        }
+
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = displayStream;
+        }
+
+        screenVideoTrack.onended = () => {
+          setIsScreenSharing(false);
+          if (localStreamRef.current && pcRef.current) {
+            const webcamTrack = localStreamRef.current.getVideoTracks()[0];
+            const sender = pcRef.current.getSenders().find((s) => s.track?.kind === "video");
+            if (sender && webcamTrack) {
+              sender.replaceTrack(webcamTrack);
+            }
+            if (localVideoRef.current) {
+              localVideoRef.current.srcObject = localStreamRef.current;
+            }
+          }
+        };
+      } catch (err) {
+        console.error("Failed to share screen:", err);
+      }
+    }
+  };
+
   const handleEndCall = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     toneRef.current?.stop();
@@ -591,15 +650,27 @@ export function CallModal({
           </button>
 
           {callType === "video" && (
-            <button
-              onClick={toggleVideo}
-              className={`flex h-12 w-12 items-center justify-center rounded-full transition shadow-md cursor-pointer ${
-                isVideoOff ? "bg-red-600 text-white hover:bg-red-500" : "bg-[#1f2937] text-white hover:bg-[#374151]"
-              }`}
-              title={isVideoOff ? "Turn Camera On" : "Turn Camera Off"}
-            >
-              {isVideoOff ? <VideoOff size={18} /> : <Video size={18} />}
-            </button>
+            <>
+              <button
+                onClick={toggleVideo}
+                className={`flex h-12 w-12 items-center justify-center rounded-full transition shadow-md cursor-pointer ${
+                  isVideoOff ? "bg-red-600 text-white hover:bg-red-500" : "bg-[#1f2937] text-white hover:bg-[#374151]"
+                }`}
+                title={isVideoOff ? "Turn Camera On" : "Turn Camera Off"}
+              >
+                {isVideoOff ? <VideoOff size={18} /> : <Video size={18} />}
+              </button>
+
+              <button
+                onClick={toggleScreenShare}
+                className={`flex h-12 w-12 items-center justify-center rounded-full transition shadow-md cursor-pointer ${
+                  isScreenSharing ? "bg-blue-600 text-white hover:bg-blue-500 ring-2 ring-blue-400/50" : "bg-[#1f2937] text-white hover:bg-[#374151]"
+                }`}
+                title={isScreenSharing ? "Stop Screen Share" : "Share Screen"}
+              >
+                {isScreenSharing ? <MonitorOff size={18} /> : <ScreenShare size={18} />}
+              </button>
+            </>
           )}
 
           <button

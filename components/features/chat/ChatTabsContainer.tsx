@@ -7,7 +7,7 @@ import { useChatStore, ChatBox } from "@/store/chatStore";
 import { Avatar, Button, Input } from "@/components/ui";
 import { CallModal } from "./CallModal";
 import { messageService } from "@/services/messageService";
-
+import { AudioPlayer } from "@/components/ui/AudioPlayer";
 import { useSocketContext } from "@/components/providers/SocketProvider";
 
 function ChatTab({ box }: { box: ChatBox }) {
@@ -178,20 +178,34 @@ function ChatTab({ box }: { box: ChatBox }) {
                   );
                 }
 
+                const isMe = msg.sender === "me";
+
                 return (
                   <div
                     key={idx}
-                    className={`flex flex-col ${msg.sender === "me" ? "items-end" : "items-start"}`}
+                    className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}
                   >
-                    <div
-                      className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-xs leading-relaxed ${
-                        msg.sender === "me"
-                          ? "bg-blue-600 text-white rounded-br-xs"
-                          : "bg-[#1f2937] text-slate-200 rounded-bl-xs"
-                      }`}
-                    >
-                      {msg.text}
-                    </div>
+                    {msg.text.startsWith("data:audio/") || msg.text.includes(".webm") || msg.text.includes("[Voice Note]") ? (
+                      <AudioPlayer src={msg.text} isMe={isMe} />
+                    ) : msg.text.startsWith("data:image/") || msg.text.match(/\.(png|jpg|jpeg|webp|gif)$/i) ? (
+                      <div className="relative rounded-2xl overflow-hidden max-w-[200px] border border-white/10 shadow-lg">
+                        <img src={msg.text} className="w-full max-h-48 object-cover" alt="Attachment" />
+                      </div>
+                    ) : msg.text.startsWith("data:video/") || msg.text.match(/\.(mp4|webm|mov)$/i) ? (
+                      <div className="relative rounded-2xl overflow-hidden max-w-[200px] border border-white/10 shadow-lg bg-black">
+                        <video src={msg.text} controls className="w-full max-h-48 object-cover" />
+                      </div>
+                    ) : (
+                      <div
+                        className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-xs leading-relaxed ${
+                          isMe
+                            ? "bg-blue-600 text-white rounded-br-xs"
+                            : "bg-[#1f2937] text-slate-200 rounded-bl-xs"
+                        }`}
+                      >
+                        {msg.text}
+                      </div>
+                    )}
                     <span className="text-[9px] text-slate-500 mt-1 px-1">{msg.time}</span>
                   </div>
                 );
