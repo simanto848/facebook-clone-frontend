@@ -21,9 +21,11 @@ import { CallModal } from "../chat/CallModal";
 import { useSocketContext } from "@/components/providers/SocketProvider";
 import { AudioPlayer } from "@/components/ui/AudioPlayer";
 import { VoiceRecorder } from "../chat/VoiceRecorder";
+import { GroupInfoModal } from "../chat/GroupInfoModal";
 
 export default function ChatWindow() {
   const [showInfoPanel, setShowInfoPanel] = useState(false);
+  const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
   const [messageText, setMessageText] = useState("");
   const [activeCall, setActiveCall] = useState<"audio" | "video" | null>(null);
   const [showRecorder, setShowRecorder] = useState(false);
@@ -423,6 +425,22 @@ export default function ChatWindow() {
         {showInfoPanel && (
           <ChatInfoPanel onClose={() => setShowInfoPanel(false)} />
         )}
+
+        {/* Group Info Modal */}
+        <GroupInfoModal
+          isOpen={isGroupModalOpen}
+          onClose={() => setIsGroupModalOpen(false)}
+          groupTitle={activeConversation.name}
+          groupId={activeConversation.id}
+          participants={[
+            {
+              id: activeConversation.id,
+              name: activeConversation.name,
+              avatar: activeConversation.avatar,
+              role: "ADMIN",
+            },
+          ]}
+        />
       </div>
     </>
   );

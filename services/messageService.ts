@@ -18,6 +18,16 @@ export const messageService = {
     return response.data;
   },
 
+  createGroupConversation: async (payload: { title: string; recipientIds: string[] }) => {
+    const axios = await useAxios();
+    const response = await axios.post("/messages/conversations", {
+      isGroup: true,
+      title: payload.title,
+      recipientIds: payload.recipientIds,
+    });
+    return response.data;
+  },
+
   getMessages: async (conversationId: string, page = 1, limit = 50) => {
     const axios = await useAxios();
     const response = await axios.get(`/messages/${conversationId}?page=${page}&limit=${limit}`);

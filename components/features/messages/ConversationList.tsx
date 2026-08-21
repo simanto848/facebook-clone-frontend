@@ -1,13 +1,15 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Search } from "lucide-react";
+import { Search, Users, Plus } from "lucide-react";
 import Image from "next/image";
 import { useChatStore } from "@/store/chatStore";
+import { CreateGroupModal } from "../chat/CreateGroupModal";
 
 export default function ConversationList() {
   const { conversations, activeConversationId, setActiveConversationId, fetchConversations } = useChatStore();
   const [searchQuery, setSearchQuery] = useState("");
+  const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
 
   useEffect(() => {
     fetchConversations();
@@ -19,10 +21,21 @@ export default function ConversationList() {
 
   return (
     <div className="h-full">
-      <div className="p-5">
-        <h1 className="text-2xl font-bold text-white">Messages</h1>
+      <div className="p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-white">Messages</h1>
 
-        <div className="mt-4 flex items-center rounded-xl bg-[#1f2937] px-4">
+          <button
+            onClick={() => setIsGroupModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white border border-blue-500/30 transition text-xs font-bold cursor-pointer"
+            title="Create new group chat"
+          >
+            <Users size={14} />
+            <span>+ Group</span>
+          </button>
+        </div>
+
+        <div className="flex items-center rounded-xl bg-[#1f2937] px-4">
           <Search size={18} className="text-slate-400" />
 
           <input
@@ -33,6 +46,11 @@ export default function ConversationList() {
           />
         </div>
       </div>
+
+      <CreateGroupModal
+        isOpen={isGroupModalOpen}
+        onClose={() => setIsGroupModalOpen(false)}
+      />
 
       <div className="space-y-1 px-3">
         {filteredConversations.length === 0 ? (
