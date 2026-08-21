@@ -3,9 +3,13 @@ import { messageService } from "@/services/messageService";
 import { friendshipService } from "@/services/friendshipService";
 
 export interface Message {
+  id?: string;
   sender: "me" | "them";
   text: string;
   time: string;
+  reactions?: Record<string, number>;
+  isEdited?: boolean;
+  isDeleted?: boolean;
 }
 
 export interface ChatBox {
@@ -46,6 +50,9 @@ interface ChatState {
   markConversationAsRead: (id: string) => void;
   startCall: (recipient: { id: string; name: string; avatar: string; isOnline?: boolean }, callType: "audio" | "video") => void;
   endCallState: () => void;
+  addReaction: (convId: string, msgIndex: number, emoji: string) => void;
+  editMessage: (convId: string, msgIndex: number, newText: string) => void;
+  deleteMessage: (convId: string, msgIndex: number) => void;
 }
 
 let activeFetchPromise: Promise<void> | null = null;
@@ -304,5 +311,64 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   endCallState: () => {
     set({ activeCall: null });
+  },
+
+  addReaction: (convId: string, msgIndex: number, emoji: string) => {
+    set((state) => {
+      const updateMsgs = (msgs: Message[]) =>
+        msgs.map((m, idx) => {
+          if (idx !== msgIndex) return m;
+          const currentReactions = { ...(m.reactions || {}) };
+          currentReactions[emoji] = (currentReactions[emoji] || 0) + 1;
+          return { ...m, reactions: currentReactions };
+        });
+
+      return {
+        conversations: state.conversations.map((c) =>
+          c.id === convId ? { ...c, messages: updateMsgs(c.messages) } : c
+        ),
+        openChatBoxes: state.openChatBoxes.map((b) =>
+          b.id === convId ? { ...b, messages: updateMsgs(b.messages) } : b
+        ),
+      };
+    });
+  },
+
+  editMessage: (convId: string, msgIndex: number, newText: string) => {
+    set((state) => {
+      const updateMsgs = (msgs: Message[]) =>
+        msgs.map((m, idx) => {
+          if (idx !== msgIndex) return m;
+          return { ...m, text: newText, isEdited: true };
+        });
+
+      return {
+        conversations: state.conversations.map((c) =>
+          c.id === convId ? { ...c, messages: updateMsgs(c.messages) } : c
+        ),
+        openChatBoxes: state.openChatBoxes.map((b) =>
+          b.id === convId ? { ...b, messages: updateMsgs(b.messages) } : b
+        ),
+      };
+    });
+  },
+
+  deleteMessage: (convId: string, msgIndex: number) => {
+    set((state) => {
+      const updateMsgs = (msgs: Message[]) =>
+        msgs.map((m, idx) => {
+          if (idx !== msgIndex) return m;
+          return { ...m, text: "This message was deleted", isDeleted: true };
+        });
+
+      return {
+        conversations: state.conversations.map((c) =>
+          c.id === convId ? { ...c, messages: updateMsgs(c.messages) } : c
+        ),
+        openChatBoxes: state.openChatBoxes.map((b) =>
+          b.id === convId ? { ...b, messages: updateMsgs(b.messages) } : b
+        ),
+      };
+    });
   },
 }));

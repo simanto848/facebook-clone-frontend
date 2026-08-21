@@ -12,6 +12,10 @@ import {
   Video,
   Mic,
   X,
+  Smile,
+  Pencil,
+  Trash2,
+  MoreVertical,
 } from "lucide-react";
 import Image from "next/image";
 import { useState, useEffect, useRef } from "react";
@@ -30,6 +34,10 @@ export default function ChatWindow() {
   const [activeCall, setActiveCall] = useState<"audio" | "video" | null>(null);
   const [showRecorder, setShowRecorder] = useState(false);
   const [attachment, setAttachment] = useState<{ url: string; type: "image" | "video" | "file" } | null>(null);
+
+  const [hoveredMsgIndex, setHoveredMsgIndex] = useState<number | null>(null);
+  const [editingMsgIndex, setEditingMsgIndex] = useState<number | null>(null);
+  const [editText, setEditText] = useState("");
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -59,6 +67,9 @@ export default function ChatWindow() {
     setActiveConversationId,
     sendDirectMessage,
     fetchMessagesForUser,
+    addReaction,
+    editMessage,
+    deleteMessage,
   } = useChatStore();
 
   const activeConversation = conversations.find(
@@ -251,10 +262,15 @@ export default function ChatWindow() {
                   );
                 }
 
+                const isHovered = hoveredMsgIndex === index;
+                const isEditingThis = editingMsgIndex === index;
+
                 return (
                   <div
                     key={index}
-                    className={`flex items-end gap-3 ${isMe ? "justify-end" : ""}`}
+                    onMouseEnter={() => setHoveredMsgIndex(index)}
+                    onMouseLeave={() => setHoveredMsgIndex(null)}
+                    className={`group relative flex items-end gap-3 ${isMe ? "justify-end" : ""}`}
                   >
                     {!isMe && (
                       <div className="relative h-8 w-8 overflow-hidden rounded-full shrink-0">
@@ -268,8 +284,77 @@ export default function ChatWindow() {
                       </div>
                     )}
 
-                    <div className="flex flex-col max-w-[70%] sm:max-w-md gap-1">
-                      {msg.text.startsWith("data:audio/") || msg.text.includes(".webm") || msg.text.includes("[Voice Note]") ? (
+                    {/* Emoji Reaction Popover on Hover */}
+                    {isHovered && !msg.isDeleted && !isEditingThis && (
+                      <div className={`absolute -top-9 z-20 flex items-center gap-1 rounded-full bg-[#1f2937] border border-blue-500/30 p-1 shadow-xl animate-in fade-in zoom-in-90 duration-150 ${
+                        isMe ? "right-2" : "left-10"
+                      }`}>
+                        {["👍", "❤️", "😂", "😮", "😢", "😡"].map((emoji) => (
+                          <button
+                            key={emoji}
+                            onClick={() => {
+                              addReaction(activeConversation.id, index, emoji);
+                              if (socket) {
+                                socket.emit("message_reaction", {
+                                  conversationId: activeConversation.id,
+                                  msgIndex: index,
+                                  emoji,
+                                });
+                              }
+                            }}
+                            className="p-1 hover:scale-125 transition cursor-pointer text-sm"
+                            title={`React with ${emoji}`}
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="flex flex-col max-w-[70%] sm:max-w-md gap-1 relative group/bubble">
+                      {/* Message Content or Inline Edit Form */}
+                      {isEditingThis ? (
+                        <div className="flex items-center gap-2 p-1 bg-[#1f2937] rounded-xl border border-blue-500/50">
+                          <input
+                            type="text"
+                            value={editText}
+                            onChange={(e) => setEditText(e.target.value)}
+                            className="flex-1 bg-transparent px-2 py-1 text-xs text-white outline-none"
+                            autoFocus
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                if (editText.trim()) {
+                                  editMessage(activeConversation.id, index, editText.trim());
+                                }
+                                setEditingMsgIndex(null);
+                              } else if (e.key === "Escape") {
+                                setEditingMsgIndex(null);
+                              }
+                            }}
+                          />
+                          <button
+                            onClick={() => {
+                              if (editText.trim()) {
+                                editMessage(activeConversation.id, index, editText.trim());
+                              }
+                              setEditingMsgIndex(null);
+                            }}
+                            className="px-2 py-1 text-[11px] bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-500 cursor-pointer"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={() => setEditingMsgIndex(null)}
+                            className="p-1 text-slate-400 hover:text-white cursor-pointer"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ) : msg.isDeleted ? (
+                        <div className="rounded-2xl px-4 py-2.5 text-xs italic text-slate-400 bg-[#1f2937]/50 border border-slate-700/40">
+                          This message was deleted
+                        </div>
+                      ) : msg.text.startsWith("data:audio/") || msg.text.includes(".webm") || msg.text.includes("[Voice Note]") ? (
                         <AudioPlayer src={msg.text} isMe={isMe} />
                       ) : msg.text.startsWith("data:image/") || msg.text.match(/\.(png|jpg|jpeg|webp|gif)$/i) ? (
                         <div className="relative rounded-2xl overflow-hidden max-w-xs border border-white/10 shadow-lg">
@@ -290,13 +375,50 @@ export default function ChatWindow() {
                           {msg.text}
                         </div>
                       )}
-                      <span
-                        className={`text-[10px] text-slate-500 px-1 ${
-                          isMe ? "text-right" : "text-left"
-                        }`}
-                      >
-                        {msg.time}
-                      </span>
+
+                      {/* Reaction Badges */}
+                      {msg.reactions && Object.keys(msg.reactions).length > 0 && (
+                        <div className={`flex items-center gap-1 mt-0.5 ${isMe ? "justify-end" : "justify-start"}`}>
+                          {Object.entries(msg.reactions).map(([emoji, count]) => (
+                            <span
+                              key={emoji}
+                              className="inline-flex items-center gap-1 rounded-full bg-[#1f2937] border border-blue-500/30 px-2 py-0.5 text-[10px] font-bold text-white shadow-xs"
+                            >
+                              <span>{emoji}</span>
+                              <span className="text-[9px] text-blue-400">{count}</span>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Time & Edit Status */}
+                      <div className={`flex items-center gap-1 px-1 text-[10px] text-slate-500 ${isMe ? "justify-end" : "justify-start"}`}>
+                        <span>{msg.time}</span>
+                        {msg.isEdited && <span className="text-slate-400 font-medium">(edited)</span>}
+
+                        {/* Edit & Delete Action Triggers for Sent Messages */}
+                        {isMe && !msg.isDeleted && isHovered && (
+                          <div className="flex items-center gap-1 ml-1">
+                            <button
+                              onClick={() => {
+                                setEditingMsgIndex(index);
+                                setEditText(msg.text);
+                              }}
+                              className="p-0.5 text-slate-400 hover:text-blue-400 transition cursor-pointer"
+                              title="Edit message"
+                            >
+                              <Pencil size={12} />
+                            </button>
+                            <button
+                              onClick={() => deleteMessage(activeConversation.id, index)}
+                              className="p-0.5 text-slate-400 hover:text-red-400 transition cursor-pointer"
+                              title="Delete message"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
