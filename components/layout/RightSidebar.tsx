@@ -1,6 +1,8 @@
 import { ChartLine, Circle } from "lucide-react";
 import Image from "next/image";
-import React from "react";
+import Link from "next/link";
+import React, { useState, useEffect } from "react";
+import { hashtagService } from "@/services/hashtagService";
 
 const friends = [
   {
@@ -20,7 +22,7 @@ const friends = [
   },
 ];
 
-const trends = [
+const fallbackTrends = [
   {
     category: "Technology",
     title: "#Glassmorphism",
@@ -31,9 +33,37 @@ const trends = [
     title: "#Lumina UI V2",
     posts: "8.2k posts",
   },
+  {
+    category: "Architecture",
+    title: "#React 19",
+    posts: "19.4k posts",
+  },
 ];
 
 const RightSidebar = () => {
+  const [trends, setTrends] = useState(fallbackTrends);
+
+  useEffect(() => {
+    const fetchTrends = async () => {
+      try {
+        const res = await hashtagService.getTrending(5);
+        const items = res?.data || res?.hashtags || res || [];
+        if (Array.isArray(items) && items.length > 0) {
+          const parsed = items.map((t: any) => ({
+            category: t.category || "Trending Topic",
+            title: t.name ? (t.name.startsWith("#") ? t.name : `#${t.name}`) : (t.tag ? `#${t.tag}` : "#tech"),
+            posts: t._count?.posts ? `${t._count.posts} posts` : (t.count ? `${t.count} posts` : "Hot"),
+          }));
+          setTrends(parsed);
+        }
+      } catch (err) {
+        console.warn("Using fallback trends due to network error:", err);
+      }
+    };
+
+    fetchTrends();
+  }, []);
+
   return (
     <aside className="w-72 min-h-screen bg-[#111827] border-l border-[#1f2937] px-5 py-6">
       {/* Header */}
@@ -54,20 +84,27 @@ const RightSidebar = () => {
 
         <div className="my-4 h-px bg-[#232d42]" />
 
-        <div className="space-y-6">
-          {trends.map((trend) => (
-            <div key={trend.title}>
-              <p className="text-xs font-semibold text-slate-500">
-                {trend.category}
-              </p>
+        <div className="space-y-4">
+          {trends.map((trend) => {
+            const cleanTag = trend.title.replace(/^#/, "");
+            return (
+              <Link
+                key={trend.title}
+                href={`/hashtag/${encodeURIComponent(cleanTag)}`}
+                className="block group cursor-pointer transition hover:translate-x-0.5"
+              >
+                <p className="text-xs font-semibold text-slate-500 group-hover:text-blue-400 transition">
+                  {trend.category}
+                </p>
 
-              <h3 className="mt-1 text-lg font-bold text-slate-200">
-                {trend.title}
-              </h3>
+                <h3 className="mt-0.5 text-sm font-bold text-slate-200 group-hover:text-white transition">
+                  {trend.title}
+                </h3>
 
-              <span className="text-sm text-slate-500">{trend.posts}</span>
-            </div>
-          ))}
+                <span className="text-xs text-slate-500">{trend.posts}</span>
+              </Link>
+            );
+          })}
         </div>
       </div>
 
