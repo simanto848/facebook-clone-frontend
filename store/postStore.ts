@@ -95,6 +95,7 @@ interface PostState {
   connectionRequests: ConnectionUser[];
   filter: "latest" | "popular" | "trending" | "following";
   setFilter: (filter: "latest" | "popular" | "trending" | "following") => void;
+  setPosts: (posts: PostType[]) => void;
   createPost: (post: Omit<PostType, "id" | "createdAt" | "reactions" | "comments">) => void;
   deletePost: (id: string) => void;
   editPost: (id: string, content: string) => void;
@@ -113,6 +114,61 @@ interface PostState {
   acceptRequest: (id: string) => void;
   declineRequest: (id: string) => void;
 }
+
+export const mapBackendPostToPostType = (p: any): PostType => ({
+  id: p.id || Math.random().toString(36).substring(7),
+  author: {
+    name:
+      p.author?.displayName ||
+      `${p.author?.firstName || ""} ${p.author?.lastName || ""}`.trim() ||
+      p.author?.username ||
+      "Anonymous",
+    username: p.author?.username || "user",
+    avatar:
+      p.author?.profilePicture ||
+      p.author?.avatarUrl ||
+      p.author?.avatar ||
+      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
+  },
+  createdAt: p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "Just now",
+  visibility: (p.visibility ? p.visibility.toLowerCase() : "public") as any,
+  type: (p.type || (p.mediaUrls && p.mediaUrls.length > 0 ? "image" : "text")) as any,
+  content: p.content || "",
+  images: p.mediaUrls || p.images || [],
+  video: p.video,
+  poll: p.poll,
+  sharedPost: p.sharedPost,
+  article: p.article,
+  reactions:
+    p.reactions && typeof p.reactions === "object" && !Array.isArray(p.reactions)
+      ? p.reactions
+      : {
+          like: Array.isArray(p.reactions) ? p.reactions.filter((r: any) => r.type === "LIKE").length : p._count?.reactions || 0,
+          love: Array.isArray(p.reactions) ? p.reactions.filter((r: any) => r.type === "LOVE").length : 0,
+          haha: Array.isArray(p.reactions) ? p.reactions.filter((r: any) => r.type === "HAHA").length : 0,
+          wow: Array.isArray(p.reactions) ? p.reactions.filter((r: any) => r.type === "WOW").length : 0,
+          sad: Array.isArray(p.reactions) ? p.reactions.filter((r: any) => r.type === "SAD").length : 0,
+          angry: Array.isArray(p.reactions) ? p.reactions.filter((r: any) => r.type === "ANGRY").length : 0,
+        },
+  userReaction: p.userReaction?.toLowerCase(),
+  comments: Array.isArray(p.comments)
+    ? p.comments.map((c: any) => ({
+        id: c.id,
+        author: {
+          name: c.author?.displayName || c.author?.username || "User",
+          username: c.author?.username || "user",
+          avatar: c.author?.profilePicture || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
+        },
+        content: c.content || "",
+        createdAt: c.createdAt ? new Date(c.createdAt).toLocaleDateString() : "Just now",
+        likes: c._count?.likes || c.likes || 0,
+        userLiked: c.userLiked,
+        replies: c.replies || [],
+      }))
+    : [],
+  saved: !!p.saved || !!p.isBookmarked,
+  pinned: !!p.pinned,
+});
 
 const initialPosts: PostType[] = [
   {
@@ -347,6 +403,7 @@ export const usePostStore = create<PostState>((set) => ({
   ],
   filter: "latest",
   setFilter: (filter) => set({ filter }),
+  setPosts: (posts) => set({ posts }),
   createPost: (post) =>
     set((state) => {
       const newPost: PostType = {

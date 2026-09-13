@@ -7,8 +7,10 @@ import FeedFilter from "@/components/features/post/FeedFilter";
 import Stories from "@/components/features/story/Stories";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
-import { usePostStore } from "@/store/postStore";
-import { ShieldAlert } from "lucide-react";
+import { usePostStore, mapBackendPostToPostType } from "@/store/postStore";
+import { postService } from "@/services/postService";
+import { ShieldAlert, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui";
 
 // Stories Skeleton Loader
 const StoriesSkeleton = () => (
@@ -62,17 +64,35 @@ const EmptyState = () => (
 );
 
 export default function Home() {
-  const { posts, filter, setFilter } = usePostStore();
+  const { posts, filter, setFilter, setPosts } = usePostStore();
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Simulate loading on mount and filter changes
-  useEffect(() => {
-    setIsLoading(true);
-    const timer = setTimeout(() => {
+  const fetchFeed = async (showLoading = true) => {
+    if (showLoading) setIsLoading(true);
+    try {
+      const res = await postService.getFeed(1, 25);
+      const items = res.data?.posts || res.data || res.posts || res;
+      if (Array.isArray(items) && items.length > 0) {
+        const mapped = items.map(mapBackendPostToPostType);
+        setPosts(mapped);
+      }
+    } catch (err) {
+      console.warn("Backend feed unavailable or returned error, using fallback feed:", err);
+    } finally {
       setIsLoading(false);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, [filter]);
+      setIsRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchFeed();
+  }, []);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await fetchFeed(false);
+  };
 
   const getFilteredPosts = () => {
     let list = [...posts];
@@ -107,7 +127,21 @@ export default function Home() {
           <div className="w-full max-w-3xl px-6 py-6 space-y-6">
             {isLoading ? <StoriesSkeleton /> : <Stories />}
             <CreatePost />
-            <FeedFilter value={filter} onChange={setFilter} />
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex-1">
+                <FeedFilter value={filter} onChange={setFilter} />
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                leftIcon={<RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""} />}
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="text-slate-400 hover:text-white"
+              >
+                Refresh
+              </Button>
+            </div>
 
             <div className="space-y-6">
               {isLoading ? (
