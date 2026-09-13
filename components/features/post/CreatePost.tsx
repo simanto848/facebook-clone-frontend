@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
-import { Images, Video, BarChart2, BookOpen, Trash2, Plus, X } from "lucide-react";
+import { Images, Video, BarChart2, BookOpen, Trash2, Plus, X, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { usePostStore } from "@/store/postStore";
 import { useAuthStore } from "@/store/authStore";
+import { postService } from "@/services/postService";
 import PostVisibilitySelect from "./PostVisibilitySelect";
 import { CreatePostModal } from "./CreatePostModal";
 
@@ -29,18 +30,41 @@ export default function CreatePost() {
     url: "",
   });
 
-  const handlePost = () => {
+  const [submitting, setSubmitting] = useState(false);
+
+  const handlePost = async () => {
     if (!content.trim() && type === "text") return;
+    if (submitting) return;
+
+    setSubmitting(true);
+
+    const postContent = content || (type === "poll" ? pollQuestion : "");
+    const mediaUrls = type === "image" && images.length > 0 ? images : (type === "video" && videoUrl ? [videoUrl] : []);
+
+    let backendId: string | undefined;
+
+    try {
+      const res = await postService.createPost({
+        content: postContent,
+        mediaUrls,
+        privacy: visibility === "public" ? "PUBLIC" : visibility === "friends" ? "FRIENDS" : "ONLY_ME",
+      });
+      const data = res?.data || res;
+      if (data?.id) backendId = data.id;
+    } catch (err) {
+      console.warn("Backend createPost failed, falling back to local optimistic state:", err);
+    }
 
     const postPayload: any = {
+      id: backendId || Math.random().toString(36).substring(7),
       author: {
-        name: user?.displayName || user?.username || "Alex Morgan",
-        username: user?.username || "alex",
+        name: user?.displayName || user?.username || "You",
+        username: user?.username || "you",
         avatar: user?.avatar || "https://images.unsplash.com/photo-1779040622687-42bb00790c67?w=500",
       },
       visibility,
       type,
-      content: content || (type === "poll" ? pollQuestion : ""),
+      content: postContent,
     };
 
     if (type === "image" && images.length > 0) {
@@ -77,6 +101,7 @@ export default function CreatePost() {
     setPollQuestion("");
     setPollOptions(["", ""]);
     setArticleDetails({ title: "", summary: "", thumbnail: "", url: "" });
+    setSubmitting(false);
   };
 
   const addPollOption = () => {
@@ -268,9 +293,11 @@ export default function CreatePost() {
           <div className="flex gap-2">
             <button
               onClick={handlePost}
-              className="bg-blue-600 text-white font-semibold text-xs px-6 py-2.5 rounded-full hover:bg-blue-700 transition shadow-lg shadow-blue-600/10"
+              disabled={submitting}
+              className="flex items-center gap-1.5 bg-blue-600 text-white font-semibold text-xs px-6 py-2.5 rounded-full hover:bg-blue-700 transition shadow-lg shadow-blue-600/10 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Post
+              {submitting && <Loader2 size={13} className="animate-spin" />}
+              <span>{submitting ? "Posting..." : "Post"}</span>
             </button>
           </div>
         </div>
