@@ -3,9 +3,11 @@
 import React, { useState, useEffect } from "react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
-import { Sparkles, Calendar, Share2 } from "lucide-react";
+import { Sparkles, Calendar, Share2, Check } from "lucide-react";
 import Image from "next/image";
 import { memoryService } from "@/services/memoryService";
+import { postService } from "@/services/postService";
+import { usePostStore } from "@/store/postStore";
 import {
   PageHeader,
   Card,
@@ -44,6 +46,35 @@ const fallbackMemories: MemoryItem[] = [
 export default function MemoriesPage() {
   const [memories, setMemories] = useState<MemoryItem[]>(fallbackMemories);
   const [loading, setLoading] = useState(false);
+  const [sharedMap, setSharedMap] = useState<Record<string, boolean>>({});
+  const { createPost } = usePostStore();
+
+  const handleShareMemory = async (memory: MemoryItem) => {
+    setSharedMap((prev) => ({ ...prev, [memory.id]: true }));
+    const shareContent = `On this day ${memory.yearsAgo} year${memory.yearsAgo > 1 ? "s" : ""} ago: "${memory.content}"`;
+
+    try {
+      await postService.createPost({
+        content: shareContent,
+        mediaUrls: memory.mediaUrl ? [memory.mediaUrl] : [],
+        privacy: "PUBLIC",
+      });
+    } catch (err) {
+      console.warn("Backend share memory post error, fallback to local store:", err);
+    }
+
+    createPost({
+      author: {
+        name: "You",
+        username: "you",
+        avatar: "https://images.unsplash.com/photo-1779040622687-42bb00790c67?w=500",
+      },
+      visibility: "public",
+      type: memory.mediaUrl ? "image" : "text",
+      content: shareContent,
+      images: memory.mediaUrl ? [memory.mediaUrl] : [],
+    });
+  };
 
   useEffect(() => {
     const fetchMemories = async () => {
@@ -110,12 +141,12 @@ export default function MemoriesPage() {
                           <span className="text-xs text-slate-500">• {m.dateStr}</span>
                         </div>
                         <Button
-                          variant="secondary"
+                          variant={sharedMap[m.id] ? "success" : "secondary"}
                           size="sm"
-                          leftIcon={<Share2 size={13} />}
-                          onClick={() => alert("Shared memory to feed!")}
+                          leftIcon={sharedMap[m.id] ? <Check size={13} /> : <Share2 size={13} />}
+                          onClick={() => handleShareMemory(m)}
                         >
-                          Share Memory
+                          {sharedMap[m.id] ? "Shared to Feed!" : "Share Memory"}
                         </Button>
                       </div>
 
