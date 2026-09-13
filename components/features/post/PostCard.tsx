@@ -12,6 +12,7 @@ import PostGallery from "./PostGallery";
 import PostVideo from "./PostVideo";
 import PostComments from "./PostComments";
 import { Button } from "@/components/ui";
+import { reactionService } from "@/services/reactionService";
 
 interface Props {
   post: PostType;
@@ -65,6 +66,26 @@ export default function PostCard({ post }: Props) {
 
   // Find user active reaction
   const userReactionObj = reactionsList.find((r) => r.type === post.userReaction);
+
+  const handleReactionSelect = async (reactionType: string) => {
+    const isRemoving = post.userReaction === reactionType;
+    addReaction(post.id, reactionType);
+    setShowReactionPicker(false);
+
+    try {
+      if (isRemoving) {
+        await reactionService.removeReaction(post.id, "POST");
+      } else {
+        await reactionService.addReaction({
+          targetId: post.id,
+          targetType: "POST",
+          type: reactionType.toUpperCase() as any,
+        });
+      }
+    } catch (err) {
+      console.warn("Backend reaction failed, fallback to local store:", err);
+    }
+  };
 
   return (
     <article
@@ -276,7 +297,7 @@ export default function PostCard({ post }: Props) {
           onMouseLeave={() => setShowReactionPicker(false)}
         >
           <button
-            onClick={() => addReaction(post.id, "like")}
+            onClick={() => handleReactionSelect(post.userReaction || "like")}
             className={`
               flex w-full items-center justify-center gap-2 rounded-xl py-2 text-sm font-medium transition
               ${userReactionObj ? `${userReactionObj.color} bg-slate-800/30 font-semibold` : "hover:bg-[#1f2937] hover:text-white"}
@@ -292,7 +313,7 @@ export default function PostCard({ post }: Props) {
 
           {showReactionPicker && (
             <ReactionPicker
-              onSelect={(reaction) => addReaction(post.id, reaction)}
+              onSelect={(reaction) => handleReactionSelect(reaction)}
               onClose={() => setShowReactionPicker(false)}
             />
           )}
