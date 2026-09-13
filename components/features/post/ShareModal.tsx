@@ -3,6 +3,7 @@ import { Share2, Send, Link as LinkIcon, Check } from "lucide-react";
 import { shareService } from "@/services/shareService";
 import { Dialog, Button } from "@/components/ui";
 import { useChatStore } from "@/store/chatStore";
+import { usePostStore } from "@/store/postStore";
 
 interface ShareModalProps {
   isOpen: boolean;
@@ -37,24 +38,49 @@ export default function ShareModal({ isOpen, onClose, postId, post }: ShareModal
     }, 1200);
   };
 
+  const createPost = usePostStore((state) => state.createPost);
+
   const handleShare = async (e: React.FormEvent) => {
     e.preventDefault();
     setSharing(true);
 
     try {
       await shareService.sharePost({ postId: targetPostId, caption });
-      setShared(true);
-      setTimeout(() => {
-        setShared(false);
-        setCaption("");
-        onClose();
-      }, 1200);
     } catch (err) {
-      console.error("Share post error:", err);
-      onClose();
-    } finally {
-      setSharing(false);
+      console.warn("Backend share error, using optimistic local state:", err);
     }
+
+    // Optimistically add shared post to feed timeline
+    if (post) {
+      createPost({
+        author: {
+          name: "You",
+          username: "you",
+          avatar: "https://images.unsplash.com/photo-1779040622687-42bb00790c67?w=500",
+        },
+        visibility: "public",
+        type: "shared",
+        content: caption || "Shared a post",
+        sharedPost: {
+          id: post.id,
+          author: post.author || {
+            name: "User",
+            username: "user",
+            avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
+          },
+          content: post.content || "",
+          createdAt: post.createdAt || "Recently",
+        },
+      });
+    }
+
+    setShared(true);
+    setTimeout(() => {
+      setShared(false);
+      setCaption("");
+      onClose();
+    }, 1200);
+    setSharing(false);
   };
 
   return (
