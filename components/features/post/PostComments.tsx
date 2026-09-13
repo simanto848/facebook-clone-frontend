@@ -1,7 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
-import { Send } from "lucide-react";
+import { Send, Loader2 } from "lucide-react";
 import { usePostStore, CommentType } from "@/store/postStore";
+import { useAuthStore } from "@/store/authStore";
+import { commentService } from "@/services/commentService";
 import CommentItem from "./CommentItem";
 
 interface Props {
@@ -12,13 +14,99 @@ interface Props {
 export default function PostComments({ postId, comments }: Props) {
   const { addComment, addReplyToComment, toggleLikeComment, editComment, deleteComment } =
     usePostStore();
+  const user = useAuthStore((state) => state.user);
   const [commentText, setCommentText] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [commentList, setCommentList] = useState<CommentType[]>(comments);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    setCommentList(comments);
+  }, [comments]);
+
+  useEffect(() => {
+    const fetchComments = async () => {
+      setLoading(true);
+      try {
+        const res = await commentService.getPostComments(postId, 1, 30);
+        const items = res?.data?.comments || res?.data || res?.comments || res;
+        if (Array.isArray(items) && items.length > 0) {
+          const mapped: CommentType[] = items.map((c: any) => ({
+            id: c.id,
+            author: {
+              name:
+                c.author?.displayName ||
+                `${c.author?.firstName || ""} ${c.author?.lastName || ""}`.trim() ||
+                c.author?.username ||
+                "User",
+              username: c.author?.username || "user",
+              avatar:
+                c.author?.profilePicture ||
+                c.author?.avatarUrl ||
+                "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
+            },
+            content: c.content || "",
+            createdAt: c.createdAt ? new Date(c.createdAt).toLocaleDateString() : "Just now",
+            likes: c._count?.likes || c.likes || 0,
+            userLiked: c.userLiked,
+            replies: Array.isArray(c.replies)
+              ? c.replies.map((r: any) => ({
+                  id: r.id,
+                  author: {
+                    name: r.author?.displayName || r.author?.username || "User",
+                    username: r.author?.username || "user",
+                    avatar: r.author?.profilePicture || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
+                  },
+                  content: r.content || "",
+                  createdAt: r.createdAt ? new Date(r.createdAt).toLocaleDateString() : "Just now",
+                  likes: r._count?.likes || r.likes || 0,
+                }))
+              : [],
+          }));
+          setCommentList(mapped);
+        }
+      } catch (err) {
+        console.warn("Could not load backend comments, using local comments:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchComments();
+  }, [postId]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!commentText.trim()) return;
-    addComment(postId, commentText);
+    if (!commentText.trim() || submitting) return;
+
+    setSubmitting(true);
+    const content = commentText.trim();
     setCommentText("");
+
+    let backendId: string | undefined;
+    try {
+      const res = await commentService.createComment({ postId, content });
+      const data = res?.data || res;
+      if (data?.id) backendId = data.id;
+    } catch (err) {
+      console.warn("Backend createComment failed, using optimistic state:", err);
+    }
+
+    const newComment: CommentType = {
+      id: backendId || Math.random().toString(36).substring(7),
+      author: {
+        name: user?.displayName || user?.username || "You",
+        username: user?.username || "you",
+        avatar: user?.avatar || "https://images.unsplash.com/photo-1779040622687-42bb00790c67?w=100",
+      },
+      content,
+      createdAt: "Just now",
+      likes: 0,
+    };
+
+    setCommentList((prev) => [newComment, ...prev]);
+    addComment(postId, content);
+    setSubmitting(false);
   };
 
   const handleReply = (commentId: string, replyText: string) => {
@@ -35,6 +123,7 @@ export default function PostComments({ postId, comments }: Props) {
 
   const handleDelete = (commentId: string) => {
     deleteComment(postId, commentId);
+    setCommentList((prev) => prev.filter((c) => c.id !== commentId));
   };
 
   return (
@@ -70,10 +159,15 @@ export default function PostComments({ postId, comments }: Props) {
 
       {/* Comments List */}
       <div className="mt-4 space-y-4 max-h-[350px] overflow-y-auto pr-1 custom-scrollbar">
-        {comments.length === 0 ? (
+        {loading ? (
+          <div className="py-4 flex justify-center text-slate-500 items-center gap-2">
+            <Loader2 size={16} className="animate-spin text-blue-500" />
+            <span className="text-xs">Loading comments...</span>
+          </div>
+        ) : commentList.length === 0 ? (
           <p className="text-center text-xs text-slate-500 py-3">No comments yet. Start the conversation!</p>
         ) : (
-          comments.map((comment) => (
+          commentList.map((comment) => (
             <CommentItem
               key={comment.id}
               comment={comment}
