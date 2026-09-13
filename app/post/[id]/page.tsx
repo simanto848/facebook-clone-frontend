@@ -1,11 +1,12 @@
 "use client";
 
-import React, { use } from "react";
+import React, { use, useState, useEffect } from "react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
-import { usePostStore } from "@/store/postStore";
-import { ArrowLeft, MessageSquare } from "lucide-react";
+import { usePostStore, mapBackendPostToPostType, PostType } from "@/store/postStore";
+import { postService } from "@/services/postService";
+import { ArrowLeft, MessageSquare, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface PageProps {
@@ -16,7 +17,39 @@ export default function PostDetailPage({ params }: PageProps) {
   const router = useRouter();
   const { id } = use(params);
   const { posts } = usePostStore();
-  const post = posts.find((p) => p.id === id);
+  const existingPost = posts.find((p) => p.id === id);
+
+  const [post, setPost] = useState<PostType | null>(existingPost || null);
+  const [loading, setLoading] = useState(!existingPost);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (existingPost) {
+      setPost(existingPost);
+      return;
+    }
+
+    const fetchPostDetail = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await postService.getPost(id);
+        const data = res?.data || res;
+        if (data) {
+          const mapped = mapBackendPostToPostType(data);
+          setPost(mapped);
+        } else {
+          setError("Post not found");
+        }
+      } catch (err: any) {
+        setError(err.message || "Failed to load post");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPostDetail();
+  }, [id, existingPost]);
 
   return (
     <div className="min-h-screen bg-[#0f172a] text-white">
@@ -42,14 +75,18 @@ export default function PostDetailPage({ params }: PageProps) {
               </div>
             </div>
 
-            {post ? (
-              // Renders the single post card
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-20 text-center space-y-3 rounded-2xl border border-[#1f2937] bg-[#111827]/40">
+                <Loader2 size={32} className="animate-spin text-blue-500" />
+                <p className="text-xs text-slate-400">Loading post thread...</p>
+              </div>
+            ) : post ? (
               <PostCard post={post} />
             ) : (
               <div className="flex flex-col items-center justify-center py-16 text-center space-y-4 rounded-2xl border border-dashed border-[#1f2937] bg-[#111827]/30">
                 <MessageSquare size={40} className="text-slate-500" />
                 <div>
-                  <h3 className="font-semibold text-white">Post not found</h3>
+                  <h3 className="font-semibold text-white">{error || "Post not found"}</h3>
                   <p className="text-xs text-slate-500 mt-1 max-w-xs">
                     This post may have been deleted by the author or does not exist.
                   </p>
