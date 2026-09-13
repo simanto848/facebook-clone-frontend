@@ -3,8 +3,9 @@
 import React, { useState, useEffect } from "react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
-import { Flag, Plus, ThumbsUp } from "lucide-react";
+import { Flag, Plus, ThumbsUp, ExternalLink } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { pageService } from "@/services/pageService";
 import {
   PageHeader,
@@ -160,11 +161,13 @@ export default function PagesHubPage() {
 
                     <CardContent className="p-4 flex-1 flex flex-col justify-between space-y-3">
                       <div className="flex gap-3 items-start">
-                        <div className="-mt-8 z-10">
+                        <Link href={`/pages/${p.id}`} className="-mt-8 z-10 block cursor-pointer">
                           <Avatar src={p.avatar} name={p.name} size="lg" />
-                        </div>
+                        </Link>
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-sm font-bold text-white truncate">{p.name}</h3>
+                          <Link href={`/pages/${p.id}`} className="hover:text-blue-400 transition cursor-pointer">
+                            <h3 className="text-sm font-bold text-white truncate hover:underline">{p.name}</h3>
+                          </Link>
                           <Badge variant="primary" size="sm" className="mt-0.5">{p.category}</Badge>
                         </div>
                       </div>
@@ -172,14 +175,22 @@ export default function PagesHubPage() {
 
                       <div className="flex items-center justify-between pt-2 border-t border-[#1f2937]/60">
                         <span className="text-xs text-slate-400 font-semibold">{(p.likes + (isLiked ? 1 : 0)).toLocaleString()} likes</span>
-                        <Button
-                          variant={isLiked ? "primary" : "secondary"}
-                          size="sm"
-                          leftIcon={<ThumbsUp size={13} />}
-                          onClick={() => handleToggleLike(p.id)}
-                        >
-                          {isLiked ? "Liked" : "Like Page"}
-                        </Button>
+                        <div className="flex gap-2">
+                          <Link
+                            href={`/pages/${p.id}`}
+                            className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg border border-[#1f2937] bg-[#0f172a] hover:bg-[#1f2937] text-slate-300 transition"
+                          >
+                            <ExternalLink size={12} /> View
+                          </Link>
+                          <Button
+                            variant={isLiked ? "primary" : "secondary"}
+                            size="sm"
+                            leftIcon={<ThumbsUp size={13} />}
+                            onClick={() => handleToggleLike(p.id)}
+                          >
+                            {isLiked ? "Liked" : "Like Page"}
+                          </Button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
