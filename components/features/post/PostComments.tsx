@@ -109,21 +109,36 @@ export default function PostComments({ postId, comments }: Props) {
     setSubmitting(false);
   };
 
-  const handleReply = (commentId: string, replyText: string) => {
+  const handleReply = async (commentId: string, replyText: string) => {
     addReplyToComment(postId, commentId, replyText);
+    try {
+      await commentService.createComment({ postId, parentId: commentId, content: replyText });
+    } catch (err) {
+      console.warn("Backend reply creation failed, using local store:", err);
+    }
   };
 
   const handleLike = (commentId: string) => {
     toggleLikeComment(postId, commentId);
   };
 
-  const handleEdit = (commentId: string, newText: string) => {
+  const handleEdit = async (commentId: string, newText: string) => {
     editComment(postId, commentId, newText);
+    try {
+      await commentService.updateComment(commentId, newText);
+    } catch (err) {
+      console.warn("Backend update comment failed, using local store:", err);
+    }
   };
 
-  const handleDelete = (commentId: string) => {
+  const handleDelete = async (commentId: string) => {
     deleteComment(postId, commentId);
     setCommentList((prev) => prev.filter((c) => c.id !== commentId));
+    try {
+      await commentService.deleteComment(commentId);
+    } catch (err) {
+      console.warn("Backend delete comment failed, using local store:", err);
+    }
   };
 
   return (

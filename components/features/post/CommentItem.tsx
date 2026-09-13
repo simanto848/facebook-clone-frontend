@@ -1,8 +1,7 @@
-"use client";
-
 import React, { useState } from "react";
 import { Heart, MessageSquare, Check, CornerDownRight, Trash2, Edit2 } from "lucide-react";
 import { CommentType } from "@/store/postStore";
+import { useAuthStore } from "@/store/authStore";
 import { Avatar, Button, Input } from "@/components/ui";
 
 interface Props {
@@ -14,6 +13,7 @@ interface Props {
 }
 
 export default function CommentItem({ comment, onLike, onReply, onEdit, onDelete }: Props) {
+  const currentUser = useAuthStore((state) => state.user);
   const [isReplying, setIsReplying] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [replyText, setReplyText] = useState("");
@@ -89,7 +89,9 @@ export default function CommentItem({ comment, onLike, onReply, onEdit, onDelete
               <span>Reply</span>
             </button>
 
-            {comment.author.username === "alex" && (
+            {(currentUser?.username === comment.author.username ||
+              comment.author.username === "alex" ||
+              comment.author.username === "you") && (
               <>
                 <button
                   onClick={() => setIsEditing(!isEditing)}
