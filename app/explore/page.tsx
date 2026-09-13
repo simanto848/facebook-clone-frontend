@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
-import { usePostStore } from "@/store/postStore";
+import { usePostStore, mapBackendPostToPostType, PostType } from "@/store/postStore";
 import { useChatStore } from "@/store/chatStore";
-import { Search, Hash, Compass } from "lucide-react";
+import { Search, Hash, Compass, User, UserPlus, MessageSquare, Loader2, ArrowRight } from "lucide-react";
 import { searchService } from "@/services/searchService";
 import { hashtagService } from "@/services/hashtagService";
 import {
@@ -16,6 +17,9 @@ import {
   Badge,
   EmptyState,
   Button,
+  Avatar,
+  Card,
+  CardContent,
 } from "@/components/ui";
 
 const defaultPopularTags = ["design", "webgl", "react", "brutalism", "tokyo", "security"];
@@ -27,6 +31,9 @@ export default function ExplorePage() {
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [popularTags, setPopularTags] = useState<string[]>(defaultPopularTags);
+  const [searching, setSearching] = useState(false);
+  const [matchedUsers, setMatchedUsers] = useState<any[]>([]);
+  const [matchedPosts, setMatchedPosts] = useState<PostType[]>([]);
 
   useEffect(() => {
     const fetchTrending = async () => {
@@ -44,23 +51,60 @@ export default function ExplorePage() {
   }, []);
 
   useEffect(() => {
-    if (!searchQuery.trim()) return;
+    if (!searchQuery.trim()) {
+      setMatchedUsers([]);
+      setMatchedPosts([]);
+      setSearching(false);
+      return;
+    }
+
+    setSearching(true);
     const delayDebounceFn = setTimeout(async () => {
       try {
-        await searchService.search(searchQuery, activeCategory === "all" ? "all" : (activeCategory as any));
+        const searchType =
+          activeCategory === "people"
+            ? "users"
+            : activeCategory === "posts"
+            ? "posts"
+            : "all";
+
+        const res = await searchService.search(searchQuery, searchType as any);
+        const data = res?.data || res;
+
+        if (data?.users && Array.isArray(data.users)) {
+          setMatchedUsers(data.users);
+        } else {
+          setMatchedUsers([]);
+        }
+
+        if (data?.posts && Array.isArray(data.posts)) {
+          setMatchedPosts(data.posts.map(mapBackendPostToPostType));
+        } else {
+          setMatchedPosts([]);
+        }
       } catch (err) {
         console.error("Search API error:", err);
+      } finally {
+        setSearching(false);
       }
-    }, 400);
+    }, 350);
 
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery, activeCategory]);
 
   const getFilteredPosts = () => {
+    if (searchQuery.trim() && matchedPosts.length > 0) {
+      return matchedPosts;
+    }
+
     let list = [...posts];
 
     if (selectedTag) {
-      list = list.filter((p) => p.content.toLowerCase().includes(`#${selectedTag}`) || p.content.toLowerCase().includes(selectedTag));
+      list = list.filter(
+        (p) =>
+          p.content.toLowerCase().includes(`#${selectedTag}`) ||
+          p.content.toLowerCase().includes(selectedTag)
+      );
     }
 
     if (searchQuery.trim() !== "") {
@@ -160,7 +204,77 @@ export default function ExplorePage() {
 
             {/* Posts & Search Results Feed */}
             <div className="space-y-4">
-              {filteredPosts.length === 0 ? (
+              {searching ? (
+                <div className="py-20 flex flex-col items-center justify-center gap-3 text-slate-400">
+                  <Loader2 size={32} className="animate-spin text-blue-500" />
+                  <span className="text-xs">Searching community for "{searchQuery}"...</span>
+                </div>
+              ) : activeCategory === "people" ? (
+                matchedUsers.length === 0 ? (
+                  <EmptyState
+                    icon={<User size={36} className="text-slate-400" />}
+                    title={searchQuery ? "No members found" : "Search members"}
+                    description={searchQuery ? "No community members match your search criteria." : "Type a name or handle above to find people."}
+                  />
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {matchedUsers.map((u) => {
+                      const name = `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.username || "Member";
+                      const avatar = u.profilePicture || u.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100";
+                      return (
+                        <Card key={u.id} hover className="p-4 flex items-center justify-between gap-3">
+                          <Link href={`/profile/${u.username || u.id}`} className="flex items-center gap-3 min-w-0 cursor-pointer">
+                            <Avatar src={avatar} name={name} size="md" />
+                            <div className="min-w-0">
+                              <h4 className="text-xs font-bold text-white truncate hover:underline">{name}</h4>
+                              <p className="text-[11px] text-slate-400 truncate">@{u.username || "user"}</p>
+                            </div>
+                          </Link>
+                          <div className="flex gap-1.5 shrink-0">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => openChat({ id: u.id, name, avatar })}
+                              className="text-slate-300 hover:text-white"
+                            >
+                              <MessageSquare size={13} />
+                            </Button>
+                            <Link href={`/profile/${u.username || u.id}`}>
+                              <Button size="sm" variant="secondary">
+                                Profile
+                              </Button>
+                            </Link>
+                          </div>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                )
+              ) : activeCategory === "groups" ? (
+                <div className="py-8 text-center space-y-4 rounded-2xl border border-[#1f2937] bg-[#111827]/40 p-6">
+                  <h3 className="text-sm font-bold text-white">Explore Community Groups</h3>
+                  <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                    Browse all active tech groups, discussions, and specialized engineering rooms.
+                  </p>
+                  <Link href="/groups" className="inline-block">
+                    <Button variant="primary" size="sm" rightIcon={<ArrowRight size={14} />}>
+                      Go to Groups Hub
+                    </Button>
+                  </Link>
+                </div>
+              ) : activeCategory === "pages" ? (
+                <div className="py-8 text-center space-y-4 rounded-2xl border border-[#1f2937] bg-[#111827]/40 p-6">
+                  <h3 className="text-sm font-bold text-white">Explore Brand & Tech Pages</h3>
+                  <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                    Discover official brand pages, developer tools, and verified organizations.
+                  </p>
+                  <Link href="/pages" className="inline-block">
+                    <Button variant="primary" size="sm" rightIcon={<ArrowRight size={14} />}>
+                      Go to Pages Hub
+                    </Button>
+                  </Link>
+                </div>
+              ) : filteredPosts.length === 0 ? (
                 <EmptyState
                   icon={<Search size={36} className="text-slate-400" />}
                   title="No matches found"
