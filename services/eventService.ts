@@ -2,18 +2,21 @@ import { useAxios } from "@/lib/useAxios";
 
 export interface CreateEventInput {
   title: string;
-  description: string;
-  startDate: string;
+  description?: string;
+  startDate?: string;
+  startTime?: string;
   endDate?: string;
+  endTime?: string;
   location?: string;
   category?: string;
   coverImage?: string;
+  coverUrl?: string;
 }
 
 export const eventService = {
-  getEvents: async (page = 1, limit = 20) => {
+  getEvents: async (page = 1, pageSize = 20) => {
     const axios = await useAxios();
-    const response = await axios.get(`/events?page=${page}&limit=${limit}`);
+    const response = await axios.get(`/events?page=${page}&pageSize=${pageSize}`);
     return response.data;
   },
 
@@ -25,13 +28,25 @@ export const eventService = {
 
   createEvent: async (data: CreateEventInput) => {
     const axios = await useAxios();
-    const response = await axios.post("/events", data);
+    const payload: Record<string, any> = {
+      title: data.title,
+      description: data.description,
+      location: data.location,
+      startTime: data.startTime || (data.startDate ? new Date(data.startDate).toISOString() : new Date().toISOString()),
+    };
+    if (data.endTime || data.endDate) {
+      payload.endTime = data.endTime || new Date(data.endDate!).toISOString();
+    }
+    if (data.coverUrl || data.coverImage) {
+      payload.coverUrl = data.coverUrl || data.coverImage;
+    }
+    const response = await axios.post("/events", payload);
     return response.data;
   },
 
-  rsvpEvent: async (id: string, status: "GOING" | "INTERESTED" | "DECLINED") => {
+  rsvpEvent: async (id: string, status: "going" | "interested" | "declined" | string) => {
     const axios = await useAxios();
-    const response = await axios.post(`/events/${id}/rsvp`, { status });
+    const response = await axios.post(`/events/${id}/rsvp`, { status: status.toLowerCase() });
     return response.data;
   },
 

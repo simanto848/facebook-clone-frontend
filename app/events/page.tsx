@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
-import { Calendar, MapPin, Users, Ticket, Check } from "lucide-react";
+import { Calendar, MapPin, Users, Ticket, Check, Plus, Image as ImageIcon } from "lucide-react";
 import Image from "next/image";
 import { eventService } from "@/services/eventService";
 import {
@@ -15,6 +16,8 @@ import {
   Badge,
   EmptyState,
   Loader,
+  Dialog,
+  Input,
 } from "@/components/ui";
 
 interface TechEvent {
@@ -67,6 +70,19 @@ export default function EventsPage() {
   const [activeFilter, setActiveFilter] = useState<string>("all");
   const [loading, setLoading] = useState(false);
 
+  // Create Event Modal State
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    category: "Conference",
+    location: "",
+    startDate: "",
+    coverImage: "",
+  });
+
   const fetchEventsFromBackend = async () => {
     setLoading(true);
     try {
@@ -76,11 +92,11 @@ export default function EventsPage() {
         const fetched: TechEvent[] = items.map((item: any) => ({
           id: item.id,
           title: item.title,
-          cover: item.coverImage || "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=600",
-          date: item.startDate ? new Date(item.startDate).toLocaleDateString() : "Upcoming",
+          cover: item.coverImage || item.coverUrl || "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=600",
+          date: item.startTime || item.startDate ? new Date(item.startTime || item.startDate).toLocaleDateString() : "Upcoming",
           location: item.location || "Online",
           category: item.category || "Meetup",
-          attendees: item._count?.rsvps || 0,
+          attendees: item._count?.rsvps || (Array.isArray(item.rsvps) ? item.rsvps.length : 0),
           description: item.description || "",
         }));
         setEvents(fetched);
@@ -106,10 +122,61 @@ export default function EventsPage() {
 
     if (newStatus) {
       try {
-        await eventService.rsvpEvent(eventId, newStatus.toUpperCase() as any);
+        await eventService.rsvpEvent(eventId, newStatus);
       } catch (err) {
         console.error("RSVP error:", err);
       }
+    }
+  };
+
+  const handleCreateEvent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.title.trim()) {
+      setCreateError("Event title is required");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setCreateError(null);
+    try {
+      const startDateIso = formData.startDate
+        ? new Date(formData.startDate).toISOString()
+        : new Date().toISOString();
+
+      const created = await eventService.createEvent({
+        title: formData.title,
+        description: formData.description,
+        location: formData.location,
+        category: formData.category,
+        startTime: startDateIso,
+        coverUrl: formData.coverImage || "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=600",
+      });
+
+      const newEvent: TechEvent = {
+        id: created.data?.id || created.id || `event-${Date.now()}`,
+        title: formData.title,
+        cover: formData.coverImage || "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=600",
+        date: new Date(startDateIso).toLocaleDateString(),
+        location: formData.location || "Online",
+        category: formData.category,
+        attendees: 1,
+        description: formData.description,
+      };
+
+      setEvents((prev) => [newEvent, ...prev]);
+      setIsCreateOpen(false);
+      setFormData({
+        title: "",
+        description: "",
+        category: "Conference",
+        location: "",
+        startDate: "",
+        coverImage: "",
+      });
+    } catch (err: any) {
+      setCreateError(err.response?.data?.message || err.message || "Failed to create event");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -150,6 +217,15 @@ export default function EventsPage() {
               title="Tech Events & Hackathons"
               description="Discover tech conferences, developer meetups, and code hackathons."
               icon={<Calendar size={22} />}
+              actions={
+                <Button
+                  leftIcon={<Plus size={16} />}
+                  onClick={() => setIsCreateOpen(true)}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  Create Event
+                </Button>
+              }
             />
 
             <Tabs
@@ -177,9 +253,12 @@ export default function EventsPage() {
                   const displayAttendees = rsvpStatus === "going" ? event.attendees + 1 : event.attendees;
 
                   return (
-                    <Card key={event.id} hover className="flex flex-col md:flex-row group">
+                    <Card key={event.id} hover className="flex flex-col md:flex-row group overflow-hidden">
                       {/* Event Banner */}
-                      <div className="relative h-48 md:h-auto md:w-56 overflow-hidden shrink-0">
+                      <Link
+                        href={`/events/${event.id}`}
+                        className="relative h-48 md:h-auto md:w-56 overflow-hidden shrink-0 block"
+                      >
                         <Image
                           src={event.cover}
                           fill
@@ -190,14 +269,16 @@ export default function EventsPage() {
                         <div className="absolute top-3 left-3">
                           <Badge variant="glass">{event.category}</Badge>
                         </div>
-                      </div>
+                      </Link>
 
                       {/* Event Details */}
                       <CardContent className="p-5 flex-1 flex flex-col justify-between space-y-4">
                         <div className="space-y-2">
-                          <h3 className="font-bold text-base text-white hover:text-blue-400 transition cursor-pointer">
-                            {event.title}
-                          </h3>
+                          <Link href={`/events/${event.id}`}>
+                            <h3 className="font-bold text-base text-white hover:text-blue-400 transition cursor-pointer">
+                              {event.title}
+                            </h3>
+                          </Link>
                           <div className="flex flex-col gap-1 text-xs text-slate-400">
                             <div className="flex items-center gap-1.5">
                               <Calendar size={13} className="text-blue-400 shrink-0" />
@@ -250,6 +331,106 @@ export default function EventsPage() {
           <RightSidebar />
         </aside>
       </div>
+
+      {/* CREATE EVENT MODAL */}
+      <Dialog
+        isOpen={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+        title="Host a New Tech Event"
+        description="Fill in the event details to publish to the community."
+        size="lg"
+      >
+        <form onSubmit={handleCreateEvent} className="space-y-4 pt-2">
+          {createError && (
+            <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl text-xs">
+              {createError}
+            </div>
+          )}
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-300">Event Title *</label>
+            <Input
+              required
+              placeholder="e.g., Global Rust & WebAssembly Summit 2026"
+              value={formData.title}
+              onChange={(e) => setFormData((p) => ({ ...p, title: e.target.value }))}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-300">Category</label>
+              <select
+                value={formData.category}
+                onChange={(e) => setFormData((p) => ({ ...p, category: e.target.value }))}
+                className="w-full bg-[#1e293b] border border-[#334155] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500 transition"
+              >
+                <option value="Conference">Conference</option>
+                <option value="Hackathon">Hackathon</option>
+                <option value="Meetup">Meetup</option>
+                <option value="Workshop">Workshop</option>
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-300">Start Date & Time</label>
+              <Input
+                type="datetime-local"
+                value={formData.startDate}
+                onChange={(e) => setFormData((p) => ({ ...p, startDate: e.target.value }))}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-300">Location</label>
+            <Input
+              placeholder="e.g., San Francisco, CA or Online (Zoom)"
+              value={formData.location}
+              onChange={(e) => setFormData((p) => ({ ...p, location: e.target.value }))}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-300">Cover Image URL</label>
+            <Input
+              placeholder="https://images.unsplash.com/..."
+              value={formData.coverImage}
+              onChange={(e) => setFormData((p) => ({ ...p, coverImage: e.target.value }))}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-300">Description</label>
+            <textarea
+              rows={3}
+              placeholder="Describe agenda, keynote speakers, and what attendees will learn..."
+              value={formData.description}
+              onChange={(e) => setFormData((p) => ({ ...p, description: e.target.value }))}
+              className="w-full bg-[#1e293b] border border-[#334155] rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition resize-none"
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-[#1f2937]">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsCreateOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              size="sm"
+              disabled={isSubmitting}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {isSubmitting ? "Publishing..." : "Publish Event"}
+            </Button>
+          </div>
+        </form>
+      </Dialog>
     </div>
   );
 }
