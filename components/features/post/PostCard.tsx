@@ -11,6 +11,7 @@ import PollPost from "./PollPost";
 import PostGallery from "./PostGallery";
 import PostVideo from "./PostVideo";
 import PostComments from "./PostComments";
+import ReportModal from "./ReportModal";
 import { Button } from "@/components/ui";
 import { reactionService } from "@/services/reactionService";
 import { bookmarkService } from "@/services/bookmarkService";
@@ -35,6 +36,7 @@ export default function PostCard({ post }: Props) {
   const [showComments, setShowComments] = useState(false);
   const [showReactionPicker, setShowReactionPicker] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
 
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -180,7 +182,7 @@ export default function PostCard({ post }: Props) {
           onPin={() => togglePinPost(post.id)}
           onSave={handleToggleSave}
           onHide={() => alert("Post hidden.")}
-          onReport={() => alert("Post reported.")}
+          onReport={() => setIsReportOpen(true)}
         />
       </div>
 
@@ -402,6 +404,15 @@ export default function PostCard({ post }: Props) {
         post={post}
         isOpen={shareModalOpen}
         onClose={() => setShareModalOpen(false)}
+      />
+
+      {/* Report Content Modal Dialog Overlay */}
+      <ReportModal
+        postId={post.id}
+        targetId={post.id}
+        targetType="POST"
+        isOpen={isReportOpen}
+        onClose={() => setIsReportOpen(false)}
       />
 
       {/* Render Nested Comments section */}
