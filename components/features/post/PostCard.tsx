@@ -13,6 +13,8 @@ import PostVideo from "./PostVideo";
 import PostComments from "./PostComments";
 import { Button } from "@/components/ui";
 import { reactionService } from "@/services/reactionService";
+import { bookmarkService } from "@/services/bookmarkService";
+import { postService } from "@/services/postService";
 
 interface Props {
   post: PostType;
@@ -34,11 +36,40 @@ export default function PostCard({ post }: Props) {
   const [showReactionPicker, setShowReactionPicker] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
 
-  const handleEditSubmit = (e: React.FormEvent) => {
+  const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editText.trim()) return;
     editPost(post.id, editText);
     setIsEditing(false);
+    try {
+      await postService.updatePost(post.id, { content: editText });
+    } catch (err) {
+      console.warn("Backend updatePost failed, using local store:", err);
+    }
+  };
+
+  const handleDeletePost = async () => {
+    deletePost(post.id);
+    try {
+      await postService.deletePost(post.id);
+    } catch (err) {
+      console.warn("Backend deletePost failed, using local store:", err);
+    }
+  };
+
+  const handleToggleSave = async () => {
+    const nextSaved = !post.saved;
+    toggleSavePost(post.id);
+
+    try {
+      if (nextSaved) {
+        await bookmarkService.createBookmark(post.id);
+      } else {
+        await bookmarkService.deleteBookmark((post as any).bookmarkId || post.id);
+      }
+    } catch (err) {
+      console.warn("Backend bookmark toggle error, fallback to local store:", err);
+    }
   };
 
   // Visibility Icon lookup
@@ -145,9 +176,9 @@ export default function PostCard({ post }: Props) {
           isSaved={!!post.saved}
           isPinned={!!post.pinned}
           onEdit={() => setIsEditing(true)}
-          onDelete={() => deletePost(post.id)}
+          onDelete={handleDeletePost}
           onPin={() => togglePinPost(post.id)}
-          onSave={() => toggleSavePost(post.id)}
+          onSave={handleToggleSave}
           onHide={() => alert("Post hidden.")}
           onReport={() => alert("Post reported.")}
         />
@@ -335,7 +366,7 @@ export default function PostCard({ post }: Props) {
         <div className="flex-1 flex justify-center">
           <SaveButton
             isSaved={!!post.saved}
-            onClick={() => toggleSavePost(post.id)}
+            onClick={handleToggleSave}
             showText={true}
           />
         </div>
