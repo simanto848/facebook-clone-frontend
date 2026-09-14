@@ -80,6 +80,8 @@ export default function EventsPage() {
     category: "Conference",
     location: "",
     startDate: "",
+    endDate: "",
+    isOnline: false,
     coverImage: "",
   });
 
@@ -136,6 +138,11 @@ export default function EventsPage() {
       return;
     }
 
+    if (formData.startDate && formData.endDate && new Date(formData.endDate) < new Date(formData.startDate)) {
+      setCreateError("End date cannot be earlier than start date");
+      return;
+    }
+
     setIsSubmitting(true);
     setCreateError(null);
     try {
@@ -143,24 +150,35 @@ export default function EventsPage() {
         ? new Date(formData.startDate).toISOString()
         : new Date().toISOString();
 
+      const endDateIso = formData.endDate
+        ? new Date(formData.endDate).toISOString()
+        : undefined;
+
+      const locationStr = formData.isOnline
+        ? formData.location
+          ? `Online - ${formData.location}`
+          : "Online Stream"
+        : formData.location || "San Francisco, CA";
+
       const created = await eventService.createEvent({
-        title: formData.title,
-        description: formData.description,
-        location: formData.location,
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        location: locationStr,
         category: formData.category,
         startTime: startDateIso,
-        coverUrl: formData.coverImage || "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=600",
+        endTime: endDateIso,
+        coverUrl: formData.coverImage.trim() || "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=600",
       });
 
       const newEvent: TechEvent = {
         id: created.data?.id || created.id || `event-${Date.now()}`,
-        title: formData.title,
-        cover: formData.coverImage || "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=600",
+        title: formData.title.trim(),
+        cover: formData.coverImage.trim() || "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=600",
         date: new Date(startDateIso).toLocaleDateString(),
-        location: formData.location || "Online",
+        location: locationStr,
         category: formData.category,
         attendees: 1,
-        description: formData.description,
+        description: formData.description.trim(),
       };
 
       setEvents((prev) => [newEvent, ...prev]);
@@ -171,6 +189,8 @@ export default function EventsPage() {
         category: "Conference",
         location: "",
         startDate: "",
+        endDate: "",
+        isOnline: false,
         coverImage: "",
       });
     } catch (err: any) {
@@ -372,6 +392,20 @@ export default function EventsPage() {
               </select>
             </div>
 
+            <div className="space-y-1.5 flex items-center pt-5">
+              <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-300">
+                <input
+                  type="checkbox"
+                  checked={formData.isOnline}
+                  onChange={(e) => setFormData((p) => ({ ...p, isOnline: e.target.checked }))}
+                  className="rounded border-[#334155] bg-[#1e293b] text-blue-600 focus:ring-blue-500"
+                />
+                <span>Virtual / Online Event (Zoom/YouTube)</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-slate-300">Start Date & Time</label>
               <Input
@@ -380,12 +414,23 @@ export default function EventsPage() {
                 onChange={(e) => setFormData((p) => ({ ...p, startDate: e.target.value }))}
               />
             </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-300">End Date & Time (Optional)</label>
+              <Input
+                type="datetime-local"
+                value={formData.endDate}
+                onChange={(e) => setFormData((p) => ({ ...p, endDate: e.target.value }))}
+              />
+            </div>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-300">Location</label>
+            <label className="text-xs font-semibold text-slate-300">
+              {formData.isOnline ? "Online Platform / Meeting Link (Optional)" : "Physical Location / Venue"}
+            </label>
             <Input
-              placeholder="e.g., San Francisco, CA or Online (Zoom)"
+              placeholder={formData.isOnline ? "e.g., Zoom / Discord Live / YouTube Stream" : "e.g., San Francisco, CA or Tokyo Shibuya"}
               value={formData.location}
               onChange={(e) => setFormData((p) => ({ ...p, location: e.target.value }))}
             />
@@ -423,6 +468,7 @@ export default function EventsPage() {
             <Button
               type="submit"
               size="sm"
+              loading={isSubmitting}
               disabled={isSubmitting}
               className="bg-blue-600 hover:bg-blue-700"
             >
