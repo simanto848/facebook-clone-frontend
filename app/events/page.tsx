@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
-import { Calendar, MapPin, Users, Ticket, Check, Plus, Image as ImageIcon } from "lucide-react";
+import { Calendar, MapPin, Users, Ticket, Check, Plus, Image as ImageIcon, Search } from "lucide-react";
 import Image from "next/image";
 import { eventService } from "@/services/eventService";
 import {
@@ -68,6 +68,7 @@ export default function EventsPage() {
   const [events, setEvents] = useState<TechEvent[]>(initialEvents);
   const [rsvps, setRsvps] = useState<Record<string, "going" | "interested" | null>>({ e1: "interested" });
   const [activeFilter, setActiveFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [loading, setLoading] = useState(false);
 
   // Create Event Modal State
@@ -201,25 +202,46 @@ export default function EventsPage() {
   };
 
   const getFilteredEvents = () => {
-    switch (activeFilter) {
-      case "hackathons":
-        return events.filter((e) => e.category.toLowerCase().includes("hackathon"));
-      case "meetups":
-        return events.filter((e) => e.category.toLowerCase().includes("meetup"));
-      case "going":
-        return events.filter((e) => rsvps[e.id] === "going");
-      default:
-        return events;
+    let list = events;
+
+    if (activeFilter === "conference") {
+      list = list.filter((e) => e.category.toLowerCase().includes("conference"));
+    } else if (activeFilter === "hackathon") {
+      list = list.filter((e) => e.category.toLowerCase().includes("hackathon"));
+    } else if (activeFilter === "meetup") {
+      list = list.filter((e) => e.category.toLowerCase().includes("meetup"));
+    } else if (activeFilter === "workshop") {
+      list = list.filter((e) => e.category.toLowerCase().includes("workshop"));
+    } else if (activeFilter === "going") {
+      list = list.filter((e) => rsvps[e.id] === "going");
+    } else if (activeFilter === "interested") {
+      list = list.filter((e) => rsvps[e.id] === "interested");
     }
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      list = list.filter(
+        (e) =>
+          e.title.toLowerCase().includes(q) ||
+          e.description.toLowerCase().includes(q) ||
+          e.location.toLowerCase().includes(q) ||
+          e.category.toLowerCase().includes(q)
+      );
+    }
+
+    return list;
   };
 
   const filteredEvents = getFilteredEvents();
 
   const filterTabs = [
     { id: "all", label: "All Events" },
-    { id: "hackathons", label: "Hackathons" },
-    { id: "meetups", label: "Meetups" },
-    { id: "going", label: "RSVPs (Going)" },
+    { id: "conference", label: "Conferences" },
+    { id: "hackathon", label: "Hackathons" },
+    { id: "meetup", label: "Meetups" },
+    { id: "workshop", label: "Workshops" },
+    { id: "going", label: "RSVP Going" },
+    { id: "interested", label: "Interested" },
   ];
 
   return (
@@ -237,6 +259,7 @@ export default function EventsPage() {
               title="Tech Events & Hackathons"
               description="Discover tech conferences, developer meetups, and code hackathons."
               icon={<Calendar size={22} />}
+              badge={<Badge variant="primary">{filteredEvents.length} Events</Badge>}
               actions={
                 <Button
                   leftIcon={<Plus size={16} />}
@@ -247,6 +270,17 @@ export default function EventsPage() {
                 </Button>
               }
             />
+
+            <div className="relative">
+              <Input
+                placeholder="Search events by name, topic, or location..."
+                leftIcon={<Search size={16} className="text-slate-400" />}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                clearable
+                className="bg-[#111827] border-[#1f2937]"
+              />
+            </div>
 
             <Tabs
               tabs={filterTabs}
