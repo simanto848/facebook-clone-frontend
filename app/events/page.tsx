@@ -116,19 +116,41 @@ export default function EventsPage() {
   }, []);
 
   const handleRsvp = async (eventId: string, status: "going" | "interested") => {
-    const current = rsvps[eventId];
-    const newStatus = current === status ? null : status;
+    const currentStatus = rsvps[eventId];
+    const newStatus = currentStatus === status ? null : status;
+    const prevEvents = [...events];
+
     setRsvps((prev) => ({
       ...prev,
       [eventId]: newStatus,
     }));
 
-    if (newStatus) {
-      try {
+    setEvents((prev) =>
+      prev.map((e) => {
+        if (e.id !== eventId) return e;
+        let delta = 0;
+        if (newStatus === "going" && currentStatus !== "going") delta = 1;
+        else if (currentStatus === "going" && newStatus !== "going") delta = -1;
+        return {
+          ...e,
+          attendees: Math.max(0, e.attendees + delta),
+        };
+      })
+    );
+
+    try {
+      if (newStatus) {
         await eventService.rsvpEvent(eventId, newStatus);
-      } catch (err) {
-        console.error("RSVP error:", err);
+      } else {
+        await eventService.rsvpEvent(eventId, "declined");
       }
+    } catch (err) {
+      console.error("RSVP error, rolling back:", err);
+      setRsvps((prev) => ({
+        ...prev,
+        [eventId]: currentStatus,
+      }));
+      setEvents(prevEvents);
     }
   };
 
@@ -304,7 +326,6 @@ export default function EventsPage() {
               ) : (
                 filteredEvents.map((event) => {
                   const rsvpStatus = rsvps[event.id];
-                  const displayAttendees = rsvpStatus === "going" ? event.attendees + 1 : event.attendees;
 
                   return (
                     <Card key={event.id} hover className="flex flex-col md:flex-row group overflow-hidden">
@@ -323,6 +344,13 @@ export default function EventsPage() {
                         <div className="absolute top-3 left-3">
                           <Badge variant="glass">{event.category}</Badge>
                         </div>
+                        {rsvpStatus && (
+                          <div className="absolute top-3 right-3">
+                            <Badge variant={rsvpStatus === "going" ? "success" : "primary"} size="sm">
+                              {rsvpStatus === "going" ? "Going" : "Interested"}
+                            </Badge>
+                          </div>
+                        )}
                       </Link>
 
                       {/* Event Details */}
@@ -344,7 +372,7 @@ export default function EventsPage() {
                             </div>
                             <div className="flex items-center gap-1.5">
                               <Users size={13} className="text-blue-400 shrink-0" />
-                              <span>{displayAttendees.toLocaleString()} attending</span>
+                              <span>{event.attendees.toLocaleString()} attending</span>
                             </div>
                           </div>
                           <p className="text-xs text-slate-400 leading-relaxed">{event.description}</p>
