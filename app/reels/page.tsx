@@ -20,6 +20,8 @@ import { useRouter } from "next/navigation";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import { postService } from "@/services/postService";
+import { reactionService } from "@/services/reactionService";
+import { friendshipService } from "@/services/friendshipService";
 
 interface ReelItem {
   id: string;
@@ -150,18 +152,72 @@ export default function ReelsPage() {
     setActiveReelIndex((prev) => (prev < reels.length - 1 ? prev + 1 : 0));
   };
 
-  const toggleLike = (reelId: string) => {
+  const [shareToast, setShareToast] = useState<string | null>(null);
+  const [followedAuthors, setFollowedAuthors] = useState<Record<string, boolean>>({});
+
+  const toggleLike = async (reelId: string) => {
+    const target = reels.find((r) => r.id === reelId);
+    if (!target) return;
+    const isLiking = !target.hasLiked;
+
     setReels((prev) =>
       prev.map((r) => {
         if (r.id !== reelId) return r;
-        const hasLiked = !r.hasLiked;
         return {
           ...r,
-          hasLiked,
-          likes: hasLiked ? r.likes + 1 : r.likes - 1,
+          hasLiked: isLiking,
+          likes: isLiking ? r.likes + 1 : Math.max(0, r.likes - 1),
         };
       })
     );
+
+    try {
+      if (isLiking) {
+        await reactionService.addReaction({
+          targetId: reelId,
+          targetType: "POST",
+          type: "LIKE",
+        });
+      } else {
+        await reactionService.removeReaction(reelId, "POST");
+      }
+    } catch (err) {
+      console.warn("Backend reaction failed:", err);
+    }
+  };
+
+  const handleShare = async (reelId: string) => {
+    setReels((prev) =>
+      prev.map((r) => (r.id === reelId ? { ...r, shares: r.shares + 1 } : r))
+    );
+
+    try {
+      await postService.sharePost(reelId);
+    } catch {
+      // ignore
+    }
+
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      const shareUrl = `${window.location.origin}/reels`;
+      navigator.clipboard.writeText(shareUrl).catch(() => {});
+      setShareToast("Link copied to clipboard!");
+      setTimeout(() => setShareToast(null), 2500);
+    }
+  };
+
+  const handleFollowAuthor = async (authorId?: string) => {
+    if (!authorId) return;
+    const isCurrentlyFollowing = !!followedAuthors[authorId];
+    setFollowedAuthors((prev) => ({ ...prev, [authorId]: !isCurrentlyFollowing }));
+    try {
+      if (isCurrentlyFollowing) {
+        await friendshipService.unfollowUser(authorId);
+      } else {
+        await friendshipService.followUser(authorId);
+      }
+    } catch (err) {
+      console.warn("Failed to toggle follow author:", err);
+    }
   };
 
   const togglePlay = () => {
@@ -257,6 +313,13 @@ export default function ReelsPage() {
               </button>
             </div>
 
+            {/* Share Toast */}
+            {shareToast && (
+              <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30 px-3 py-1.5 rounded-full bg-emerald-600/90 text-white text-xs font-bold shadow-lg animate-in fade-in">
+                {shareToast}
+              </div>
+            )}
+
             {/* Right Action Icons Sidebar */}
             <div className="absolute right-4 bottom-16 z-20 flex flex-col items-center gap-5">
               {/* Like Button */}
@@ -284,7 +347,12 @@ export default function ReelsPage() {
 
               {/* Share Button */}
               <div className="flex flex-col items-center gap-1">
-                <button className="flex h-12 w-12 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70 transition cursor-pointer shadow-lg">
+                <button
+                  type="button"
+                  onClick={() => handleShare(currentReel.id)}
+                  className="flex h-12 w-12 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70 transition cursor-pointer shadow-lg"
+                  title="Share reel"
+                >
                   <Share2 size={22} />
                 </button>
                 <span className="text-[11px] font-bold drop-shadow-md">{currentReel.shares}</span>
@@ -306,9 +374,19 @@ export default function ReelsPage() {
                   <p className="text-xs font-bold text-white leading-tight">{currentReel.author.name}</p>
                   <p className="text-[10px] text-slate-300">@{currentReel.author.handle}</p>
                 </div>
-                <button className="ml-2 px-3 py-1 rounded-full bg-blue-600 text-[10px] font-bold text-white hover:bg-blue-500 cursor-pointer">
-                  Follow
-                </button>
+                {currentReel.authorId && (
+                  <button
+                    type="button"
+                    onClick={() => handleFollowAuthor(currentReel.authorId)}
+                    className={`ml-2 px-3 py-1 rounded-full text-[10px] font-bold transition cursor-pointer ${
+                      followedAuthors[currentReel.authorId]
+                        ? "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                        : "bg-blue-600 text-white hover:bg-blue-500"
+                    }`}
+                  >
+                    {followedAuthors[currentReel.authorId] ? "Following" : "Follow"}
+                  </button>
+                )}
               </div>
 
               <p className="text-xs text-white leading-snug line-clamp-2 drop-shadow-md">{currentReel.caption}</p>
