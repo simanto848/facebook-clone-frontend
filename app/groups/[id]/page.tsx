@@ -7,7 +7,8 @@ import { ArrowLeft, Users, Shield, Plus } from "lucide-react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
-import { usePostStore } from "@/store/postStore";
+import { usePostStore, mapBackendPostToPostType, PostType } from "@/store/postStore";
+import { useAuthStore } from "@/store/authStore";
 import { groupService } from "@/services/groupService";
 import {
   Button,
@@ -16,6 +17,8 @@ import {
   CardContent,
   Avatar,
   Loader,
+  Dialog,
+  EmptyState,
 } from "@/components/ui";
 
 interface PageProps {
@@ -25,29 +28,87 @@ interface PageProps {
 export default function GroupDetailPage({ params }: PageProps) {
   const router = useRouter();
   const { id } = use(params);
-  const { posts } = usePostStore();
+  const { posts: storePosts } = usePostStore();
+  const { user: authUser } = useAuthStore();
   const [group, setGroup] = useState<any>(null);
+  const [groupPosts, setGroupPosts] = useState<PostType[]>([]);
   const [isJoined, setIsJoined] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchGroup = async () => {
-      setLoading(true);
-      try {
-        const res = await groupService.getGroupById(id);
-        const data = res.data || res;
-        if (data) {
-          setGroup(data);
-          setIsJoined(Boolean(data.isMember));
-        }
-      } catch (err) {
-        console.error("Fetch group detail error:", err);
-      } finally {
-        setLoading(false);
+  // Post creation modal
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [postContent, setPostContent] = useState("");
+  const [isPosting, setIsPosting] = useState(false);
+  const [postError, setPostError] = useState<string | null>(null);
+
+  const fetchGroupData = async () => {
+    setLoading(true);
+    try {
+      const res = await groupService.getGroupById(id);
+      const data = res.data || res;
+      if (data) {
+        setGroup(data);
+        setIsJoined(Boolean(data.isMember));
       }
-    };
-    fetchGroup();
+
+      // Fetch dynamic group posts
+      try {
+        const postsRes = await groupService.getGroupPosts(id);
+        const pItems = postsRes.data?.posts || postsRes.data || postsRes.posts || postsRes || [];
+        if (Array.isArray(pItems) && pItems.length > 0) {
+          setGroupPosts(pItems.map(mapBackendPostToPostType));
+        } else {
+          setGroupPosts(storePosts.slice(0, 3));
+        }
+      } catch {
+        setGroupPosts(storePosts.slice(0, 3));
+      }
+    } catch (err) {
+      console.error("Fetch group detail error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchGroupData();
   }, [id]);
+
+  const handleCreatePost = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!postContent.trim()) return;
+
+    setIsPosting(true);
+    setPostError(null);
+    try {
+      const res = await groupService.createGroupPost(id, postContent);
+      const created = res.data || res;
+      const newPost: PostType = created?.id
+        ? mapBackendPostToPostType(created)
+        : {
+            id: `gp_${Date.now()}`,
+            author: {
+              name: authUser?.displayName || "You",
+              username: authUser?.username || "you",
+              avatar: authUser?.avatar || "https://images.unsplash.com/photo-1779040622687-42bb00790c67?w=500",
+            },
+            content: postContent,
+            createdAt: "Just now",
+            visibility: "public",
+            type: "text",
+            reactions: { like: 0, love: 0, haha: 0, wow: 0, sad: 0, angry: 0 },
+            comments: [],
+          };
+
+      setGroupPosts((prev) => [newPost, ...prev]);
+      setPostContent("");
+      setIsCreateOpen(false);
+    } catch (err: any) {
+      setPostError(err.response?.data?.message || err.message || "Failed to publish group post");
+    } finally {
+      setIsPosting(false);
+    }
+  };
 
   const toggleJoin = async () => {
     const nextJoined = !isJoined;
@@ -62,8 +123,6 @@ export default function GroupDetailPage({ params }: PageProps) {
       console.error("Group toggle join error:", err);
     }
   };
-
-  const groupPosts = posts.slice(0, 3);
 
   return (
     <div className="min-h-screen bg-[#0f172a] text-white">
@@ -148,15 +207,81 @@ export default function GroupDetailPage({ params }: PageProps) {
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
                     <h3 className="font-bold text-sm text-white">Group Feed</h3>
-                    <Button variant="primary" size="sm" leftIcon={<Plus size={14} />}>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      leftIcon={<Plus size={14} />}
+                      onClick={() => setIsCreateOpen(true)}
+                    >
                       New Post
                     </Button>
                   </div>
 
-                  {groupPosts.map((post) => (
-                    <PostCard key={post.id} post={post} />
-                  ))}
+                  {groupPosts.length === 0 ? (
+                    <EmptyState
+                      icon={<Users size={36} className="text-slate-500" />}
+                      title="No posts in this group yet"
+                      description="Be the first to share an update, question, or design in this community."
+                      action={
+                        <Button size="sm" onClick={() => setIsCreateOpen(true)}>
+                          Create First Post
+                        </Button>
+                      }
+                    />
+                  ) : (
+                    groupPosts.map((post) => (
+                      <PostCard key={post.id} post={post} />
+                    ))
+                  )}
                 </div>
+
+                {/* Create Group Post Modal */}
+                <Dialog
+                  isOpen={isCreateOpen}
+                  onClose={() => setIsCreateOpen(false)}
+                  title={`Post to ${group.name}`}
+                  description="Share an update or question with the members of this group."
+                  size="md"
+                >
+                  <form onSubmit={handleCreatePost} className="space-y-4 pt-2">
+                    {postError && (
+                      <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl text-xs">
+                        {postError}
+                      </div>
+                    )}
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-300">Your Message</label>
+                      <textarea
+                        rows={4}
+                        placeholder="What would you like to discuss with this group?"
+                        value={postContent}
+                        onChange={(e) => setPostContent(e.target.value)}
+                        className="w-full bg-[#1e293b] border border-[#334155] rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition resize-none"
+                        required
+                      />
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-2 border-t border-[#1f2937]">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setIsCreateOpen(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="submit"
+                        size="sm"
+                        disabled={isPosting}
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
+                        {isPosting ? "Publishing..." : "Post to Group"}
+                      </Button>
+                    </div>
+                  </form>
+                </Dialog>
               </div>
             ) : (
               <div className="py-20 text-center space-y-3">
