@@ -6,7 +6,7 @@ import Link from "next/link";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
-import { Hash, Flame, Bell, Loader2, Sparkles, TrendingUp } from "lucide-react";
+import { Hash, Flame, Bell, Loader2, Sparkles, TrendingUp, Check } from "lucide-react";
 import { usePostStore, mapBackendPostToPostType, PostType } from "@/store/postStore";
 import { hashtagService } from "@/services/hashtagService";
 import { PageHeader, Badge, Button, EmptyState } from "@/components/ui";
@@ -17,9 +17,47 @@ export default function HashtagPage() {
   const tag = decodeURIComponent(rawTag);
   const { posts } = usePostStore();
   const [following, setFollowing] = useState(false);
+  const [followerCount, setFollowerCount] = useState(1420);
+  const [followFeedback, setFollowFeedback] = useState<string | null>(null);
   const [hashtagPosts, setHashtagPosts] = useState<PostType[]>([]);
   const [trendingTopics, setTrendingTopics] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("followed_topics");
+      if (stored) {
+        const list: string[] = JSON.parse(stored);
+        if (list.includes(tag.toLowerCase())) {
+          setFollowing(true);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, [tag]);
+
+  const handleToggleFollow = () => {
+    const nextFollowing = !following;
+    setFollowing(nextFollowing);
+    setFollowerCount((prev) => (nextFollowing ? prev + 1 : Math.max(0, prev - 1)));
+
+    try {
+      const stored = localStorage.getItem("followed_topics");
+      let list: string[] = stored ? JSON.parse(stored) : [];
+      if (nextFollowing) {
+        if (!list.includes(tag.toLowerCase())) list.push(tag.toLowerCase());
+        setFollowFeedback(`Following #${tag}. Posts tagged with this topic will appear in your feed.`);
+      } else {
+        list = list.filter((t) => t !== tag.toLowerCase());
+        setFollowFeedback(`Unfollowed #${tag}.`);
+      }
+      localStorage.setItem("followed_topics", JSON.stringify(list));
+      setTimeout(() => setFollowFeedback(null), 3000);
+    } catch {
+      // ignore
+    }
+  };
 
   useEffect(() => {
     const fetchTrending = async () => {
@@ -93,18 +131,30 @@ export default function HashtagPage() {
               title={`#${tag}`}
               description={`Explore community posts, code snippets, and discussions tagged with #${tag}.`}
               icon={<Hash size={24} className="text-blue-400" />}
-              badge={<Badge variant="primary" pulse>{hashtagPosts.length} Posts</Badge>}
+              badge={
+                <div className="flex items-center gap-2">
+                  <Badge variant="primary" pulse>{hashtagPosts.length} Posts</Badge>
+                  <span className="text-xs text-slate-400 font-medium">{followerCount.toLocaleString()} followers</span>
+                </div>
+              }
               actions={
                 <Button
                   variant={following ? "secondary" : "primary"}
                   size="sm"
-                  leftIcon={<Bell size={14} />}
-                  onClick={() => setFollowing(!following)}
+                  leftIcon={following ? <Check size={14} className="text-emerald-400" /> : <Bell size={14} />}
+                  onClick={handleToggleFollow}
                 >
                   {following ? "Following Topic" : "Follow Topic"}
                 </Button>
               }
             />
+
+            {followFeedback && (
+              <div className="p-3 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-xl text-xs flex items-center gap-2 animate-in fade-in duration-200">
+                <Check size={14} className="text-blue-400 shrink-0" />
+                <span>{followFeedback}</span>
+              </div>
+            )}
 
             {/* Trending Topics Pill Bar */}
             {trendingTopics.length > 0 && (
