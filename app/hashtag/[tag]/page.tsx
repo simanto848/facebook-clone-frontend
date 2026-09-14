@@ -6,15 +6,18 @@ import Link from "next/link";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
-import { Hash, Flame, Bell, Loader2, Sparkles, TrendingUp, Check } from "lucide-react";
+import { Hash, Flame, Bell, Loader2, Sparkles, TrendingUp, Check, Send, Plus, Image as ImageIcon } from "lucide-react";
 import { usePostStore, mapBackendPostToPostType, PostType } from "@/store/postStore";
+import { useAuthStore } from "@/store/authStore";
 import { hashtagService } from "@/services/hashtagService";
-import { PageHeader, Badge, Button, EmptyState } from "@/components/ui";
+import { postService } from "@/services/postService";
+import { PageHeader, Badge, Button, EmptyState, Avatar } from "@/components/ui";
 
 export default function HashtagPage() {
   const params = useParams();
   const rawTag = (params?.tag as string) || "design";
   const tag = decodeURIComponent(rawTag);
+  const user = useAuthStore((s) => s.user);
   const { posts } = usePostStore();
   const [following, setFollowing] = useState(false);
   const [followerCount, setFollowerCount] = useState(1420);
@@ -22,6 +25,61 @@ export default function HashtagPage() {
   const [hashtagPosts, setHashtagPosts] = useState<PostType[]>([]);
   const [trendingTopics, setTrendingTopics] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [newPostText, setNewPostText] = useState("");
+  const [isPosting, setIsPosting] = useState(false);
+  const [postError, setPostError] = useState<string | null>(null);
+
+  const handleCreateTagPost = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPostText.trim() || isPosting) return;
+
+    setIsPosting(true);
+    setPostError(null);
+    let content = newPostText.trim();
+    if (!content.toLowerCase().includes(`#${tag.toLowerCase()}`)) {
+      content = `${content} #${tag}`;
+    }
+
+    try {
+      const res = await postService.createPost({
+        content,
+        privacy: "PUBLIC",
+      });
+      const data = res?.data || res;
+      let newPost: PostType;
+      if (data && data.id) {
+        newPost = mapBackendPostToPostType(data);
+      } else {
+        newPost = {
+          id: Math.random().toString(36).substring(7),
+          author: {
+            name: user?.displayName || user?.username || "You",
+            username: user?.username || "you",
+            avatar: user?.avatar || "https://images.unsplash.com/photo-1779040622687-42bb00790c67?w=100",
+          },
+          content,
+          createdAt: "Just now",
+          visibility: "public",
+          type: "text",
+          reactions: { like: 0, love: 0, haha: 0, wow: 0, sad: 0, angry: 0 },
+          comments: [],
+        };
+      }
+      setHashtagPosts((prev) => [newPost, ...prev]);
+      usePostStore.getState().createPost({
+        author: newPost.author,
+        visibility: "public",
+        type: "text",
+        content,
+      });
+      setNewPostText("");
+    } catch (err: any) {
+      console.error("Create hashtag post error:", err);
+      setPostError(err.response?.data?.message || err.message || "Failed to publish post");
+    } finally {
+      setIsPosting(false);
+    }
+  };
 
   useEffect(() => {
     try {
@@ -194,6 +252,48 @@ export default function HashtagPage() {
                 </div>
               </div>
             )}
+
+            {/* Quick Post Publisher for Tag */}
+            <div className="rounded-2xl border border-[#1f2937] bg-[#111827] p-4 space-y-3 shadow-lg">
+              <div className="flex items-center gap-2 text-xs font-semibold text-slate-300">
+                <Plus size={14} className="text-blue-400" />
+                <span>Publish to #{tag}</span>
+              </div>
+
+              {postError && (
+                <div className="p-2.5 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl text-xs">
+                  {postError}
+                </div>
+              )}
+
+              <form onSubmit={handleCreateTagPost} className="space-y-3">
+                <div className="flex gap-2.5 items-center">
+                  <Avatar
+                    src={user?.avatar || "https://images.unsplash.com/photo-1779040622687-42bb00790c67?w=100"}
+                    name={user?.displayName || "You"}
+                    size="sm"
+                    className="shrink-0"
+                  />
+                  <input
+                    type="text"
+                    placeholder={`Write a thought or code tip about #${tag}...`}
+                    value={newPostText}
+                    onChange={(e) => setNewPostText(e.target.value)}
+                    className="flex-1 rounded-xl border border-[#1f2937] bg-[#0f172a] px-4 py-2.5 text-xs text-white outline-none placeholder:text-slate-500 focus:border-blue-500 transition"
+                  />
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    size="sm"
+                    loading={isPosting}
+                    disabled={isPosting || !newPostText.trim()}
+                    leftIcon={<Send size={13} />}
+                  >
+                    {isPosting ? "Posting..." : "Post"}
+                  </Button>
+                </div>
+              </form>
+            </div>
 
             <div className="flex items-center gap-2 border-b border-[#1f2937] pb-3">
               <Flame size={16} className="text-blue-400" />
