@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
-import { Flag, Plus, ThumbsUp, ExternalLink } from "lucide-react";
+import { Flag, Plus, ThumbsUp, ExternalLink, Share2, Check, Globe } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { pageService } from "@/services/pageService";
@@ -28,6 +28,7 @@ interface BrandPage {
   likes: number;
   avatar: string;
   cover: string;
+  website?: string;
   isLiked?: boolean;
   isOwner?: boolean;
 }
@@ -41,6 +42,7 @@ const samplePages: BrandPage[] = [
     likes: 42300,
     avatar: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=200",
     cover: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=600",
+    website: "https://react.dev",
   },
   {
     id: "p2",
@@ -56,6 +58,7 @@ const samplePages: BrandPage[] = [
 export default function PagesHubPage() {
   const [pages, setPages] = useState<BrandPage[]>(samplePages);
   const [likedMap, setLikedMap] = useState<Record<string, boolean>>({});
+  const [copiedPageId, setCopiedPageId] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<string>("all");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [name, setName] = useState("");
@@ -210,6 +213,15 @@ export default function PagesHubPage() {
     }
   };
 
+  const handleSharePage = (p: BrandPage) => {
+    if (typeof window !== "undefined") {
+      const url = `${window.location.origin}/pages/${p.id}`;
+      navigator.clipboard.writeText(url);
+      setCopiedPageId(p.id);
+      setTimeout(() => setCopiedPageId(null), 2000);
+    }
+  };
+
   const pageTabs = [
     { id: "all", label: "All Pages" },
     { id: "liked", label: "Liked Pages" },
@@ -277,34 +289,62 @@ export default function PagesHubPage() {
                 {filteredPages.map((p) => {
                   const isLiked = likedMap[p.id] ?? p.isLiked;
                   return (
-                    <Card key={p.id} hover className="flex flex-col justify-between">
-                      <div className="relative h-24 w-full overflow-hidden">
-                        <Image src={p.cover} fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" alt="cover" />
-                        <div className="absolute inset-0 bg-black/40" />
+                    <Card key={p.id} hover className="flex flex-col justify-between group overflow-hidden">
+                      <Link href={`/pages/${p.id}`} className="relative h-28 w-full overflow-hidden block">
+                        <Image
+                          src={p.cover}
+                          fill
+                          sizes="(max-width: 768px) 100vw, 50vw"
+                          className="object-cover transition-transform duration-300 group-hover:scale-105"
+                          alt="cover"
+                        />
+                        <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent" />
                         {p.isOwner && (
                           <div className="absolute top-2 right-2">
                             <Badge variant="success" size="sm">Admin</Badge>
                           </div>
                         )}
-                      </div>
+                      </Link>
 
                       <CardContent className="p-4 flex-1 flex flex-col justify-between space-y-3">
                         <div className="flex gap-3 items-start">
                           <Link href={`/pages/${p.id}`} className="-mt-8 z-10 block cursor-pointer">
-                            <Avatar src={p.avatar} name={p.name} size="lg" />
+                            <Avatar src={p.avatar} name={p.name} size="lg" className="border-2 border-[#111827] shadow-md" />
                           </Link>
                           <div className="flex-1 min-w-0">
                             <Link href={`/pages/${p.id}`} className="hover:text-blue-400 transition cursor-pointer">
                               <h3 className="text-sm font-bold text-white truncate hover:underline">{p.name}</h3>
                             </Link>
-                            <Badge variant="primary" size="sm" className="mt-0.5">{p.category}</Badge>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <Badge variant="primary" size="sm">{p.category}</Badge>
+                              {p.website && (
+                                <a
+                                  href={p.website}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-slate-400 hover:text-white transition"
+                                  title={p.website}
+                                >
+                                  <Globe size={12} />
+                                </a>
+                              )}
+                            </div>
                           </div>
                         </div>
                         <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">{p.description}</p>
 
                         <div className="flex items-center justify-between pt-2 border-t border-[#1f2937]/60">
                           <span className="text-xs text-slate-400 font-semibold">{p.likes.toLocaleString()} likes</span>
-                          <div className="flex gap-2">
+                          <div className="flex gap-1.5">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleSharePage(p)}
+                              className="text-slate-400 hover:text-white px-2"
+                              title="Share Page Link"
+                            >
+                              {copiedPageId === p.id ? <Check size={13} className="text-emerald-400" /> : <Share2 size={13} />}
+                            </Button>
                             <Link
                               href={`/pages/${p.id}`}
                               className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg border border-[#1f2937] bg-[#0f172a] hover:bg-[#1f2937] text-slate-300 transition"
