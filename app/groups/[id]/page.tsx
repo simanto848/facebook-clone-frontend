@@ -3,7 +3,7 @@
 import React, { useState, useEffect, use } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Users, Shield, Plus } from "lucide-react";
+import { ArrowLeft, Users, Shield, Plus, Check, UserPlus } from "lucide-react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
@@ -33,6 +33,8 @@ export default function GroupDetailPage({ params }: PageProps) {
   const [group, setGroup] = useState<any>(null);
   const [groupPosts, setGroupPosts] = useState<PostType[]>([]);
   const [isJoined, setIsJoined] = useState(false);
+  const [memberCount, setMemberCount] = useState(1);
+  const [isJoinLoading, setIsJoinLoading] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Post creation modal
@@ -49,6 +51,7 @@ export default function GroupDetailPage({ params }: PageProps) {
       if (data) {
         setGroup(data);
         setIsJoined(Boolean(data.isMember));
+        setMemberCount(data._count?.members || data.membersCount || 1);
       }
 
       // Fetch dynamic group posts
@@ -113,6 +116,8 @@ export default function GroupDetailPage({ params }: PageProps) {
   const toggleJoin = async () => {
     const nextJoined = !isJoined;
     setIsJoined(nextJoined);
+    setMemberCount((c) => (nextJoined ? c + 1 : Math.max(1, c - 1)));
+    setIsJoinLoading(true);
     try {
       if (nextJoined) {
         await groupService.joinGroup(id);
@@ -121,6 +126,11 @@ export default function GroupDetailPage({ params }: PageProps) {
       }
     } catch (err) {
       console.error("Group toggle join error:", err);
+      // Revert on error
+      setIsJoined(!nextJoined);
+      setMemberCount((c) => (nextJoined ? Math.max(1, c - 1) : c + 1));
+    } finally {
+      setIsJoinLoading(false);
     }
   };
 
@@ -174,7 +184,7 @@ export default function GroupDetailPage({ params }: PageProps) {
                         <h1 className="text-2xl font-bold text-white leading-tight drop-shadow-md">{group.name}</h1>
                         <div className="flex items-center gap-2 mt-1">
                           <Badge variant="primary" size="sm">{group.category || "Community"}</Badge>
-                          <span className="text-xs text-slate-300 font-semibold">{group._count?.members || 12} members</span>
+                          <span className="text-xs text-slate-300 font-semibold">{memberCount} members</span>
                         </div>
                       </div>
                     </div>
@@ -182,10 +192,12 @@ export default function GroupDetailPage({ params }: PageProps) {
                     <Button
                       variant={isJoined ? "secondary" : "primary"}
                       size="sm"
+                      leftIcon={isJoined ? <Check size={14} /> : <UserPlus size={14} />}
+                      loading={isJoinLoading}
                       onClick={toggleJoin}
                       className={isJoined ? "" : "bg-blue-600 hover:bg-blue-500"}
                     >
-                      {isJoined ? "Joined" : "Join Group"}
+                      {isJoined ? "Joined Guild" : "Join Guild"}
                     </Button>
                   </div>
                 </div>
