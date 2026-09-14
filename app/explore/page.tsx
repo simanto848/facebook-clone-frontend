@@ -7,9 +7,11 @@ import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
 import { usePostStore, mapBackendPostToPostType, PostType } from "@/store/postStore";
 import { useChatStore } from "@/store/chatStore";
-import { Search, Hash, Compass, User, Users, UserPlus, MessageSquare, Loader2, ArrowRight, History } from "lucide-react";
+import { Search, Hash, Compass, User, Users, UserPlus, MessageSquare, Loader2, ArrowRight, History, Check } from "lucide-react";
 import { searchService } from "@/services/searchService";
 import { hashtagService } from "@/services/hashtagService";
+import { followService } from "@/services/followService";
+import { groupService } from "@/services/groupService";
 import {
   PageHeader,
   Input,
@@ -37,6 +39,9 @@ export default function ExplorePage() {
   const [matchedGroups, setMatchedGroups] = useState<any[]>([]);
   const [matchedPages, setMatchedPages] = useState<any[]>([]);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [followedUserIds, setFollowedUserIds] = useState<Set<string>>(new Set());
+  const [joinedGroupIds, setJoinedGroupIds] = useState<Set<string>>(new Set());
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -181,6 +186,64 @@ export default function ExplorePage() {
 
   const filteredPosts = getFilteredPosts();
 
+  const handleToggleFollow = async (userId: string) => {
+    setActionLoading(`follow-${userId}`);
+    const isFollowed = followedUserIds.has(userId);
+    setFollowedUserIds((prev) => {
+      const next = new Set(prev);
+      if (isFollowed) next.delete(userId);
+      else next.add(userId);
+      return next;
+    });
+
+    try {
+      if (isFollowed) {
+        await followService.unfollowUser(userId);
+      } else {
+        await followService.followUser(userId);
+      }
+    } catch (err) {
+      console.error("Failed to toggle follow:", err);
+      setFollowedUserIds((prev) => {
+        const next = new Set(prev);
+        if (isFollowed) next.add(userId);
+        else next.delete(userId);
+        return next;
+      });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleToggleGroupJoin = async (groupId: string) => {
+    setActionLoading(`group-${groupId}`);
+    const isJoined = joinedGroupIds.has(groupId);
+    setJoinedGroupIds((prev) => {
+      const next = new Set(prev);
+      if (isJoined) next.delete(groupId);
+      else next.add(groupId);
+      return next;
+    });
+
+    try {
+      if (isJoined) {
+        await groupService.leaveGroup(groupId);
+      } else {
+        await groupService.joinGroup(groupId);
+      }
+    } catch (err) {
+      console.error("Failed to toggle group join:", err);
+      setJoinedGroupIds((prev) => {
+        const next = new Set(prev);
+        if (isJoined) next.add(groupId);
+        else next.delete(groupId);
+        return next;
+      });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const categoryTabs = [
     { id: "all", label: "All Feed" },
     { id: "posts", label: searchQuery.trim() ? `Posts (${matchedPosts.length})` : "Posts" },
@@ -309,6 +372,7 @@ export default function ExplorePage() {
                     {matchedUsers.map((u) => {
                       const name = `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.username || "Member";
                       const avatar = u.profilePicture || u.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100";
+                      const isFollowing = followedUserIds.has(u.id);
                       return (
                         <Card key={u.id} hover className="p-4 flex items-center justify-between gap-3">
                           <Link href={`/profile/${u.username || u.id}`} className="flex items-center gap-3 min-w-0 cursor-pointer">
@@ -318,7 +382,16 @@ export default function ExplorePage() {
                               <p className="text-[11px] text-slate-400 truncate">@{u.username || "user"}</p>
                             </div>
                           </Link>
-                          <div className="flex gap-1.5 shrink-0">
+                          <div className="flex gap-1.5 shrink-0 items-center">
+                            <Button
+                              size="sm"
+                              variant={isFollowing ? "secondary" : "primary"}
+                              loading={actionLoading === `follow-${u.id}`}
+                              leftIcon={isFollowing ? <Check size={12} /> : <UserPlus size={12} />}
+                              onClick={() => handleToggleFollow(u.id)}
+                            >
+                              {isFollowing ? "Following" : "Follow"}
+                            </Button>
                             <Button
                               size="sm"
                               variant="ghost"
@@ -327,11 +400,6 @@ export default function ExplorePage() {
                             >
                               <MessageSquare size={13} />
                             </Button>
-                            <Link href={`/profile/${u.username || u.id}`}>
-                              <Button size="sm" variant="secondary">
-                                Profile
-                              </Button>
-                            </Link>
                           </div>
                         </Card>
                       );
@@ -348,22 +416,36 @@ export default function ExplorePage() {
                     />
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {matchedGroups.map((g) => (
-                        <Card key={g.id} hover className="p-4 flex items-center justify-between gap-3">
-                          <Link href={`/groups/${g.id}`} className="flex items-center gap-3 min-w-0 cursor-pointer">
-                            <Avatar src={g.coverImage || g.avatar} name={g.name} size="md" />
-                            <div className="min-w-0">
-                              <h4 className="text-xs font-bold text-white truncate hover:underline">{g.name}</h4>
-                              <p className="text-[11px] text-slate-400 truncate">{g.category || "Community"}</p>
+                      {matchedGroups.map((g) => {
+                        const isJoined = joinedGroupIds.has(g.id);
+                        return (
+                          <Card key={g.id} hover className="p-4 flex items-center justify-between gap-3">
+                            <Link href={`/groups/${g.id}`} className="flex items-center gap-3 min-w-0 cursor-pointer">
+                              <Avatar src={g.coverImage || g.avatar} name={g.name} size="md" />
+                              <div className="min-w-0">
+                                <h4 className="text-xs font-bold text-white truncate hover:underline">{g.name}</h4>
+                                <p className="text-[11px] text-slate-400 truncate">{g.category || "Community"}</p>
+                              </div>
+                            </Link>
+                            <div className="flex gap-1.5 shrink-0 items-center">
+                              <Button
+                                size="sm"
+                                variant={isJoined ? "secondary" : "primary"}
+                                loading={actionLoading === `group-${g.id}`}
+                                leftIcon={isJoined ? <Check size={12} /> : <Users size={12} />}
+                                onClick={() => handleToggleGroupJoin(g.id)}
+                              >
+                                {isJoined ? "Joined" : "Join"}
+                              </Button>
+                              <Link href={`/groups/${g.id}`}>
+                                <Button size="sm" variant="ghost">
+                                  View
+                                </Button>
+                              </Link>
                             </div>
-                          </Link>
-                          <Link href={`/groups/${g.id}`}>
-                            <Button size="sm" variant="secondary">
-                              View Group
-                            </Button>
-                          </Link>
-                        </Card>
-                      ))}
+                          </Card>
+                        );
+                      })}
                     </div>
                   )
                 ) : (
