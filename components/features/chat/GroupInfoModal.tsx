@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
-import { Users, Shield, ShieldAlert, LogOut, UserMinus, X } from "lucide-react";
-import { Dialog, Button, Avatar, Badge } from "@/components/ui";
+import { Users, Shield, ShieldAlert, LogOut, UserMinus, X, Edit3, Check } from "lucide-react";
+import { Dialog, Button, Avatar, Badge, Input } from "@/components/ui";
 import { useAuthStore } from "@/store/authStore";
 import { useChatStore } from "@/store/chatStore";
+import { groupChatService } from "@/services/groupChatService";
 
 interface GroupParticipant {
   id: string;
@@ -24,21 +25,61 @@ interface GroupInfoModalProps {
 export function GroupInfoModal({
   isOpen,
   onClose,
-  groupTitle,
-  participants = [],
+  groupTitle: initialTitle,
+  participants: initialParticipants = [],
   groupId,
 }: GroupInfoModalProps) {
   const currentUser = useAuthStore((state) => state.user);
-  const { conversations, setActiveConversationId, fetchConversations } = useChatStore();
+  const { setActiveConversationId, fetchConversations } = useChatStore();
+
+  const [groupTitle, setGroupTitle] = useState(initialTitle);
+  const [participants, setParticipants] = useState<GroupParticipant[]>(initialParticipants);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [titleInput, setTitleInput] = useState(initialTitle);
+  const [isLeaving, setIsLeaving] = useState(false);
 
   const isCurrentUserAdmin = participants.some(
     (p) => p.id === currentUser?.id && p.role === "ADMIN"
   );
 
+  const handleUpdateTitle = async () => {
+    if (!titleInput.trim() || titleInput === groupTitle) {
+      setIsEditingTitle(false);
+      return;
+    }
+    try {
+      await groupChatService.updateGroupChatTitle(groupId, titleInput.trim());
+      setGroupTitle(titleInput.trim());
+      await fetchConversations();
+    } catch (e) {
+      console.error("Failed to update group title:", e);
+    } finally {
+      setIsEditingTitle(false);
+    }
+  };
+
+  const handleRemoveParticipant = async (userId: string) => {
+    setParticipants((prev) => prev.filter((p) => p.id !== userId));
+    try {
+      await groupChatService.removeParticipant(groupId, userId);
+      await fetchConversations();
+    } catch (e) {
+      console.error("Failed to remove participant:", e);
+    }
+  };
+
   const handleLeaveGroup = async () => {
-    setActiveConversationId(null);
-    await fetchConversations();
-    onClose();
+    setIsLeaving(true);
+    try {
+      await groupChatService.leaveGroupChat(groupId);
+    } catch (e) {
+      console.error("Error leaving group:", e);
+    } finally {
+      setIsLeaving(false);
+      setActiveConversationId(null);
+      await fetchConversations();
+      onClose();
+    }
   };
 
   return (
@@ -51,7 +92,37 @@ export function GroupInfoModal({
               <Users size={24} />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white">{groupTitle}</h2>
+              {isEditingTitle ? (
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <Input
+                    value={titleInput}
+                    onChange={(e) => setTitleInput(e.target.value)}
+                    className="h-7 text-xs bg-slate-800 border-slate-700 py-0.5"
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    onClick={handleUpdateTitle}
+                    className="p-1 rounded bg-blue-600 hover:bg-blue-500 text-white"
+                  >
+                    <Check size={14} />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg font-bold text-white">{groupTitle}</h2>
+                  {isCurrentUserAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingTitle(true)}
+                      className="p-1 text-slate-400 hover:text-white"
+                      title="Edit group title"
+                    >
+                      <Edit3 size={13} />
+                    </button>
+                  )}
+                </div>
+              )}
               <p className="text-xs text-slate-400">{participants.length} Members</p>
             </div>
           </div>
@@ -95,6 +166,16 @@ export function GroupInfoModal({
                     ) : (
                       <Badge variant="secondary">Member</Badge>
                     )}
+                    {isCurrentUserAdmin && !isSelf && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveParticipant(member.id)}
+                        className="p-1 text-slate-400 hover:text-rose-400 hover:bg-white/5 rounded-lg transition"
+                        title="Remove member"
+                      >
+                        <UserMinus size={13} />
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -107,6 +188,7 @@ export function GroupInfoModal({
           <Button
             variant="danger"
             size="sm"
+            loading={isLeaving}
             onClick={handleLeaveGroup}
             className="flex items-center gap-1.5 bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white border border-red-500/30 cursor-pointer"
           >
