@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
-import { Calendar, MapPin, Users, Ticket, Check, Plus, Image as ImageIcon, Search } from "lucide-react";
+import { Calendar, MapPin, Users, Ticket, Check, Plus, Image as ImageIcon, Search, Share2, ExternalLink } from "lucide-react";
 import Image from "next/image";
 import { eventService } from "@/services/eventService";
 import {
@@ -69,7 +69,17 @@ export default function EventsPage() {
   const [rsvps, setRsvps] = useState<Record<string, "going" | "interested" | null>>({ e1: "interested" });
   const [activeFilter, setActiveFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [copiedEventId, setCopiedEventId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const handleShareEvent = (e: TechEvent) => {
+    if (typeof window !== "undefined") {
+      const url = `${window.location.origin}/events/${e.id}`;
+      navigator.clipboard.writeText(url);
+      setCopiedEventId(e.id);
+      setTimeout(() => setCopiedEventId(null), 2000);
+    }
+  };
 
   // Create Event Modal State
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -379,11 +389,11 @@ export default function EventsPage() {
                         </div>
 
                         {/* Actions */}
-                        <div className="flex gap-2 pt-2 border-t border-[#1f2937]/60">
+                        <div className="flex items-center gap-2 pt-2 border-t border-[#1f2937]/60">
                           <Button
                             variant={rsvpStatus === "going" ? "success" : "primary"}
-                            fullWidth
                             size="sm"
+                            className="flex-1"
                             leftIcon={rsvpStatus === "going" ? <Check size={14} /> : <Ticket size={14} />}
                             onClick={() => handleRsvp(event.id, "going")}
                           >
@@ -391,12 +401,28 @@ export default function EventsPage() {
                           </Button>
                           <Button
                             variant={rsvpStatus === "interested" ? "secondary" : "ghost"}
-                            fullWidth
                             size="sm"
+                            className="flex-1"
                             leftIcon={rsvpStatus === "interested" ? <Check size={14} /> : undefined}
                             onClick={() => handleRsvp(event.id, "interested")}
                           >
-                            Interested
+                            {rsvpStatus === "interested" ? "Interested" : "Mark Interested"}
+                          </Button>
+                          <Link
+                            href={`/events/${event.id}`}
+                            className="inline-flex items-center gap-1 text-xs px-2.5 py-2 rounded-xl border border-[#1f2937] bg-[#0f172a] hover:bg-[#1f2937] text-slate-300 transition"
+                            title="View Event Details"
+                          >
+                            <ExternalLink size={13} />
+                          </Link>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="px-2.5 text-slate-400 hover:text-white"
+                            onClick={() => handleShareEvent(event)}
+                            title="Share event link"
+                          >
+                            {copiedEventId === event.id ? <Check size={14} className="text-emerald-400" /> : <Share2 size={14} />}
                           </Button>
                         </div>
                       </CardContent>
