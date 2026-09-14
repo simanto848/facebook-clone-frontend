@@ -95,15 +95,21 @@ export default function CommentItem({ comment, onLike, onReply, onEdit, onDelete
               <>
                 <button
                   onClick={() => setIsEditing(!isEditing)}
-                  className="hover:text-yellow-400 transition"
+                  className="hover:text-yellow-400 transition flex items-center gap-1"
                 >
-                  Edit
+                  <Edit2 size={11} />
+                  <span>Edit</span>
                 </button>
                 <button
-                  onClick={() => onDelete(comment.id)}
-                  className="hover:text-red-400 transition"
+                  onClick={() => {
+                    if (typeof window !== "undefined" && window.confirm("Are you sure you want to delete this comment?")) {
+                      onDelete(comment.id);
+                    }
+                  }}
+                  className="hover:text-red-400 transition flex items-center gap-1"
                 >
-                  Delete
+                  <Trash2 size={11} />
+                  <span>Delete</span>
                 </button>
               </>
             )}

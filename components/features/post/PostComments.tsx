@@ -124,6 +124,20 @@ export default function PostComments({ postId, comments }: Props) {
 
   const handleEdit = async (commentId: string, newText: string) => {
     editComment(postId, commentId, newText);
+
+    const updateRecursive = (list: CommentType[]): CommentType[] =>
+      list.map((item) => {
+        if (item.id === commentId) {
+          return { ...item, content: newText };
+        }
+        if (item.replies && item.replies.length > 0) {
+          return { ...item, replies: updateRecursive(item.replies) };
+        }
+        return item;
+      });
+
+    setCommentList((prev) => updateRecursive(prev));
+
     try {
       await commentService.updateComment(commentId, newText);
     } catch (err) {
@@ -133,7 +147,17 @@ export default function PostComments({ postId, comments }: Props) {
 
   const handleDelete = async (commentId: string) => {
     deleteComment(postId, commentId);
-    setCommentList((prev) => prev.filter((c) => c.id !== commentId));
+
+    const deleteRecursive = (list: CommentType[]): CommentType[] =>
+      list
+        .filter((item) => item.id !== commentId)
+        .map((item) => ({
+          ...item,
+          replies: item.replies ? deleteRecursive(item.replies) : [],
+        }));
+
+    setCommentList((prev) => deleteRecursive(prev));
+
     try {
       await commentService.deleteComment(commentId);
     } catch (err) {
