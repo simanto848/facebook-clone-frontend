@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, Heart, Eye } from "lucide-react";
+import { ChevronLeft, ChevronRight, Heart, Eye, Trash2 } from "lucide-react";
 import { Dialog, Avatar, Button, Badge } from "@/components/ui";
 
 export interface StoryItem {
@@ -25,6 +25,7 @@ interface StoryViewerModalProps {
   currentIndex: number;
   onNavigate: (newIndex: number) => void;
   onLike?: (storyId: string) => void;
+  onDelete?: (storyId: string) => void;
 }
 
 export function StoryViewerModal({
@@ -34,6 +35,7 @@ export function StoryViewerModal({
   currentIndex,
   onNavigate,
   onLike,
+  onDelete,
 }: StoryViewerModalProps) {
   const [progress, setProgress] = useState(0);
   const currentStory = stories[currentIndex];
@@ -87,7 +89,22 @@ export function StoryViewerModal({
               <span className="text-[10px] text-slate-300">Just now</span>
             </div>
           </div>
-          <Badge variant="glass">{currentStory.type.toUpperCase()}</Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant="glass">{currentStory.type.toUpperCase()}</Badge>
+            {onDelete && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(currentStory.id);
+                }}
+                className="p-1 text-white/70 hover:text-rose-400 hover:bg-white/10 rounded-full transition"
+                title="Delete Story"
+              >
+                <Trash2 size={16} />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Navigation Buttons */}

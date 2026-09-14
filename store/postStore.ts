@@ -109,6 +109,7 @@ interface PostState {
   deleteComment: (postId: string, commentId: string) => void;
   editComment: (postId: string, commentId: string, newText: string) => void;
   addStory: (story: Partial<StoryType> & Omit<StoryType, "id" | "createdAt" | "views" | "reactions"> & { id?: string }) => void;
+  deleteStory: (storyId: string) => void;
   viewStory: (storyId: string) => void;
   reactStory: (storyId: string) => void;
   acceptRequest: (id: string) => void;
@@ -598,6 +599,10 @@ export const usePostStore = create<PostState>((set) => ({
       };
       return { stories: [newStory, ...state.stories] };
     }),
+  deleteStory: (storyId) =>
+    set((state) => ({
+      stories: state.stories.filter((s) => s.id !== storyId),
+    })),
   viewStory: (storyId) =>
     set((state) => ({
       stories: state.stories.map((s) => (s.id === storyId ? { ...s, views: s.views + 1 } : s)),

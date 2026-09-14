@@ -10,7 +10,7 @@ import { StoryViewerModal } from "./StoryViewerModal";
 import { Dialog, Button, Input, Select, Avatar } from "@/components/ui";
 
 export default function Stories() {
-  const { stories, addStory, viewStory, reactStory } = usePostStore();
+  const { stories, addStory, deleteStory, viewStory, reactStory } = usePostStore();
   const { user: authUser } = useAuthStore();
   const [activeStoryIndex, setActiveStoryIndex] = useState<number | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -19,6 +19,22 @@ export default function Stories() {
   const [newStoryMedia, setNewStoryMedia] = useState("");
   const [isSubmittingStory, setIsSubmittingStory] = useState(false);
   const [storyError, setStoryError] = useState<string | null>(null);
+
+  const handleDeleteStory = async (storyId: string) => {
+    try {
+      await storyService.deleteStory(storyId);
+    } catch {
+      // ignore network errors if mock/offline
+    }
+    deleteStory(storyId);
+    if (activeStoryIndex !== null) {
+      if (stories.length <= 1) {
+        setActiveStoryIndex(null);
+      } else if (activeStoryIndex >= stories.length - 1) {
+        setActiveStoryIndex(Math.max(0, stories.length - 2));
+      }
+    }
+  };
 
   const fetchBackendStories = async () => {
     try {
@@ -179,6 +195,7 @@ export default function Stories() {
           currentIndex={activeStoryIndex}
           onNavigate={(newIndex) => setActiveStoryIndex(newIndex)}
           onLike={(id) => reactStory(id)}
+          onDelete={handleDeleteStory}
         />
       )}
 
