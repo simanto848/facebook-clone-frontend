@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
-import { Hash, Flame, Bell, Loader2 } from "lucide-react";
+import { Hash, Flame, Bell, Loader2, Sparkles, TrendingUp } from "lucide-react";
 import { usePostStore, mapBackendPostToPostType, PostType } from "@/store/postStore";
 import { hashtagService } from "@/services/hashtagService";
 import { PageHeader, Badge, Button, EmptyState } from "@/components/ui";
@@ -17,7 +18,32 @@ export default function HashtagPage() {
   const { posts } = usePostStore();
   const [following, setFollowing] = useState(false);
   const [hashtagPosts, setHashtagPosts] = useState<PostType[]>([]);
+  const [trendingTopics, setTrendingTopics] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTrending = async () => {
+      try {
+        const res = await hashtagService.getTrending(12);
+        const data = res?.data || res || [];
+        if (Array.isArray(data) && data.length > 0) {
+          setTrendingTopics(data);
+        } else {
+          setTrendingTopics([
+            { name: "react", count: 420 },
+            { name: "nextjs", count: 310 },
+            { name: "typescript", count: 280 },
+            { name: "webgl", count: 190 },
+            { name: "tailwindcss", count: 160 },
+            { name: "design", count: 140 },
+          ]);
+        }
+      } catch (err) {
+        console.warn("Trending fetch failed:", err);
+      }
+    };
+    fetchTrending();
+  }, []);
 
   useEffect(() => {
     const fetchTagPosts = async () => {
@@ -79,6 +105,45 @@ export default function HashtagPage() {
                 </Button>
               }
             />
+
+            {/* Trending Topics Pill Bar */}
+            {trendingTopics.length > 0 && (
+              <div className="space-y-2 p-3.5 rounded-2xl border border-[#1f2937] bg-[#111827]/50 backdrop-blur-sm">
+                <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-400">
+                  <Flame size={14} className="text-amber-400" />
+                  <span>Trending Topics</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {trendingTopics.map((topic: any) => {
+                    const topicName = (topic.name || topic.tag || topic).replace(/^#/, "");
+                    const isCurrent = topicName.toLowerCase() === tag.toLowerCase();
+                    return (
+                      <Link
+                        key={topicName}
+                        href={`/hashtag/${encodeURIComponent(topicName)}`}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition ${
+                          isCurrent
+                            ? "bg-blue-600 border-blue-500 text-white shadow-md shadow-blue-500/20"
+                            : "bg-[#0f172a] border-[#1f2937] text-slate-300 hover:border-slate-600 hover:text-white"
+                        }`}
+                      >
+                        <Hash size={12} className={isCurrent ? "text-white" : "text-blue-400"} />
+                        <span>{topicName}</span>
+                        {topic.count && (
+                          <span
+                            className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                              isCurrent ? "bg-white/20 text-white" : "bg-[#1f2937] text-slate-400"
+                            }`}
+                          >
+                            {topic.count}
+                          </span>
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             <div className="flex items-center gap-2 border-b border-[#1f2937] pb-3">
               <Flame size={16} className="text-blue-400" />
