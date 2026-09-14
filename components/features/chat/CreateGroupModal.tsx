@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Users, Search, Check, X, Loader2 } from "lucide-react";
 import { Dialog, Button, Input, Avatar, Checkbox } from "@/components/ui";
 import { friendshipService } from "@/services/friendshipService";
+import { groupChatService } from "@/services/groupChatService";
 import { messageService } from "@/services/messageService";
 import { useChatStore } from "@/store/chatStore";
 
@@ -71,9 +72,9 @@ export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
 
     setSubmitting(true);
     try {
-      const res = await messageService.createGroupConversation({
-        title: groupTitle.trim(),
-        recipientIds: selectedUserIds,
+      const res = await groupChatService.createGroupChat({
+        name: groupTitle.trim(),
+        memberIds: selectedUserIds,
       });
 
       const newConvId = res?.data?.id || res?.id;

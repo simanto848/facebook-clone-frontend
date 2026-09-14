@@ -8,37 +8,41 @@ export interface CreateGroupChatInput {
 export const groupChatService = {
   createGroupChat: async (data: CreateGroupChatInput) => {
     const axios = await useAxios();
-    const response = await axios.post("/group-chats", data);
+    const response = await axios.post("/messages/conversations", {
+      isGroup: true,
+      title: data.name,
+      recipientIds: data.memberIds,
+    });
     return response.data;
   },
 
-  getGroupChats: async () => {
+  updateGroupChatTitle: async (conversationId: string, title: string) => {
     const axios = await useAxios();
-    const response = await axios.get("/group-chats");
+    const response = await axios.patch(`/group-chats/${conversationId}`, { title });
     return response.data;
   },
 
-  getGroupMessages: async (groupChatId: string, page = 1, limit = 50) => {
+  addParticipants: async (conversationId: string, userIds: string[]) => {
     const axios = await useAxios();
-    const response = await axios.get(`/group-chats/${groupChatId}/messages?page=${page}&limit=${limit}`);
+    const response = await axios.post(`/group-chats/${conversationId}/participants`, { userIds });
     return response.data;
   },
 
-  sendGroupMessage: async (groupChatId: string, content: string, mediaUrl?: string) => {
+  removeParticipant: async (conversationId: string, userId: string) => {
     const axios = await useAxios();
-    const response = await axios.post(`/group-chats/${groupChatId}/messages`, { content, mediaUrl });
+    const response = await axios.delete(`/group-chats/${conversationId}/participants/${userId}`);
     return response.data;
   },
 
-  addMember: async (groupChatId: string, userId: string) => {
+  leaveGroupChat: async (conversationId: string) => {
     const axios = await useAxios();
-    const response = await axios.post(`/group-chats/${groupChatId}/members`, { userId });
+    const response = await axios.post(`/group-chats/${conversationId}/leave`);
     return response.data;
   },
 
-  leaveGroupChat: async (groupChatId: string) => {
+  updateParticipantRole: async (conversationId: string, userId: string, role: string) => {
     const axios = await useAxios();
-    const response = await axios.post(`/group-chats/${groupChatId}/leave`);
+    const response = await axios.patch(`/group-chats/${conversationId}/participants/${userId}/role`, { role });
     return response.data;
   },
 };
