@@ -7,7 +7,7 @@ import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
 import { usePostStore, mapBackendPostToPostType, PostType } from "@/store/postStore";
 import { useChatStore } from "@/store/chatStore";
-import { Search, Hash, Compass, User, Users, UserPlus, MessageSquare, Loader2, ArrowRight } from "lucide-react";
+import { Search, Hash, Compass, User, Users, UserPlus, MessageSquare, Loader2, ArrowRight, History } from "lucide-react";
 import { searchService } from "@/services/searchService";
 import { hashtagService } from "@/services/hashtagService";
 import {
@@ -36,6 +36,39 @@ export default function ExplorePage() {
   const [matchedPosts, setMatchedPosts] = useState<PostType[]>([]);
   const [matchedGroups, setMatchedGroups] = useState<any[]>([]);
   const [matchedPages, setMatchedPages] = useState<any[]>([]);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("recent_explore_searches");
+      if (stored) {
+        setRecentSearches(JSON.parse(stored));
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const saveRecentSearch = (query: string) => {
+    const trimmed = query.trim();
+    if (!trimmed) return;
+    try {
+      const updated = [trimmed, ...recentSearches.filter((s) => s.toLowerCase() !== trimmed.toLowerCase())].slice(0, 6);
+      setRecentSearches(updated);
+      localStorage.setItem("recent_explore_searches", JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
+  };
+
+  const clearRecentSearches = () => {
+    setRecentSearches([]);
+    try {
+      localStorage.removeItem("recent_explore_searches");
+    } catch {
+      // ignore
+    }
+  };
 
   useEffect(() => {
     const fetchTrending = async () => {
@@ -102,6 +135,8 @@ export default function ExplorePage() {
         } else {
           setMatchedPages([]);
         }
+
+        saveRecentSearch(searchQuery);
       } catch (err) {
         console.error("Search API error:", err);
       } finally {
@@ -148,10 +183,10 @@ export default function ExplorePage() {
 
   const categoryTabs = [
     { id: "all", label: "All Feed" },
-    { id: "posts", label: "Posts" },
-    { id: "people", label: "People" },
-    { id: "groups", label: "Groups" },
-    { id: "pages", label: "Pages" },
+    { id: "posts", label: searchQuery.trim() ? `Posts (${matchedPosts.length})` : "Posts" },
+    { id: "people", label: searchQuery.trim() ? `People (${matchedUsers.length})` : "People" },
+    { id: "groups", label: searchQuery.trim() ? `Groups (${matchedGroups.length})` : "Groups" },
+    { id: "pages", label: searchQuery.trim() ? `Pages (${matchedPages.length})` : "Pages" },
   ];
 
   return (
@@ -184,6 +219,39 @@ export default function ExplorePage() {
                 }}
                 className="bg-[#111827] border-[#1f2937] text-sm py-3"
               />
+
+              {/* Recent Searches */}
+              {!searchQuery && recentSearches.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold tracking-wider uppercase text-slate-400 flex items-center gap-1.5">
+                      <History size={13} />
+                      Recent Searches
+                    </span>
+                    <button
+                      onClick={clearRecentSearches}
+                      className="text-[11px] text-slate-400 hover:text-red-400 transition-colors"
+                    >
+                      Clear history
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {recentSearches.map((term) => (
+                      <button
+                        key={term}
+                        onClick={() => {
+                          setSearchQuery(term);
+                          setSelectedTag(null);
+                        }}
+                        className="px-3 py-1 bg-[#1e293b] hover:bg-[#334155] text-slate-300 hover:text-white rounded-full text-xs font-medium transition-colors flex items-center gap-1.5"
+                      >
+                        <Search size={11} className="text-slate-400" />
+                        {term}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Popular Topics */}
               <div className="space-y-2">
