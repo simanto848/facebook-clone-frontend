@@ -17,6 +17,8 @@ export default function Stories() {
   const [newStoryType, setNewStoryType] = useState<"text" | "image" | "video">("text");
   const [newStoryText, setNewStoryText] = useState("");
   const [newStoryMedia, setNewStoryMedia] = useState("");
+  const [isSubmittingStory, setIsSubmittingStory] = useState(false);
+  const [storyError, setStoryError] = useState<string | null>(null);
 
   const fetchBackendStories = async () => {
     try {
@@ -47,26 +49,43 @@ export default function Stories() {
 
   const handleCreateStory = async (e: React.FormEvent) => {
     e.preventDefault();
-    const content = newStoryType === "text" ? newStoryText : newStoryMedia;
-    if (!content.trim()) return;
+    setStoryError(null);
+
+    const mediaUrl =
+      newStoryType === "text"
+        ? "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600"
+        : newStoryMedia.trim();
+
+    if (!mediaUrl) {
+      setStoryError("Media URL is required for your story.");
+      return;
+    }
+
+    setIsSubmittingStory(true);
+    let createdStoryId = `story_${Date.now()}`;
 
     try {
-      await storyService.createStory({
-        mediaUrl: content,
+      const res = await storyService.createStory({
+        mediaUrl,
+        caption: newStoryText.trim() || undefined,
         mediaType: newStoryType === "video" ? "VIDEO" : "IMAGE",
-        caption: newStoryText,
       });
-    } catch {
-      // Fall back to local state
+      const data = res.data || res;
+      if (data?.id) createdStoryId = data.id;
+    } catch (err: any) {
+      console.error("Failed to persist story to backend:", err);
+    } finally {
+      setIsSubmittingStory(false);
     }
 
     addStory({
+      id: createdStoryId,
       author: {
-        name: "Alex Morgan",
-        avatar: "https://images.unsplash.com/photo-1779040622687-42bb00790c67?w=500",
+        name: authUser?.displayName || authUser?.username || "You",
+        avatar: authUser?.avatar || "https://images.unsplash.com/photo-1779040622687-42bb00790c67?w=500",
       },
       type: newStoryType,
-      content,
+      content: newStoryType === "text" ? newStoryText : mediaUrl,
     });
 
     setNewStoryText("");
@@ -170,6 +189,12 @@ export default function Stories() {
         title="Create Story"
       >
         <form onSubmit={handleCreateStory} className="space-y-4">
+          {storyError && (
+            <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl text-xs">
+              {storyError}
+            </div>
+          )}
+
           <Select
             label="Story Format"
             value={newStoryType}
@@ -183,7 +208,7 @@ export default function Stories() {
 
           {newStoryType === "text" ? (
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-300 block">Story Caption</label>
+              <label className="text-xs font-semibold text-slate-300 block">Story Text</label>
               <textarea
                 placeholder="What is on your mind?"
                 value={newStoryText}
@@ -193,20 +218,32 @@ export default function Stories() {
               />
             </div>
           ) : (
-            <Input
-              label={newStoryType === "image" ? "Image URL" : "Video URL"}
-              placeholder="https://images.unsplash.com/..."
-              value={newStoryMedia}
-              onChange={(e) => setNewStoryMedia(e.target.value)}
-              required
-            />
+            <div className="space-y-3">
+              <Input
+                label={newStoryType === "image" ? "Image URL *" : "Video URL *"}
+                placeholder="https://images.unsplash.com/..."
+                value={newStoryMedia}
+                onChange={(e) => setNewStoryMedia(e.target.value)}
+                required
+              />
+              <Input
+                label="Caption (Optional)"
+                placeholder="Add a short caption..."
+                value={newStoryText}
+                onChange={(e) => setNewStoryText(e.target.value)}
+              />
+            </div>
           )}
 
           <div className="flex justify-end gap-2 pt-2 border-t border-[#1f2937]">
-            <Button variant="secondary" onClick={() => setShowCreateModal(false)}>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setShowCreateModal(false)}
+            >
               Cancel
             </Button>
-            <Button variant="primary" type="submit">
+            <Button variant="primary" type="submit" loading={isSubmittingStory}>
               Share Story
             </Button>
           </div>
