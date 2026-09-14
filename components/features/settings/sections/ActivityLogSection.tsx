@@ -23,16 +23,25 @@ export default function ActivityLogSection() {
   const [logs, setLogs] = useState<LogEntry[]>(fallbackLogs);
   const [loading, setLoading] = useState(false);
 
+  const getActionBadgeColor = (action: string) => {
+    const upper = action.toUpperCase();
+    if (upper.includes("LOGIN") || upper.includes("AUTH")) return "bg-emerald-600/20 text-emerald-400 border-emerald-500/30";
+    if (upper.includes("DELETE") || upper.includes("REMOVE") || upper.includes("BLOCK")) return "bg-rose-600/20 text-rose-400 border-rose-500/30";
+    if (upper.includes("UPDATE") || upper.includes("EDIT")) return "bg-amber-600/20 text-amber-400 border-amber-500/30";
+    return "bg-blue-600/20 text-blue-400 border-blue-500/30";
+  };
+
   const fetchLogs = async () => {
     setLoading(true);
     try {
       const res = await activityLogService.getActivityLogs();
-      const items = res.data || res || [];
-      if (Array.isArray(items) && items.length > 0) {
+      const raw = res?.data?.logs || res?.logs || res?.data || res || [];
+      const items = Array.isArray(raw) ? raw : [];
+      if (items.length > 0) {
         const parsed: LogEntry[] = items.map((l: any) => ({
           id: l.id,
           action: l.action || "ACTIVITY",
-          details: l.details || l.description || "Activity performed",
+          details: l.details || l.description || l.message || "Activity performed",
           createdAt: l.createdAt ? new Date(l.createdAt).toLocaleString() : "Recently",
         }));
         setLogs(parsed);
@@ -48,6 +57,8 @@ export default function ActivityLogSection() {
     fetchLogs();
   }, []);
 
+  const [isClearing, setIsClearing] = useState(false);
+
   const handleDelete = async (id: string) => {
     setLogs((prev) => prev.filter((l) => l.id !== id));
     try {
@@ -58,11 +69,14 @@ export default function ActivityLogSection() {
   };
 
   const handleClear = async () => {
-    setLogs([]);
+    setIsClearing(true);
     try {
       await activityLogService.clearLogs();
+      setLogs([]);
     } catch (err) {
       console.error("Clear logs error:", err);
+    } finally {
+      setIsClearing(false);
     }
   };
 
@@ -72,7 +86,7 @@ export default function ActivityLogSection() {
       header: "Action",
       sortable: true,
       cell: (row) => (
-        <span className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-blue-600/20 text-blue-400 uppercase">
+        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border uppercase ${getActionBadgeColor(row.action)}`}>
           {row.action}
         </span>
       ),
@@ -123,6 +137,7 @@ export default function ActivityLogSection() {
             size="sm"
             variant="danger"
             leftIcon={<Trash2 size={13} />}
+            loading={isClearing}
             onClick={handleClear}
           >
             Clear Log
