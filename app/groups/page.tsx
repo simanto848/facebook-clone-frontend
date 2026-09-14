@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
@@ -326,9 +327,15 @@ export default function GroupsPage() {
                       <Card key={guild.id} hover className="flex flex-col justify-between">
                         <CardContent className="space-y-3">
                           <div className="flex items-start gap-3">
-                            <Avatar src={guild.avatar} name={guild.name} size="lg" />
+                            <Link href={`/groups/${guild.id}`}>
+                              <Avatar src={guild.avatar} name={guild.name} size="lg" className="hover:opacity-85 transition" />
+                            </Link>
                             <div className="flex-1 min-w-0">
-                              <h4 className="font-bold text-white text-sm leading-tight truncate">{guild.name}</h4>
+                              <Link href={`/groups/${guild.id}`}>
+                                <h4 className="font-bold text-white text-sm leading-tight truncate hover:text-blue-400 hover:underline transition">
+                                  {guild.name}
+                                </h4>
+                              </Link>
                               <div className="flex items-center gap-2 mt-1">
                                 <Badge variant="secondary" size="sm">{guild.category}</Badge>
                                 <span className="text-xs text-slate-400">{guild.members} members</span>
@@ -347,13 +354,14 @@ export default function GroupsPage() {
                           >
                             {joinedGuilds[guild.id] ? "Joined" : "Join Guild"}
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setSelectedGuild(guild)}
-                          >
-                            View
-                          </Button>
+                          <Link href={`/groups/${guild.id}`}>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                            >
+                              Visit
+                            </Button>
+                          </Link>
                         </div>
                       </Card>
                     ))}
