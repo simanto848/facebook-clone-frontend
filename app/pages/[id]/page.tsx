@@ -3,12 +3,12 @@
 import React, { useState, useEffect, use } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Flag, ThumbsUp, Plus, Globe, Send, MessageSquare } from "lucide-react";
+import { ArrowLeft, Flag, ThumbsUp, Plus, Globe, Send, MessageSquare, Image as ImageIcon, X } from "lucide-react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
 import { pageService } from "@/services/pageService";
-import { mapBackendPostToPostType, PostType } from "@/store/postStore";
+import { mapBackendPostToPostType, PostType, usePostStore } from "@/store/postStore";
 import {
   Button,
   Badge,
@@ -33,7 +33,10 @@ export default function BrandPageDetailPage({ params }: PageProps) {
   const [likesCount, setLikesCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [postContent, setPostContent] = useState("");
+  const [postImageUrl, setPostImageUrl] = useState("");
+  const [showImageInput, setShowImageInput] = useState(false);
   const [posting, setPosting] = useState(false);
+  const [postError, setPostError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchPageData = async () => {
@@ -79,17 +82,22 @@ export default function BrandPageDetailPage({ params }: PageProps) {
     if (!postContent.trim() || posting) return;
 
     setPosting(true);
+    setPostError(null);
     const content = postContent.trim();
-    setPostContent("");
+    const media = postImageUrl.trim() ? [postImageUrl.trim()] : [];
 
     try {
       const res = await pageService.createPagePost(id, content);
       const newP = res?.data || res;
+      let createdPost: PostType;
       if (newP && newP.id) {
-        setPagePosts((prev) => [mapBackendPostToPostType(newP), ...prev]);
+        createdPost = mapBackendPostToPostType({
+          ...newP,
+          mediaUrls: media.length > 0 ? media : newP.mediaUrls,
+        });
       } else {
         // Optimistic entry
-        const optPost: PostType = {
+        createdPost = {
           id: Math.random().toString(36).substring(7),
           author: {
             name: page?.name || "Page Admin",
@@ -97,16 +105,21 @@ export default function BrandPageDetailPage({ params }: PageProps) {
             avatar: page?.avatar || "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=200",
           },
           content,
+          images: media,
           createdAt: "Just now",
           visibility: "public",
-          type: "text",
+          type: media.length > 0 ? "image" : "text",
           reactions: { like: 0, love: 0, haha: 0, wow: 0, sad: 0, angry: 0 },
           comments: [],
         };
-        setPagePosts((prev) => [optPost, ...prev]);
       }
-    } catch (err) {
+      setPagePosts((prev) => [createdPost, ...prev]);
+      setPostContent("");
+      setPostImageUrl("");
+      setShowImageInput(false);
+    } catch (err: any) {
       console.error("Create page post error:", err);
+      setPostError(err.response?.data?.message || err.message || "Failed to publish page post");
     } finally {
       setPosting(false);
     }
@@ -230,27 +243,68 @@ export default function BrandPageDetailPage({ params }: PageProps) {
 
                 {/* Page Post Creation Form */}
                 <div className="rounded-2xl border border-[#1f2937] bg-[#111827] p-4 space-y-3">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
-                    <Plus size={14} className="text-blue-400" />
-                    <span>Publish an update as {page.name}</span>
-                  </div>
-                  <form onSubmit={handleCreatePost} className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder={`Share an announcement or update on ${page.name}...`}
-                      value={postContent}
-                      onChange={(e) => setPostContent(e.target.value)}
-                      className="flex-1 rounded-xl border border-[#1f2937] bg-[#0f172a] px-4 py-2.5 text-xs text-white outline-none placeholder:text-slate-500 focus:border-blue-500 transition"
-                    />
-                    <Button
-                      type="submit"
-                      variant="primary"
-                      size="sm"
-                      disabled={posting || !postContent.trim()}
-                      leftIcon={<Send size={13} />}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
+                      <Plus size={14} className="text-blue-400" />
+                      <span>Publish an update as {page.name}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowImageInput(!showImageInput)}
+                      className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg border transition ${
+                        showImageInput
+                          ? "border-blue-500/50 bg-blue-500/10 text-blue-400"
+                          : "border-[#1f2937] bg-[#0f172a] text-slate-400 hover:text-white"
+                      }`}
                     >
-                      {posting ? "Posting..." : "Publish"}
-                    </Button>
+                      <ImageIcon size={13} />
+                      <span>{showImageInput ? "Remove Photo" : "Add Photo"}</span>
+                    </button>
+                  </div>
+
+                  {postError && (
+                    <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl text-xs">
+                      {postError}
+                    </div>
+                  )}
+
+                  <form onSubmit={handleCreatePost} className="space-y-3">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder={`Share an announcement or update on ${page.name}...`}
+                        value={postContent}
+                        onChange={(e) => setPostContent(e.target.value)}
+                        className="flex-1 rounded-xl border border-[#1f2937] bg-[#0f172a] px-4 py-2.5 text-xs text-white outline-none placeholder:text-slate-500 focus:border-blue-500 transition"
+                      />
+                      <Button
+                        type="submit"
+                        variant="primary"
+                        size="sm"
+                        disabled={posting || !postContent.trim()}
+                        loading={posting}
+                        leftIcon={<Send size={13} />}
+                      >
+                        {posting ? "Posting..." : "Publish"}
+                      </Button>
+                    </div>
+
+                    {showImageInput && (
+                      <div className="flex items-center gap-2 pt-1">
+                        <input
+                          type="text"
+                          placeholder="Image URL (e.g. https://images.unsplash.com/...)"
+                          value={postImageUrl}
+                          onChange={(e) => setPostImageUrl(e.target.value)}
+                          className="flex-1 rounded-xl border border-[#1f2937] bg-[#0f172a] px-3.5 py-2 text-xs text-white outline-none placeholder:text-slate-500 focus:border-blue-500 transition"
+                        />
+                        {postImageUrl && (
+                          <div className="relative h-9 w-9 rounded-lg overflow-hidden border border-blue-500 shrink-0">
+                            <Image src={postImageUrl} alt="preview" fill sizes="36px" className="object-cover" />
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </form>
                 </div>
 
