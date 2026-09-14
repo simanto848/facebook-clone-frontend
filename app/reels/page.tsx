@@ -1,11 +1,25 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
-import { Heart, MessageCircle, Share2, Music, Volume2, VolumeX, Plus, Play, Pause, ArrowLeft } from "lucide-react";
+import {
+  Heart,
+  MessageCircle,
+  Share2,
+  Music,
+  Volume2,
+  VolumeX,
+  Plus,
+  Play,
+  Pause,
+  ArrowLeft,
+  ChevronUp,
+  ChevronDown,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
+import { postService } from "@/services/postService";
 
 interface ReelItem {
   id: string;
@@ -14,6 +28,7 @@ interface ReelItem {
     avatar: string;
     handle: string;
   };
+  authorId?: string;
   videoUrl: string;
   caption: string;
   musicTitle: string;
@@ -62,7 +77,78 @@ export default function ReelsPage() {
   const [isPlaying, setIsPlaying] = useState(true);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const currentReel = reels[activeReelIndex];
+  const currentReel = reels[activeReelIndex] || reels[0];
+
+  useEffect(() => {
+    const loadVideoPosts = async () => {
+      try {
+        const res = await postService.getFeed(1, 30);
+        const dataObj = res?.data || res || {};
+        const items = Array.isArray(dataObj)
+          ? dataObj
+          : Array.isArray(dataObj.posts)
+          ? dataObj.posts
+          : Array.isArray(res?.posts)
+          ? res.posts
+          : [];
+
+        const videoPosts: ReelItem[] = items
+          .filter((p: any) => {
+            const hasVideoMedia = p.mediaUrls?.some((url: string) => url.match(/\.(mp4|webm|mov|mkv)$/i));
+            return p.video || hasVideoMedia || p.type === "video";
+          })
+          .map((p: any) => {
+            const videoUrl =
+              p.video ||
+              p.mediaUrls?.find((url: string) => url.match(/\.(mp4|webm|mov|mkv)$/i)) ||
+              (p.mediaUrls && p.mediaUrls[0]) ||
+              "";
+
+            const authorName =
+              p.author?.displayName ||
+              `${p.author?.firstName || ""} ${p.author?.lastName || ""}`.trim() ||
+              p.author?.username ||
+              "Creator";
+
+            return {
+              id: p.id,
+              author: {
+                name: authorName,
+                handle: p.author?.username || "user",
+                avatar:
+                  p.author?.avatarUrl ||
+                  p.author?.profilePicture ||
+                  "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
+              },
+              authorId: p.author?.id,
+              videoUrl,
+              caption: p.content || "Awesome reel!",
+              musicTitle: "Original Audio",
+              likes: p._count?.reactions || (Array.isArray(p.reactions) ? p.reactions.length : 0),
+              comments: p._count?.comments || (Array.isArray(p.comments) ? p.comments.length : 0),
+              shares: p._count?.shares || 0,
+              hasLiked: p.userReaction != null,
+            };
+          });
+
+        if (videoPosts.length > 0) {
+          setReels([...videoPosts, ...DEFAULT_REELS]);
+        }
+      } catch (err) {
+        console.error("Failed to load feed video reels:", err);
+      }
+    };
+
+    loadVideoPosts();
+  }, []);
+
+  const handlePrevReel = () => {
+    setActiveReelIndex((prev) => (prev > 0 ? prev - 1 : reels.length - 1));
+  };
+
+  const handleNextReel = () => {
+    setActiveReelIndex((prev) => (prev < reels.length - 1 ? prev + 1 : 0));
+  };
 
   const toggleLike = (reelId: string) => {
     setReels((prev) =>
@@ -110,12 +196,17 @@ export default function ReelsPage() {
                 <span>Feed</span>
               </button>
 
-              <button
-                onClick={() => setIsMuted(!isMuted)}
-                className="p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition cursor-pointer"
-              >
-                {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
-              </button>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-mono font-bold bg-black/50 px-2.5 py-1 rounded-full text-slate-300">
+                  {activeReelIndex + 1} / {reels.length}
+                </span>
+                <button
+                  onClick={() => setIsMuted(!isMuted)}
+                  className="p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition cursor-pointer"
+                >
+                  {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+                </button>
+              </div>
             </div>
 
             {/* Video Player */}
@@ -138,6 +229,32 @@ export default function ReelsPage() {
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* Prev / Next Navigation Controls */}
+            <div className="absolute right-4 top-16 z-20 flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handlePrevReel();
+                }}
+                className="p-2 rounded-full bg-black/50 text-white/80 hover:text-white hover:bg-black/80 transition shadow-lg cursor-pointer"
+                title="Previous Reel"
+              >
+                <ChevronUp size={18} />
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleNextReel();
+                }}
+                className="p-2 rounded-full bg-black/50 text-white/80 hover:text-white hover:bg-black/80 transition shadow-lg cursor-pointer"
+                title="Next Reel"
+              >
+                <ChevronDown size={18} />
+              </button>
             </div>
 
             {/* Right Action Icons Sidebar */}
