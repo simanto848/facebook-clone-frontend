@@ -101,40 +101,70 @@ export default function ConnectionsPage() {
     };
   }, [loadData]);
 
+  const [sentRequestIds, setSentRequestIds] = useState<string[]>([]);
+  const [processingId, setProcessingId] = useState<string | null>(null);
+
   const handleAcceptRequest = async (user: DisplayUser) => {
+    setProcessingId(user.id);
     try {
       await friendshipService.acceptFriendRequest(user.id);
       setRequests((prev) => prev.filter((r) => r.id !== user.id));
       setConnections((prev) => [user, ...prev]);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("app:friendship_updated"));
+      }
     } catch (e) {
       console.error(e);
+    } finally {
+      setProcessingId(null);
     }
   };
 
   const handleDeclineRequest = async (userId: string) => {
+    setProcessingId(userId);
     try {
       await friendshipService.declineFriendRequest(userId);
       setRequests((prev) => prev.filter((r) => r.id !== userId));
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("app:friendship_updated"));
+      }
     } catch (e) {
       console.error(e);
+    } finally {
+      setProcessingId(null);
     }
   };
 
-  const handleAddFriend = async (user: DisplayUser) => {
+  const handleToggleFriendRequest = async (user: DisplayUser) => {
+    const isSent = sentRequestIds.includes(user.id);
+    setProcessingId(user.id);
     try {
-      await friendshipService.sendFriendRequest(user.id);
-      setSuggestions((prev) => prev.filter((s) => s.id !== user.id));
+      if (isSent) {
+        setSentRequestIds((prev) => prev.filter((id) => id !== user.id));
+        await friendshipService.declineFriendRequest(user.id);
+      } else {
+        setSentRequestIds((prev) => [...prev, user.id]);
+        await friendshipService.sendFriendRequest(user.id);
+      }
     } catch (e) {
-      console.error(e);
+      console.error("Error toggling friend request:", e);
+    } finally {
+      setProcessingId(null);
     }
   };
 
   const handleUnfriend = async (userId: string) => {
+    setProcessingId(userId);
     try {
       await friendshipService.unfriend(userId);
       setConnections((prev) => prev.filter((c) => c.id !== userId));
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("app:friendship_updated"));
+      }
     } catch (e) {
       console.error(e);
+    } finally {
+      setProcessingId(null);
     }
   };
 
@@ -275,13 +305,20 @@ export default function ConnectionsPage() {
 
                             <div className="flex gap-2 pt-2 border-t border-[#1f2937]/60">
                               <Button
-                                variant="primary"
+                                variant={sentRequestIds.includes(user.id) ? "outline" : "primary"}
                                 fullWidth
                                 size="sm"
-                                leftIcon={<UserPlus size={14} />}
-                                onClick={() => handleAddFriend(user)}
+                                disabled={processingId === user.id}
+                                leftIcon={
+                                  sentRequestIds.includes(user.id) ? (
+                                    <Check size={14} className="text-emerald-400" />
+                                  ) : (
+                                    <UserPlus size={14} />
+                                  )
+                                }
+                                onClick={() => handleToggleFriendRequest(user)}
                               >
-                                Connect
+                                {sentRequestIds.includes(user.id) ? "Request Sent" : "Connect"}
                               </Button>
                               <Button
                                 variant="secondary"
