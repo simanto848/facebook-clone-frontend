@@ -43,6 +43,17 @@ export default function Navbar() {
   }, [fetchConversations]);
 
   const [liveNotifications, setLiveNotifications] = useState<any[]>([]);
+  const [unreadNotifCount, setUnreadNotifCount] = useState<number>(0);
+
+  const fetchUnreadCount = async () => {
+    try {
+      const res = await notificationService.getUnreadCount();
+      const count = res?.data?.count ?? res?.count ?? 0;
+      setUnreadNotifCount(typeof count === "number" ? count : 0);
+    } catch {
+      // fallback silently
+    }
+  };
 
   useEffect(() => {
     const fetchRealNotifications = async () => {
@@ -85,6 +96,7 @@ export default function Navbar() {
     };
 
     fetchRealNotifications();
+    fetchUnreadCount();
   }, []);
 
   useEffect(() => {
@@ -110,6 +122,7 @@ export default function Navbar() {
 
       setLiveNotifications((prev) => {
         if (data.id && prev.some((n) => n.id === data.id)) return prev;
+        setUnreadNotifCount((c) => c + 1);
         return [
           {
             id: data.id || String(Date.now()),
@@ -387,9 +400,11 @@ export default function Navbar() {
               }`}
             >
               <Bell size={18} />
-              {liveNotifications.filter((n) => n.unread).length > 0 && (
+              {Math.max(unreadNotifCount, liveNotifications.filter((n) => n.unread).length) > 0 && (
                 <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-semibold text-white">
-                  {liveNotifications.filter((n) => n.unread).length}
+                  {Math.max(unreadNotifCount, liveNotifications.filter((n) => n.unread).length) > 99
+                    ? "99+"
+                    : Math.max(unreadNotifCount, liveNotifications.filter((n) => n.unread).length)}
                 </span>
               )}
             </button>
@@ -400,6 +415,7 @@ export default function Navbar() {
                   <p className="font-bold text-white text-sm">Notifications</p>
                   <button
                     onClick={() => {
+                      setUnreadNotifCount(0);
                       setLiveNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
                       notificationService.markAsRead().catch(() => {});
                     }}
