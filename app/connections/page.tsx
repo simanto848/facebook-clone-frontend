@@ -254,6 +254,7 @@ export default function ConnectionsPage() {
                                 variant="primary"
                                 fullWidth
                                 size="sm"
+                                disabled={processingId === user.id}
                                 leftIcon={<Check size={14} />}
                                 onClick={() => handleAcceptRequest(user)}
                               >
@@ -263,10 +264,19 @@ export default function ConnectionsPage() {
                                 variant="secondary"
                                 fullWidth
                                 size="sm"
+                                disabled={processingId === user.id}
                                 leftIcon={<X size={14} />}
                                 onClick={() => handleDeclineRequest(user.id)}
                               >
                                 Ignore
+                              </Button>
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => openChat({ id: user.id, name: user.name, avatar: user.avatar })}
+                                title="Message"
+                              >
+                                <MessageSquare size={14} />
                               </Button>
                             </div>
                           </CardContent>
@@ -357,9 +367,16 @@ export default function ConnectionsPage() {
                                   {user.name}
                                 </p>
                                 <p className="text-xs text-slate-400 truncate">{user.role}</p>
-                                <Badge variant="success" size="sm" pulse>
-                                  Connected
-                                </Badge>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <Badge variant="success" size="sm" pulse>
+                                    Connected
+                                  </Badge>
+                                  {user.mutual > 0 && (
+                                    <Badge variant="secondary" size="sm">
+                                      {user.mutual} mutual
+                                    </Badge>
+                                  )}
+                                </div>
                               </div>
                             </Link>
 
@@ -376,6 +393,7 @@ export default function ConnectionsPage() {
                               <Button
                                 variant="ghost"
                                 size="sm"
+                                disabled={processingId === user.id}
                                 onClick={() => handleUnfriend(user.id)}
                                 title="Remove connection"
                               >
