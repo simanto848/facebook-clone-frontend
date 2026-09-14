@@ -6,10 +6,11 @@ import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
 import { Bookmark } from "lucide-react";
 import { bookmarkService } from "@/services/bookmarkService";
+import { mapBackendPostToPostType, PostType } from "@/store/postStore";
 import { PageHeader, Badge, EmptyState, Loader } from "@/components/ui";
 
 export default function SavedPostsPage() {
-  const [savedPosts, setSavedPosts] = useState<any[]>([]);
+  const [savedPosts, setSavedPosts] = useState<(PostType & { bookmarkId?: string; category?: string })[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchBookmarks = async () => {
@@ -17,7 +18,16 @@ export default function SavedPostsPage() {
     try {
       const res = await bookmarkService.getUserBookmarks();
       const items = res.data || res || [];
-      const posts = items.map((b: any) => (b.post ? { ...b.post, bookmarkId: b.id, saved: true } : { ...b, saved: true }));
+      const posts = items.map((b: any) => {
+        const rawPost = b.post || b;
+        const mapped = mapBackendPostToPostType(rawPost);
+        return {
+          ...mapped,
+          bookmarkId: b.id,
+          saved: true,
+          category: b.category || "All",
+        };
+      });
       setSavedPosts(posts);
     } catch (err) {
       console.error("Error fetching bookmarks:", err);
