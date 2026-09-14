@@ -18,6 +18,7 @@ import {
   Input,
   Select,
   Avatar,
+  Tabs,
 } from "@/components/ui";
 
 interface Guild {
@@ -73,12 +74,47 @@ export default function GroupsPage() {
   const [description, setDescription] = useState("");
   const [avatar, setAvatar] = useState("");
 
+  const [activeTab, setActiveTab] = useState<"all" | "joined" | "owned">("all");
+  const [ownedGuildIds, setOwnedGuildIds] = useState<Record<string, boolean>>({});
+
   const fetchBackendGroups = async () => {
     try {
-      const res = await groupService.getJoinedGroups();
-      const items = res.data || res || [];
-      if (Array.isArray(items) && items.length > 0) {
-        const fetched: Guild[] = items.map((g: any) => ({
+      const [joinedRes, ownedRes] = await Promise.allSettled([
+        groupService.getJoinedGroups(),
+        groupService.getOwnedGroups(),
+      ]);
+
+      const joinedItems = joinedRes.status === "fulfilled" ? (joinedRes.value?.data || joinedRes.value || []) : [];
+      const ownedItems = ownedRes.status === "fulfilled" ? (ownedRes.value?.data || ownedRes.value || []) : [];
+
+      const ownedMap: Record<string, boolean> = {};
+      ownedItems.forEach((g: any) => {
+        if (g.id) ownedMap[g.id] = true;
+      });
+      setOwnedGuildIds(ownedMap);
+
+      const joinedMap: Record<string, boolean> = {};
+      joinedItems.forEach((g: any) => {
+        if (g.id) joinedMap[g.id] = true;
+      });
+      // Owners are also members of their groups
+      ownedItems.forEach((g: any) => {
+        if (g.id) joinedMap[g.id] = true;
+      });
+      setJoinedGuilds(joinedMap);
+
+      const combined = [...ownedItems, ...joinedItems];
+      const seen = new Set<string>();
+      const deduped: any[] = [];
+      for (const item of combined) {
+        if (item?.id && !seen.has(item.id)) {
+          seen.add(item.id);
+          deduped.push(item);
+        }
+      }
+
+      if (deduped.length > 0) {
+        const fetched: Guild[] = deduped.map((g: any) => ({
           id: g.id,
           name: g.name,
           avatar: g.avatar || "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=100",
@@ -88,9 +124,6 @@ export default function GroupsPage() {
           description: g.description || "",
         }));
         setGuilds(fetched);
-        const joinedMap: Record<string, boolean> = {};
-        fetched.forEach((g) => (joinedMap[g.id] = true));
-        setJoinedGuilds(joinedMap);
       }
     } catch (err) {
       console.error("Using local fallback groups:", err);
@@ -246,43 +279,34 @@ export default function GroupsPage() {
             ) : (
               /* BROWSE GUILDS GRID */
               <div className="space-y-6">
-                {/* Joined Guilds Drawer */}
-                <div className="space-y-3">
-                  <span className="text-xs font-bold tracking-wider uppercase text-slate-400 block">Your Joined Guilds</span>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {guilds
-                      .filter((g) => joinedGuilds[g.id])
-                      .map((guild) => (
-                        <Card
-                          key={guild.id}
-                          hover
-                          onClick={() => setSelectedGuild(guild)}
-                          className="cursor-pointer"
-                        >
-                          <CardContent className="flex items-center justify-between p-4">
-                            <div className="flex items-center gap-3">
-                              <Avatar src={guild.avatar} name={guild.name} size="lg" />
-                              <div className="space-y-0.5">
-                                <p className="text-sm font-bold text-white truncate max-w-[140px]">{guild.name}</p>
-                                <p className="text-xs text-slate-400">{guild.members} members</p>
-                              </div>
-                            </div>
-                            <Badge variant="primary" size="sm">Open</Badge>
-                          </CardContent>
-                        </Card>
-                      ))}
-                  </div>
-                </div>
+                <Tabs
+                  tabs={[
+                    { id: "all", label: "All Communities", badge: guilds.length },
+                    { id: "joined", label: "Joined Guilds", badge: Object.keys(joinedGuilds).filter((k) => joinedGuilds[k]).length },
+                    { id: "owned", label: "My Created Guilds", badge: Object.keys(ownedGuildIds).length },
+                  ]}
+                  activeTab={activeTab}
+                  onChange={(tab) => setActiveTab(tab as any)}
+                  variant="line"
+                />
 
-                {/* Explore Guilds Grid */}
+                {/* Communities Grid */}
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 border-b border-[#1f2937] pb-3">
                     <Compass size={16} className="text-blue-400" />
-                    <span className="text-xs font-bold tracking-wider uppercase text-slate-400">Suggested Communities</span>
+                    <span className="text-xs font-bold tracking-wider uppercase text-slate-400">
+                      {activeTab === "joined" ? "Your Joined Guilds" : activeTab === "owned" ? "Guilds Created By You" : "Suggested Communities"}
+                    </span>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {guilds.map((guild) => (
+                    {guilds
+                      .filter((g) => {
+                        if (activeTab === "joined") return joinedGuilds[g.id];
+                        if (activeTab === "owned") return ownedGuildIds[g.id];
+                        return true;
+                      })
+                      .map((guild) => (
                       <Card key={guild.id} hover className="flex flex-col justify-between">
                         <CardContent className="space-y-3">
                           <div className="flex items-start gap-3">
