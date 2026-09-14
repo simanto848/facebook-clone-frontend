@@ -182,8 +182,12 @@ export function NotificationDropdown({ isOpen, onClose }: NotificationDropdownPr
                 </div>
 
                 <button
-                  onClick={() => handleDelete(item.id)}
-                  className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-red-400 transition rounded-md"
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(item.id);
+                  }}
+                  className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-rose-400 hover:bg-white/5 transition rounded-md"
                   title="Delete notification"
                 >
                   <Trash2 size={13} />

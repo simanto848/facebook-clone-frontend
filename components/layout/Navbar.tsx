@@ -15,6 +15,7 @@ import {
   MessageSquare,
   CheckCheck,
   Palette,
+  Trash2,
 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
@@ -442,7 +443,7 @@ export default function Navbar() {
                             notificationService.markAsRead([notif.id]).catch(() => {});
                           }
                         }}
-                        className={`flex gap-3 p-3.5 hover:bg-[#1f2937]/50 transition cursor-pointer ${
+                        className={`flex items-start gap-3 p-3.5 hover:bg-[#1f2937]/50 transition cursor-pointer group/notif ${
                           notif.unread ? "bg-blue-500/5" : ""
                         }`}
                       >
@@ -456,9 +457,24 @@ export default function Navbar() {
                           </p>
                           <span className="text-[10px] text-slate-500 font-medium block">{notif.time}</span>
                         </div>
-                        {notif.unread && (
-                          <div className="h-2 w-2 rounded-full bg-blue-500 shrink-0 self-center" />
-                        )}
+                        <div className="flex items-center gap-1">
+                          {notif.unread && (
+                            <div className="h-2 w-2 rounded-full bg-blue-500 shrink-0 self-center mr-1" />
+                          )}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setLiveNotifications((prev) => prev.filter((n) => n.id !== notif.id));
+                              if (notif.unread) setUnreadNotifCount((c) => Math.max(0, c - 1));
+                              notificationService.deleteNotification(notif.id).catch(() => {});
+                            }}
+                            className="opacity-0 group-hover/notif:opacity-100 p-1 text-slate-500 hover:text-rose-400 hover:bg-white/5 rounded-md transition"
+                            title="Delete notification"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
                       </div>
                     ))
                   )}
