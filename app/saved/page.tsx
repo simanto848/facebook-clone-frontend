@@ -4,14 +4,15 @@ import React, { useEffect, useState } from "react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
-import { Bookmark } from "lucide-react";
+import { Bookmark, BookmarkX } from "lucide-react";
 import { bookmarkService } from "@/services/bookmarkService";
-import { mapBackendPostToPostType, PostType } from "@/store/postStore";
+import { mapBackendPostToPostType, PostType, usePostStore } from "@/store/postStore";
 import { PageHeader, Badge, EmptyState, Loader } from "@/components/ui";
 
 export default function SavedPostsPage() {
   const [savedPosts, setSavedPosts] = useState<(PostType & { bookmarkId?: string; category?: string })[]>([]);
   const [loading, setLoading] = useState(true);
+  const { toggleSavePost } = usePostStore();
 
   const fetchBookmarks = async () => {
     setLoading(true);
@@ -42,6 +43,13 @@ export default function SavedPostsPage() {
 
   const [selectedCategory, setSelectedCategory] = useState("all");
 
+  const categoryCounts: Record<string, number> = {
+    all: savedPosts.length,
+    media: savedPosts.filter((p) => p.type === "image" || p.type === "video" || (p.images && p.images.length > 0)).length,
+    discussions: savedPosts.filter((p) => p.type === "text" || (!p.article && (!p.images || p.images.length === 0))).length,
+    articles: savedPosts.filter((p) => !!p.article).length,
+  };
+
   const categories = [
     { id: "all", label: "All Items" },
     { id: "media", label: "Media & Photos" },
@@ -50,12 +58,14 @@ export default function SavedPostsPage() {
   ];
 
   const handleUnbookmark = async (bookmarkId: string, postId: string) => {
+    // Optimistic state removal
+    setSavedPosts((prev) => prev.filter((p) => p.id !== postId && p.bookmarkId !== bookmarkId));
+    toggleSavePost(postId);
     try {
       await bookmarkService.deleteBookmark(bookmarkId || postId);
     } catch (err) {
       console.error("Failed to delete bookmark:", err);
     }
-    setSavedPosts((prev) => prev.filter((p) => p.id !== postId && p.bookmarkId !== bookmarkId));
   };
 
   const filteredPosts = savedPosts.filter((post) => {
@@ -88,17 +98,25 @@ export default function SavedPostsPage() {
             <div className="flex items-center gap-2 overflow-x-auto pb-1">
               {categories.map((cat) => {
                 const isActive = selectedCategory === cat.id;
+                const count = categoryCounts[cat.id] || 0;
                 return (
                   <button
                     key={cat.id}
                     onClick={() => setSelectedCategory(cat.id)}
-                    className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap flex items-center gap-1.5 transition-all ${
                       isActive
                         ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20"
                         : "bg-slate-800/80 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-700/50"
                     }`}
                   >
-                    {cat.label}
+                    <span>{cat.label}</span>
+                    <span
+                      className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                        isActive ? "bg-white/20 text-white" : "bg-slate-700/60 text-slate-400"
+                      }`}
+                    >
+                      {count}
+                    </span>
                   </button>
                 );
               })}
@@ -122,6 +140,17 @@ export default function SavedPostsPage() {
               <div className="space-y-6">
                 {filteredPosts.map((post) => (
                   <div key={post.id} className="relative group">
+                    <div className="absolute top-4 right-14 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        type="button"
+                        onClick={() => handleUnbookmark(post.bookmarkId || "", post.id)}
+                        className="px-2.5 py-1 text-[11px] font-medium bg-rose-600/90 hover:bg-rose-600 text-white rounded-lg shadow-md backdrop-blur-xs flex items-center gap-1 transition"
+                        title="Remove from saved bookmarks"
+                      >
+                        <BookmarkX size={13} />
+                        Remove
+                      </button>
+                    </div>
                     <PostCard post={post} />
                   </div>
                 ))}
