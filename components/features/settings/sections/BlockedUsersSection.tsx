@@ -23,11 +23,14 @@ export default function BlockedUsersSection() {
       const items = res?.data || res || [];
       if (Array.isArray(items)) {
         setBlocked(
-          items.map((u: any) => ({
-            id: u.id,
-            name: `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.username || "Blocked User",
-            avatar: u.avatarUrl || u.profilePicture || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
-          }))
+          items.map((b: any) => {
+            const u = b.blocked || b.user || b;
+            return {
+              id: u.id || b.blockedId || b.id,
+              name: `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.displayName || u.username || "Blocked User",
+              avatar: u.avatarUrl || u.profilePicture || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
+            };
+          })
         );
       }
     } catch {

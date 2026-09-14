@@ -11,6 +11,7 @@ import AppearanceSection from "@/components/features/settings/sections/Appearanc
 import LanguageSection from "@/components/features/settings/sections/LanguageSection";
 import FeedSection from "@/components/features/settings/sections/FeedSection";
 import ActivityLogSection from "@/components/features/settings/sections/ActivityLogSection";
+import BlockedUsersSection from "@/components/features/settings/sections/BlockedUsersSection";
 import { Loader } from "@/components/ui";
 
 function SettingsContent() {
@@ -45,6 +46,8 @@ function SettingsContent() {
         return <NotificationsSection />;
       case "privacy":
         return <PrivacySection />;
+      case "blocking":
+        return <BlockedUsersSection />;
       case "security":
         return <SecuritySection />;
       case "appearance":

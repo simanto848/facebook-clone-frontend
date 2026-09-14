@@ -1,4 +1,4 @@
-import { Bell, Lock, Palette, Shield, User, Globe, Rss, History } from "lucide-react";
+import { Bell, Lock, Palette, Shield, User, Globe, Rss, History, UserX } from "lucide-react";
 
 export const menuItems = [
   {
@@ -20,6 +20,11 @@ export const menuItems = [
     icon: Shield,
     label: "Privacy",
     id: "privacy",
+  },
+  {
+    icon: UserX,
+    label: "Blocked Accounts",
+    id: "blocking",
   },
   {
     icon: Lock,
