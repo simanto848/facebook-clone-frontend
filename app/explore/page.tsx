@@ -7,7 +7,7 @@ import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
 import { usePostStore, mapBackendPostToPostType, PostType } from "@/store/postStore";
 import { useChatStore } from "@/store/chatStore";
-import { Search, Hash, Compass, User, UserPlus, MessageSquare, Loader2, ArrowRight } from "lucide-react";
+import { Search, Hash, Compass, User, Users, UserPlus, MessageSquare, Loader2, ArrowRight } from "lucide-react";
 import { searchService } from "@/services/searchService";
 import { hashtagService } from "@/services/hashtagService";
 import {
@@ -34,6 +34,8 @@ export default function ExplorePage() {
   const [searching, setSearching] = useState(false);
   const [matchedUsers, setMatchedUsers] = useState<any[]>([]);
   const [matchedPosts, setMatchedPosts] = useState<PostType[]>([]);
+  const [matchedGroups, setMatchedGroups] = useState<any[]>([]);
+  const [matchedPages, setMatchedPages] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchTrending = async () => {
@@ -54,6 +56,8 @@ export default function ExplorePage() {
     if (!searchQuery.trim()) {
       setMatchedUsers([]);
       setMatchedPosts([]);
+      setMatchedGroups([]);
+      setMatchedPages([]);
       setSearching(false);
       return;
     }
@@ -66,6 +70,10 @@ export default function ExplorePage() {
             ? "users"
             : activeCategory === "posts"
             ? "posts"
+            : activeCategory === "groups"
+            ? "groups"
+            : activeCategory === "pages"
+            ? "pages"
             : "all";
 
         const res = await searchService.search(searchQuery, searchType as any);
@@ -81,6 +89,18 @@ export default function ExplorePage() {
           setMatchedPosts(data.posts.map(mapBackendPostToPostType));
         } else {
           setMatchedPosts([]);
+        }
+
+        if (data?.groups && Array.isArray(data.groups)) {
+          setMatchedGroups(data.groups);
+        } else {
+          setMatchedGroups([]);
+        }
+
+        if (data?.pages && Array.isArray(data.pages)) {
+          setMatchedPages(data.pages);
+        } else {
+          setMatchedPages([]);
         }
       } catch (err) {
         console.error("Search API error:", err);
@@ -251,29 +271,87 @@ export default function ExplorePage() {
                   </div>
                 )
               ) : activeCategory === "groups" ? (
-                <div className="py-8 text-center space-y-4 rounded-2xl border border-[#1f2937] bg-[#111827]/40 p-6">
-                  <h3 className="text-sm font-bold text-white">Explore Community Groups</h3>
-                  <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                    Browse all active tech groups, discussions, and specialized engineering rooms.
-                  </p>
-                  <Link href="/groups" className="inline-block">
-                    <Button variant="primary" size="sm" rightIcon={<ArrowRight size={14} />}>
-                      Go to Groups Hub
-                    </Button>
-                  </Link>
-                </div>
+                searchQuery.trim() ? (
+                  matchedGroups.length === 0 ? (
+                    <EmptyState
+                      icon={<Users size={36} className="text-slate-400" />}
+                      title="No groups found"
+                      description={`No groups matched your search for "${searchQuery}".`}
+                    />
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {matchedGroups.map((g) => (
+                        <Card key={g.id} hover className="p-4 flex items-center justify-between gap-3">
+                          <Link href={`/groups/${g.id}`} className="flex items-center gap-3 min-w-0 cursor-pointer">
+                            <Avatar src={g.coverImage || g.avatar} name={g.name} size="md" />
+                            <div className="min-w-0">
+                              <h4 className="text-xs font-bold text-white truncate hover:underline">{g.name}</h4>
+                              <p className="text-[11px] text-slate-400 truncate">{g.category || "Community"}</p>
+                            </div>
+                          </Link>
+                          <Link href={`/groups/${g.id}`}>
+                            <Button size="sm" variant="secondary">
+                              View Group
+                            </Button>
+                          </Link>
+                        </Card>
+                      ))}
+                    </div>
+                  )
+                ) : (
+                  <div className="py-8 text-center space-y-4 rounded-2xl border border-[#1f2937] bg-[#111827]/40 p-6">
+                    <h3 className="text-sm font-bold text-white">Explore Community Groups</h3>
+                    <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                      Browse all active tech groups, discussions, and specialized engineering rooms.
+                    </p>
+                    <Link href="/groups" className="inline-block">
+                      <Button variant="primary" size="sm" rightIcon={<ArrowRight size={14} />}>
+                        Go to Groups Hub
+                      </Button>
+                    </Link>
+                  </div>
+                )
               ) : activeCategory === "pages" ? (
-                <div className="py-8 text-center space-y-4 rounded-2xl border border-[#1f2937] bg-[#111827]/40 p-6">
-                  <h3 className="text-sm font-bold text-white">Explore Brand & Tech Pages</h3>
-                  <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                    Discover official brand pages, developer tools, and verified organizations.
-                  </p>
-                  <Link href="/pages" className="inline-block">
-                    <Button variant="primary" size="sm" rightIcon={<ArrowRight size={14} />}>
-                      Go to Pages Hub
-                    </Button>
-                  </Link>
-                </div>
+                searchQuery.trim() ? (
+                  matchedPages.length === 0 ? (
+                    <EmptyState
+                      icon={<Search size={36} className="text-slate-400" />}
+                      title="No pages found"
+                      description={`No official brand pages matched "${searchQuery}".`}
+                    />
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {matchedPages.map((p) => (
+                        <Card key={p.id} hover className="p-4 flex items-center justify-between gap-3">
+                          <Link href={`/pages/${p.id}`} className="flex items-center gap-3 min-w-0 cursor-pointer">
+                            <Avatar src={p.avatar || p.cover} name={p.name} size="md" />
+                            <div className="min-w-0">
+                              <h4 className="text-xs font-bold text-white truncate hover:underline">{p.name}</h4>
+                              <p className="text-[11px] text-slate-400 truncate">{p.category || "Brand"}</p>
+                            </div>
+                          </Link>
+                          <Link href={`/pages/${p.id}`}>
+                            <Button size="sm" variant="secondary">
+                              View Page
+                            </Button>
+                          </Link>
+                        </Card>
+                      ))}
+                    </div>
+                  )
+                ) : (
+                  <div className="py-8 text-center space-y-4 rounded-2xl border border-[#1f2937] bg-[#111827]/40 p-6">
+                    <h3 className="text-sm font-bold text-white">Explore Brand & Tech Pages</h3>
+                    <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                      Discover official brand pages, developer tools, and verified organizations.
+                    </p>
+                    <Link href="/pages" className="inline-block">
+                      <Button variant="primary" size="sm" rightIcon={<ArrowRight size={14} />}>
+                        Go to Pages Hub
+                      </Button>
+                    </Link>
+                  </div>
+                )
               ) : filteredPosts.length === 0 ? (
                 <EmptyState
                   icon={<Search size={36} className="text-slate-400" />}
