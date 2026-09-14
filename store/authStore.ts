@@ -24,6 +24,7 @@ interface AuthState {
   logout: () => Promise<void>;
   checkSession: () => Promise<void>;
   initAuth: () => void;
+  updateUser: (partialUser: Partial<User>) => void;
 }
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
@@ -33,6 +34,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   loading: false,
   initialized: false,
   error: null,
+
+  updateUser: (partialUser) =>
+    set((state) => {
+      if (!state.user) return state;
+      const updated = { ...state.user, ...partialUser };
+      if (typeof window !== "undefined") {
+        localStorage.setItem("authUser", JSON.stringify(updated));
+      }
+      return { user: updated };
+    }),
 
   initAuth: () => {
     if (typeof window === "undefined") return;

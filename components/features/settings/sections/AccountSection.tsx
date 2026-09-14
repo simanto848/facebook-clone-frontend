@@ -4,15 +4,18 @@ import React, { useState, useEffect } from "react";
 import SettingsSection from "@/components/features/settings/SettingsSection";
 import { Input, Button } from "@/components/ui";
 import { useAuthStore } from "@/store/authStore";
-import { Check } from "lucide-react";
+import { userService } from "@/services/userService";
+import { Check, AlertCircle } from "lucide-react";
 
 export default function AccountSection() {
-  const user = useAuthStore((state) => state.user);
+  const { user, updateUser } = useAuthStore();
   const [fullName, setFullName] = useState(user?.displayName || "");
   const [username, setUsername] = useState(user?.username || "");
   const [bio, setBio] = useState((user as any)?.bio || "");
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar || "");
   const [saved, setSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -23,10 +26,27 @@ export default function AccountSection() {
     }
   }, [user]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    setIsSaving(true);
+    setErrorMessage(null);
+    try {
+      await userService.updateProfile({
+        displayName: fullName,
+        bio: bio,
+        avatar: avatarUrl,
+      });
+      updateUser({
+        displayName: fullName,
+        avatar: avatarUrl,
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3500);
+    } catch (err: any) {
+      setErrorMessage(err?.response?.data?.message || err.message || "Failed to update profile.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -66,14 +86,21 @@ export default function AccountSection() {
           </div>
         </div>
 
+        {errorMessage && (
+          <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl text-xs flex items-center gap-2">
+            <AlertCircle size={15} />
+            <span>{errorMessage}</span>
+          </div>
+        )}
+
         <div className="flex items-center justify-between pt-2 border-t border-[#1f2937]">
           {saved && (
-            <div className="flex items-center gap-2 text-xs font-bold text-green-400">
+            <div className="flex items-center gap-2 text-xs font-bold text-emerald-400">
               <Check size={16} />
               <span>Profile settings saved!</span>
             </div>
           )}
-          <Button variant="primary" type="submit" className="ml-auto">
+          <Button variant="primary" type="submit" loading={isSaving} className="ml-auto">
             Save Changes
           </Button>
         </div>
