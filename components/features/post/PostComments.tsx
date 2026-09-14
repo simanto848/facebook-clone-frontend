@@ -4,6 +4,7 @@ import { Send, Loader2 } from "lucide-react";
 import { usePostStore, CommentType } from "@/store/postStore";
 import { useAuthStore } from "@/store/authStore";
 import { commentService } from "@/services/commentService";
+import { reactionService } from "@/services/reactionService";
 import CommentItem from "./CommentItem";
 
 interface Props {
@@ -118,8 +119,51 @@ export default function PostComments({ postId, comments }: Props) {
     }
   };
 
-  const handleLike = (commentId: string) => {
+  const handleLike = async (commentId: string) => {
     toggleLikeComment(postId, commentId);
+
+    const toggleLikeRecursive = (list: CommentType[]): { updated: CommentType[]; wasLiked: boolean } => {
+      let foundWasLiked = false;
+      const updated = list.map((item) => {
+        if (item.id === commentId) {
+          foundWasLiked = !!item.userLiked;
+          const nextLiked = !item.userLiked;
+          return {
+            ...item,
+            userLiked: nextLiked,
+            likes: Math.max(0, item.likes + (nextLiked ? 1 : -1)),
+          };
+        }
+        if (item.replies && item.replies.length > 0) {
+          const res = toggleLikeRecursive(item.replies);
+          if (res.wasLiked) foundWasLiked = true;
+          return { ...item, replies: res.updated };
+        }
+        return item;
+      });
+      return { updated, wasLiked: foundWasLiked };
+    };
+
+    let wasLiked = false;
+    setCommentList((prev) => {
+      const res = toggleLikeRecursive(prev);
+      wasLiked = res.wasLiked;
+      return res.updated;
+    });
+
+    try {
+      if (wasLiked) {
+        await reactionService.removeReaction(commentId, "COMMENT");
+      } else {
+        await reactionService.addReaction({
+          targetId: commentId,
+          targetType: "COMMENT",
+          type: "LIKE",
+        });
+      }
+    } catch (err) {
+      console.warn("Backend toggle comment like failed:", err);
+    }
   };
 
   const handleEdit = async (commentId: string, newText: string) => {
