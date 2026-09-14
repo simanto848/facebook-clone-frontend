@@ -73,6 +73,10 @@ export default function GroupsPage() {
   const [category, setCategory] = useState("Design");
   const [description, setDescription] = useState("");
   const [avatar, setAvatar] = useState("");
+  const [cover, setCover] = useState("");
+  const [privacy, setPrivacy] = useState<"PUBLIC" | "PRIVATE">("PUBLIC");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   const [activeTab, setActiveTab] = useState<"all" | "joined" | "owned">("all");
   const [ownedGuildIds, setOwnedGuildIds] = useState<Record<string, boolean>>({});
@@ -136,21 +140,28 @@ export default function GroupsPage() {
 
   const handleCreateGuild = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim()) {
+      setCreateError("Guild name is required");
+      return;
+    }
 
+    setIsSubmitting(true);
+    setCreateError(null);
     try {
       const res = await groupService.createGroup({
         name,
         description,
         category,
         avatar: avatar || undefined,
+        coverUrl: cover || undefined,
+        privacy,
       });
       const created = res.data || res;
       const newGuild: Guild = {
         id: created.id || `g_${Date.now()}`,
         name: created.name || name,
         avatar: avatar || "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=100",
-        cover: "https://images.unsplash.com/photo-1519608487953-e999c86e7455?w=500",
+        cover: cover || "https://images.unsplash.com/photo-1519608487953-e999c86e7455?w=500",
         members: "1",
         category,
         description,
@@ -158,12 +169,17 @@ export default function GroupsPage() {
 
       setGuilds((prev) => [newGuild, ...prev]);
       setJoinedGuilds((prev) => ({ ...prev, [newGuild.id]: true }));
+      setOwnedGuildIds((prev) => ({ ...prev, [newGuild.id]: true }));
       setName("");
       setDescription("");
       setAvatar("");
+      setCover("");
       setShowCreateModal(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Create group error:", err);
+      setCreateError(err.response?.data?.message || err.message || "Failed to create group");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -361,32 +377,59 @@ export default function GroupsPage() {
         title="Create New Guild"
       >
         <form onSubmit={handleCreateGuild} className="space-y-4">
+          {createError && (
+            <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl text-xs">
+              {createError}
+            </div>
+          )}
+
           <Input
-            label="Guild Name"
-            placeholder="e.g. Rust Enthusiasts"
+            label="Guild Name *"
+            placeholder="e.g. Rust & WASM Developers"
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
           />
 
-          <Select
-            label="Category"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            options={[
-              { label: "Design", value: "Design" },
-              { label: "Systems", value: "Systems" },
-              { label: "Photography", value: "Photography" },
-              { label: "Gaming", value: "Gaming" },
-            ]}
-          />
+          <div className="grid grid-cols-2 gap-3">
+            <Select
+              label="Category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              options={[
+                { label: "Design", value: "Design" },
+                { label: "Systems", value: "Systems" },
+                { label: "Photography", value: "Photography" },
+                { label: "Gaming", value: "Gaming" },
+                { label: "Development", value: "Development" },
+              ]}
+            />
 
-          <Input
-            label="Avatar URL"
-            placeholder="https://images.unsplash.com/..."
-            value={avatar}
-            onChange={(e) => setAvatar(e.target.value)}
-          />
+            <Select
+              label="Privacy"
+              value={privacy}
+              onChange={(e) => setPrivacy(e.target.value as any)}
+              options={[
+                { label: "Public (Anyone can see)", value: "PUBLIC" },
+                { label: "Private (Members only)", value: "PRIVATE" },
+              ]}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              label="Avatar URL"
+              placeholder="https://images.unsplash.com/..."
+              value={avatar}
+              onChange={(e) => setAvatar(e.target.value)}
+            />
+            <Input
+              label="Cover URL"
+              placeholder="https://images.unsplash.com/..."
+              value={cover}
+              onChange={(e) => setCover(e.target.value)}
+            />
+          </div>
 
           <div className="space-y-1">
             <label className="text-xs font-semibold text-slate-300 block">Description</label>
@@ -407,7 +450,7 @@ export default function GroupsPage() {
             >
               Cancel
             </Button>
-            <Button type="submit" variant="primary">
+            <Button type="submit" variant="primary" loading={isSubmitting}>
               Start Guild
             </Button>
           </div>

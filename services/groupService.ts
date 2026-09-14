@@ -2,10 +2,11 @@ import { useAxios } from "@/lib/useAxios";
 
 export interface CreateGroupInput {
   name: string;
-  description: string;
+  description?: string;
   category?: string;
   avatar?: string;
   cover?: string;
+  coverUrl?: string;
   privacy?: "PUBLIC" | "PRIVATE";
 }
 
@@ -30,7 +31,13 @@ export const groupService = {
 
   createGroup: async (data: CreateGroupInput) => {
     const axios = await useAxios();
-    const response = await axios.post("/groups", data);
+    const payload = {
+      name: data.name,
+      description: data.description,
+      privacy: data.privacy || "PUBLIC",
+      coverUrl: data.coverUrl || data.cover || "",
+    };
+    const response = await axios.post("/groups", payload);
     return response.data;
   },
 
