@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import { useChatStore } from "@/store/chatStore";
-import { Users, UserPlus, MessageSquare, Check, X, UserX } from "lucide-react";
+import { Users, UserPlus, MessageSquare, Check, X, UserX, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { friendshipService } from "@/services/friendshipService";
 import {
@@ -34,9 +34,9 @@ export default function ConnectionsPage() {
   const [connections, setConnections] = useState<DisplayUser[]>([]);
   const [activeTab, setActiveTab] = useState<string>("requests");
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const loadData = async () => {
-    setLoading(true);
+  const loadData = useCallback(async () => {
     try {
       // Load pending requests
       const reqRes = await friendshipService.getPendingRequests();
@@ -77,12 +77,29 @@ export default function ConnectionsPage() {
       console.error("Failed to load connection data", err);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  }, []);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadData();
   };
 
   useEffect(() => {
+    setLoading(true);
     loadData();
-  }, []);
+
+    const handleUpdate = () => loadData();
+    if (typeof window !== "undefined") {
+      window.addEventListener("app:friendship_updated", handleUpdate);
+    }
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("app:friendship_updated", handleUpdate);
+      }
+    };
+  }, [loadData]);
 
   const handleAcceptRequest = async (user: DisplayUser) => {
     try {
@@ -142,6 +159,17 @@ export default function ConnectionsPage() {
               title="Connections Hub"
               description="Manage your developer network, pending invites, and community connections."
               icon={<Users size={22} />}
+              actions={
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  leftIcon={<RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />}
+                  onClick={handleRefresh}
+                  disabled={loading || refreshing}
+                >
+                  Refresh
+                </Button>
+              }
             />
 
             <Tabs
@@ -179,9 +207,15 @@ export default function ConnectionsPage() {
                                   {user.name}
                                 </p>
                                 <p className="text-xs text-slate-400 truncate">{user.role}</p>
-                                <Badge variant="secondary" size="sm">
-                                  {user.mutual} mutual connections
-                                </Badge>
+                                {user.mutual > 0 ? (
+                                  <Badge variant="secondary" size="sm">
+                                    {user.mutual} mutual connection{user.mutual > 1 ? "s" : ""}
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" size="sm">
+                                    New connection
+                                  </Badge>
+                                )}
                               </div>
                             </Link>
 
