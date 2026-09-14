@@ -17,6 +17,7 @@ import {
   EmptyState,
   Loader,
   Avatar,
+  Dialog,
 } from "@/components/ui";
 
 interface MemoryItem {
@@ -68,18 +69,29 @@ export default function MemoriesPage() {
   const [memories, setMemories] = useState<MemoryItem[]>(fallbackMemories);
   const [loading, setLoading] = useState(false);
   const [sharedMap, setSharedMap] = useState<Record<string, boolean>>({});
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [activeShareMemory, setActiveShareMemory] = useState<MemoryItem | null>(null);
+  const [customCaption, setCustomCaption] = useState("");
+  const [isSharing, setIsSharing] = useState(false);
   const { createPost } = usePostStore();
 
-  const handleShareMemory = async (memory: MemoryItem) => {
-    setSharedMap((prev) => ({ ...prev, [memory.id]: true }));
-    const shareContent = `On this day ${memory.yearsAgo} year${memory.yearsAgo > 1 ? "s" : ""} ago: "${memory.content}"`;
+  const handleConfirmShare = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeShareMemory || isSharing) return;
+
+    setIsSharing(true);
+    const prefix = customCaption.trim() ? `${customCaption.trim()}\n\n` : "";
+    const shareContent = `${prefix}On this day ${activeShareMemory.yearsAgo} year${activeShareMemory.yearsAgo > 1 ? "s" : ""} ago: "${activeShareMemory.content}"`;
 
     try {
-      await postService.createPost({
-        content: shareContent,
-        mediaUrls: memory.mediaUrl ? [memory.mediaUrl] : [],
-        privacy: "PUBLIC",
-      });
+      await Promise.allSettled([
+        postService.createPost({
+          content: shareContent,
+          mediaUrls: activeShareMemory.mediaUrl ? [activeShareMemory.mediaUrl] : [],
+          privacy: "PUBLIC",
+        }),
+        memoryService.shareMemory(activeShareMemory.id, customCaption.trim() || undefined),
+      ]);
     } catch (err) {
       console.warn("Backend share memory post error, fallback to local store:", err);
     }
@@ -91,10 +103,17 @@ export default function MemoriesPage() {
         avatar: "https://images.unsplash.com/photo-1779040622687-42bb00790c67?w=500",
       },
       visibility: "public",
-      type: memory.mediaUrl ? "image" : "text",
+      type: activeShareMemory.mediaUrl ? "image" : "text",
       content: shareContent,
-      images: memory.mediaUrl ? [memory.mediaUrl] : [],
+      images: activeShareMemory.mediaUrl ? [activeShareMemory.mediaUrl] : [],
     });
+
+    setSharedMap((prev) => ({ ...prev, [activeShareMemory.id]: true }));
+    setToastMessage("Memory shared successfully to your feed timeline!");
+    setTimeout(() => setToastMessage(null), 3500);
+    setActiveShareMemory(null);
+    setCustomCaption("");
+    setIsSharing(false);
   };
 
   useEffect(() => {
@@ -172,6 +191,13 @@ export default function MemoriesPage() {
               badge={<Badge variant="primary">{memories.length} Memories</Badge>}
             />
 
+            {toastMessage && (
+              <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-2xl text-xs flex items-center gap-2 animate-in fade-in duration-200">
+                <Check size={16} className="text-emerald-400 shrink-0" />
+                <span>{toastMessage}</span>
+              </div>
+            )}
+
             {loading ? (
               <div className="py-16 text-center">
                 <Loader label="Looking up memories..." />
@@ -202,7 +228,7 @@ export default function MemoriesPage() {
                           variant={sharedMap[m.id] ? "success" : "secondary"}
                           size="sm"
                           leftIcon={sharedMap[m.id] ? <Check size={13} /> : <Share2 size={13} />}
-                          onClick={() => handleShareMemory(m)}
+                          onClick={() => setActiveShareMemory(m)}
                         >
                           {sharedMap[m.id] ? "Shared to Feed!" : "Share Memory"}
                         </Button>
@@ -251,6 +277,61 @@ export default function MemoriesPage() {
           <RightSidebar />
         </aside>
       </div>
+
+      {/* SHARE MEMORY MODAL */}
+      <Dialog
+        isOpen={!!activeShareMemory}
+        onClose={() => setActiveShareMemory(null)}
+        title="Share Memory to Your Feed"
+        description="Add your thoughts looking back on this moment before sharing with friends."
+      >
+        {activeShareMemory && (
+          <form onSubmit={handleConfirmShare} className="space-y-4 pt-2">
+            <div className="p-3.5 rounded-xl border border-purple-500/30 bg-purple-500/10 space-y-2">
+              <div className="flex items-center gap-2 text-xs font-semibold text-purple-300">
+                <Sparkles size={14} />
+                <span>{activeShareMemory.yearsAgo} Year{activeShareMemory.yearsAgo > 1 ? "s" : ""} Ago Today • {activeShareMemory.dateStr}</span>
+              </div>
+              <p className="text-xs text-slate-200 line-clamp-3 italic">
+                "{activeShareMemory.content}"
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-300">Add a note or reflection (Optional)</label>
+              <textarea
+                rows={3}
+                placeholder="What are you thinking looking back on this today?..."
+                value={customCaption}
+                onChange={(e) => setCustomCaption(e.target.value)}
+                className="w-full rounded-xl border border-[#374151] bg-[#1f2937] p-3 text-xs text-white placeholder-slate-500 outline-none focus:border-purple-500 transition resize-none"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-[#1f2937]">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setActiveShareMemory(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                size="sm"
+                variant="primary"
+                loading={isSharing}
+                disabled={isSharing}
+                leftIcon={<Share2 size={13} />}
+                className="bg-purple-600 hover:bg-purple-700"
+              >
+                {isSharing ? "Sharing..." : "Share to Feed"}
+              </Button>
+            </div>
+          </form>
+        )}
+      </Dialog>
     </div>
   );
 }
