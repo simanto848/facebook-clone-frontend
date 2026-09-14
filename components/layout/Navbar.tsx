@@ -433,6 +433,15 @@ export default function Navbar() {
                     liveNotifications.map((notif) => (
                       <div
                         key={notif.id}
+                        onClick={() => {
+                          if (notif.unread) {
+                            setLiveNotifications((prev) =>
+                              prev.map((n) => (n.id === notif.id ? { ...n, unread: false } : n))
+                            );
+                            setUnreadNotifCount((c) => Math.max(0, c - 1));
+                            notificationService.markAsRead([notif.id]).catch(() => {});
+                          }
+                        }}
                         className={`flex gap-3 p-3.5 hover:bg-[#1f2937]/50 transition cursor-pointer ${
                           notif.unread ? "bg-blue-500/5" : ""
                         }`}

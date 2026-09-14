@@ -108,6 +108,21 @@ export function NotificationDropdown({ isOpen, onClose }: NotificationDropdownPr
   const unreadCount = notifications.filter((n) => n.unread).length;
   const filteredList = activeTab === "unread" ? notifications.filter((n) => n.unread) : notifications;
 
+  const handleItemClick = async (item: NotificationItem) => {
+    if (!item.unread) return;
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === item.id ? { ...n, unread: false } : n))
+    );
+    try {
+      await notificationService.markAsRead([item.id]);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("app:notification_read", { detail: { id: item.id } }));
+      }
+    } catch (e) {
+      console.error("Failed to mark notification as read:", e);
+    }
+  };
+
   return (
     <>
       <div className="fixed inset-0 z-40" onClick={onClose} />
@@ -149,9 +164,10 @@ export function NotificationDropdown({ isOpen, onClose }: NotificationDropdownPr
             filteredList.map((item) => (
               <div
                 key={item.id}
-                className={`flex items-start gap-3 p-3 rounded-xl border transition group ${
+                onClick={() => handleItemClick(item)}
+                className={`flex items-start gap-3 p-3 rounded-xl border transition group cursor-pointer ${
                   item.unread
-                    ? "bg-blue-600/10 border-blue-500/30"
+                    ? "bg-blue-600/10 border-blue-500/30 hover:bg-blue-600/15"
                     : "bg-[#111827] border-[#1f2937] hover:border-slate-700"
                 }`}
               >
