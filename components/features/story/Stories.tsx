@@ -4,12 +4,14 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { Plus, Type, Image as ImageIcon, Video } from "lucide-react";
 import { usePostStore, StoryType } from "@/store/postStore";
+import { useAuthStore } from "@/store/authStore";
 import { storyService } from "@/services/storyService";
 import { StoryViewerModal } from "./StoryViewerModal";
 import { Dialog, Button, Input, Select, Avatar } from "@/components/ui";
 
 export default function Stories() {
   const { stories, addStory, viewStory, reactStory } = usePostStore();
+  const { user: authUser } = useAuthStore();
   const [activeStoryIndex, setActiveStoryIndex] = useState<number | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newStoryType, setNewStoryType] = useState<"text" | "image" | "video">("text");
@@ -18,18 +20,19 @@ export default function Stories() {
 
   const fetchBackendStories = async () => {
     try {
-      const res = await storyService.getStories();
+      const res = await storyService.getActiveStories();
       const items = res.data || res || [];
       if (Array.isArray(items) && items.length > 0) {
         items.forEach((item: any) => {
+          const isVideo = item.mediaUrl?.match(/\.(mp4|webm|mov)$/i) || item.mediaType === "VIDEO";
           addStory({
             id: item.id,
             author: {
-              name: item.user?.username || "Story User",
-              avatar: item.user?.profilePicture || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
+              name: item.user?.displayName || item.user?.username || "Story Creator",
+              avatar: item.user?.avatarUrl || item.user?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
             },
-            type: item.mediaType === "VIDEO" ? "video" : item.mediaType === "IMAGE" ? "image" : "text",
-            content: item.mediaUrl || item.caption || "Story",
+            type: isVideo ? "video" : item.mediaUrl ? "image" : "text",
+            content: item.mediaUrl || item.caption || "Story content",
           });
         });
       }
@@ -91,11 +94,11 @@ export default function Stories() {
         >
           <div className="relative h-32 w-full bg-[#1f2937]">
             <Image
-              src="https://images.unsplash.com/photo-1779040622687-42bb00790c67?w=500"
+              src={authUser?.avatar || "https://images.unsplash.com/photo-1779040622687-42bb00790c67?w=500"}
               fill
               sizes="112px"
               className="object-cover group-hover:scale-105 transition duration-300"
-              alt="My Avatar"
+              alt={authUser?.displayName || "My Avatar"}
             />
             <div className="absolute inset-0 bg-black/20" />
           </div>
