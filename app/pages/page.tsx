@@ -58,6 +58,11 @@ export default function PagesHubPage() {
   const [name, setName] = useState("");
   const [category, setCategory] = useState("Software & Technology");
   const [description, setDescription] = useState("");
+  const [website, setWebsite] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const [coverUrl, setCoverUrl] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   const loadPages = async () => {
     try {
@@ -97,28 +102,42 @@ export default function PagesHubPage() {
 
   const handleCreatePage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim() || isSubmitting) return;
 
+    setIsSubmitting(true);
+    setCreateError(null);
     try {
-      const res = await pageService.createPage({ name, category, description });
+      const res = await pageService.createPage({
+        name: name.trim(),
+        category,
+        description: description.trim(),
+        website: website.trim() || undefined,
+        avatar: avatarUrl.trim() || undefined,
+        cover: coverUrl.trim() || undefined,
+      });
       const created = res.data || res;
       const newPage: BrandPage = {
         id: created.id || `p_${Date.now()}`,
-        name: created.name || name,
+        name: created.name || name.trim(),
         category,
-        description,
+        description: description.trim(),
         likes: 1,
-        avatar: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=200",
-        cover: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=600",
+        avatar: created.avatar || avatarUrl.trim() || "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=200",
+        cover: created.cover || coverUrl.trim() || "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=600",
         isLiked: true,
       };
       setPages((prev) => [newPage, ...prev]);
-    } catch (err) {
-      console.error("Create page fallback", err);
-    } finally {
       setShowCreateModal(false);
       setName("");
       setDescription("");
+      setWebsite("");
+      setAvatarUrl("");
+      setCoverUrl("");
+    } catch (err: any) {
+      console.error("Create page error:", err);
+      setCreateError(err.response?.data?.message || err.message || "Failed to create page");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -212,6 +231,12 @@ export default function PagesHubPage() {
         title="Create Brand Page"
       >
         <form onSubmit={handleCreatePage} className="space-y-4">
+          {createError && (
+            <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl text-xs">
+              {createError}
+            </div>
+          )}
+
           <Input
             label="Page Name"
             placeholder="e.g. NextJS Developers"
@@ -228,8 +253,32 @@ export default function PagesHubPage() {
               { label: "Software & Technology", value: "Software & Technology" },
               { label: "Design & Arts", value: "Design & Arts" },
               { label: "Community", value: "Community" },
+              { label: "Business & Startup", value: "Business & Startup" },
+              { label: "Education & Learning", value: "Education & Learning" },
             ]}
           />
+
+          <Input
+            label="Website (Optional)"
+            placeholder="https://yourbrand.io"
+            value={website}
+            onChange={(e) => setWebsite(e.target.value)}
+          />
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Input
+              label="Avatar URL (Optional)"
+              placeholder="https://images.unsplash.com/..."
+              value={avatarUrl}
+              onChange={(e) => setAvatarUrl(e.target.value)}
+            />
+            <Input
+              label="Cover Image URL (Optional)"
+              placeholder="https://images.unsplash.com/..."
+              value={coverUrl}
+              onChange={(e) => setCoverUrl(e.target.value)}
+            />
+          </div>
 
           <div className="space-y-1">
             <label className="text-xs font-semibold text-slate-300 block">Description</label>
@@ -250,8 +299,8 @@ export default function PagesHubPage() {
             >
               Cancel
             </Button>
-            <Button type="submit" variant="primary">
-              Create Page
+            <Button type="submit" variant="primary" loading={isSubmitting}>
+              {isSubmitting ? "Creating Page..." : "Create Page"}
             </Button>
           </div>
         </form>
