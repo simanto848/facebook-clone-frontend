@@ -18,6 +18,7 @@ import {
   Loader,
   Avatar,
   Dialog,
+  Tabs,
 } from "@/components/ui";
 
 interface MemoryItem {
@@ -70,6 +71,7 @@ export default function MemoriesPage() {
   const [loading, setLoading] = useState(false);
   const [sharedMap, setSharedMap] = useState<Record<string, boolean>>({});
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [activeFilter, setActiveFilter] = useState<string>("all");
   const [activeShareMemory, setActiveShareMemory] = useState<MemoryItem | null>(null);
   const [customCaption, setCustomCaption] = useState("");
   const [isSharing, setIsSharing] = useState(false);
@@ -173,6 +175,22 @@ export default function MemoriesPage() {
     fetchMemories();
   }, []);
 
+  const memoryTabs = [
+    { id: "all", label: "All Memories" },
+    { id: "1yr", label: "1 Year Ago" },
+    { id: "2yr", label: "2 Years Ago" },
+    { id: "3yr_plus", label: "3+ Years Ago" },
+    { id: "friendships", label: "Friendships" },
+  ];
+
+  const filteredMemories = memories.filter((m) => {
+    if (activeFilter === "1yr") return m.yearsAgo === 1;
+    if (activeFilter === "2yr") return m.yearsAgo === 2;
+    if (activeFilter === "3yr_plus") return m.yearsAgo >= 3;
+    if (activeFilter === "friendships") return m.type === "friendship";
+    return true;
+  });
+
   return (
     <div className="min-h-screen bg-[#0f172a] text-white">
       <div className="flex">
@@ -188,7 +206,7 @@ export default function MemoriesPage() {
               title="On This Day - Memories"
               description="Look back on special moments, technical achievements, and posts from previous years."
               icon={<Sparkles size={22} className="text-purple-400" />}
-              badge={<Badge variant="primary">{memories.length} Memories</Badge>}
+              badge={<Badge variant="primary">{filteredMemories.length} Memories</Badge>}
             />
 
             {toastMessage && (
@@ -198,19 +216,47 @@ export default function MemoriesPage() {
               </div>
             )}
 
+            {/* Celebratory Banner */}
+            <div className="relative overflow-hidden rounded-2xl border border-purple-500/20 bg-gradient-to-r from-purple-950/40 via-indigo-950/20 to-[#111827] p-5 shadow-lg">
+              <div className="flex items-start gap-3.5">
+                <div className="h-10 w-10 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-400 shrink-0">
+                  <Sparkles size={20} />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-sm font-bold text-white">Your Personal Time Machine</h3>
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    Rediscover photos, code releases, status updates, and friends you connected with on this exact day in past years.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <Tabs
+              tabs={memoryTabs}
+              activeTab={activeFilter}
+              onChange={setActiveFilter}
+              variant="line"
+            />
+
             {loading ? (
               <div className="py-16 text-center">
                 <Loader label="Looking up memories..." />
               </div>
-            ) : memories.length === 0 ? (
+            ) : filteredMemories.length === 0 ? (
               <EmptyState
                 icon={<Sparkles size={36} className="text-purple-400" />}
-                title="No memories today"
-                description="Check back tomorrow to see your past activity and timeline posts!"
+                title="No memories in this view"
+                description={
+                  activeFilter === "friendships"
+                    ? "No friendship anniversaries recorded on this day yet."
+                    : activeFilter === "all"
+                    ? "Check back tomorrow to see your past activity and timeline posts!"
+                    : "No memories found for this specific time period."
+                }
               />
             ) : (
               <div className="space-y-6">
-                {memories.map((m) => (
+                {filteredMemories.map((m) => (
                   <Card key={m.id} hover>
                     <CardContent className="space-y-4">
                       <div className="flex items-center justify-between border-b border-[#1f2937]/60 pb-3">
