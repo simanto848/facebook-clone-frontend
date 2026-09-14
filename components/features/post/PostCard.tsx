@@ -19,9 +19,10 @@ import { postService } from "@/services/postService";
 
 interface Props {
   post: PostType;
+  defaultShowComments?: boolean;
 }
 
-export default function PostCard({ post }: Props) {
+export default function PostCard({ post, defaultShowComments = false }: Props) {
   const {
     deletePost,
     editPost,
@@ -33,7 +34,7 @@ export default function PostCard({ post }: Props) {
 
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(post.content);
-  const [showComments, setShowComments] = useState(false);
+  const [showComments, setShowComments] = useState(defaultShowComments);
   const [showReactionPicker, setShowReactionPicker] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
