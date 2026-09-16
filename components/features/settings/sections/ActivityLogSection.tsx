@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Trash2, History } from "lucide-react";
+import { Trash2, History, AlertTriangle } from "lucide-react";
 import { activityLogService } from "@/services/activityLogService";
-import { DataTable, Button, type Column } from "@/components/ui";
+import { DataTable, Button, Dialog, type Column } from "@/components/ui";
 
 interface LogEntry {
   id: string;
@@ -58,6 +58,7 @@ export default function ActivityLogSection() {
   }, []);
 
   const [isClearing, setIsClearing] = useState(false);
+  const [isClearModalOpen, setIsClearModalOpen] = useState(false);
 
   const handleDelete = async (id: string) => {
     setLogs((prev) => prev.filter((l) => l.id !== id));
@@ -73,6 +74,7 @@ export default function ActivityLogSection() {
     try {
       await activityLogService.clearLogs();
       setLogs([]);
+      setIsClearModalOpen(false);
     } catch (err) {
       console.error("Clear logs error:", err);
     } finally {
@@ -157,8 +159,7 @@ export default function ActivityLogSection() {
             size="sm"
             variant="danger"
             leftIcon={<Trash2 size={13} />}
-            loading={isClearing}
-            onClick={handleClear}
+            onClick={() => setIsClearModalOpen(true)}
           >
             Clear Log
           </Button>
@@ -208,6 +209,43 @@ export default function ActivityLogSection() {
           pageSize={5}
         />
       )}
+
+      {/* CLEAR LOG CONFIRMATION MODAL */}
+      <Dialog
+        isOpen={isClearModalOpen}
+        onClose={() => setIsClearModalOpen(false)}
+        title="Clear Activity Log History"
+        description="Are you sure you want to clear your entire activity log? This will remove all audit history and session events from your account."
+        size="sm"
+      >
+        <div className="space-y-4 pt-2">
+          <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs flex items-start gap-2.5">
+            <AlertTriangle size={18} className="shrink-0 text-amber-400 mt-0.5" />
+            <p>
+              This action will reset your visible activity history. Security and audit alerts will no longer be listed.
+            </p>
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#1f2937]">
+            <Button
+              variant="secondary"
+              type="button"
+              onClick={() => setIsClearModalOpen(false)}
+              disabled={isClearing}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              type="button"
+              loading={isClearing}
+              onClick={handleClear}
+            >
+              Confirm Clear
+            </Button>
+          </div>
+        </div>
+      </Dialog>
     </div>
   );
 }
