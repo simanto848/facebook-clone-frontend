@@ -42,4 +42,10 @@ export const callService = {
     const response = await axios.get(`/active-status/${userId}`);
     return response.data;
   },
+
+  getIceServers: async () => {
+    const axios = await useAxios();
+    const response = await axios.get("/call-signaling/ice-servers");
+    return response.data;
+  },
 };

@@ -5,6 +5,7 @@ import { Mic, MicOff, Video, VideoOff, PhoneOff, Volume2, VolumeX, Maximize2, Mi
 import { Avatar, Badge } from "@/components/ui";
 import { useSocketContext } from "@/components/providers/SocketProvider";
 import { useChatStore } from "@/store/chatStore";
+import { callService } from "@/services/callService";
 
 export interface CallModalProps {
   isOpen: boolean;
@@ -210,7 +211,20 @@ export function CallModal({
           localVideoRef.current.srcObject = stream;
         }
 
-        const pc = new RTCPeerConnection(RTC_CONFIG);
+        let rtcConfig: RTCConfiguration = RTC_CONFIG;
+        try {
+          const iceRes = await callService.getIceServers();
+          const servers = iceRes?.data || iceRes;
+          if (Array.isArray(servers) && servers.length > 0) {
+            rtcConfig = {
+              iceServers: [...servers, ...RTC_CONFIG.iceServers!],
+            };
+          }
+        } catch {
+          // Use default STUN configuration
+        }
+
+        const pc = new RTCPeerConnection(rtcConfig);
         pcRef.current = pc;
 
         stream.getTracks().forEach((track) => {
