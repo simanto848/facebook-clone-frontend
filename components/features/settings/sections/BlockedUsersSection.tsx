@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { UserX, ShieldOff } from "lucide-react";
 import Image from "next/image";
 import { blockService } from "@/services/blockService";
-import { Button } from "@/components/ui";
+import { Button, Dialog } from "@/components/ui";
 
 interface BlockedUser {
   id: string;
@@ -15,6 +15,8 @@ interface BlockedUser {
 export default function BlockedUsersSection() {
   const [blocked, setBlocked] = useState<BlockedUser[]>([]);
   const [loading, setLoading] = useState(false);
+  const [unblockTarget, setUnblockTarget] = useState<BlockedUser | null>(null);
+  const [isUnblocking, setIsUnblocking] = useState(false);
 
   const fetchBlocked = async () => {
     setLoading(true);
@@ -82,7 +84,7 @@ export default function BlockedUsersSection() {
                 size="sm"
                 variant="secondary"
                 leftIcon={<ShieldOff size={13} />}
-                onClick={() => handleUnblock(user.id)}
+                onClick={() => setUnblockTarget(user)}
               >
                 Unblock
               </Button>
@@ -90,6 +92,42 @@ export default function BlockedUsersSection() {
           ))}
         </div>
       )}
+
+      {/* Confirmation Dialog */}
+      <Dialog
+        isOpen={!!unblockTarget}
+        onClose={() => setUnblockTarget(null)}
+        title={`Unblock ${unblockTarget?.name}?`}
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-slate-300">
+            {unblockTarget?.name} will be able to see your timeline, follow you, and message you again depending on your privacy settings.
+          </p>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setUnblockTarget(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              loading={isUnblocking}
+              onClick={async () => {
+                if (!unblockTarget) return;
+                setIsUnblocking(true);
+                await handleUnblock(unblockTarget.id);
+                setIsUnblocking(false);
+                setUnblockTarget(null);
+              }}
+            >
+              Unblock
+            </Button>
+          </div>
+        </div>
+      </Dialog>
     </div>
   );
 }
