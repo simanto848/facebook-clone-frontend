@@ -4,10 +4,11 @@ import React, { useState, useEffect, use } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Users, Shield, Plus, Check, UserPlus, Crown, MessageSquare, Info, ShieldCheck, Share2 } from "lucide-react";
+import { ArrowLeft, Users, Shield, Plus, Check, UserPlus, Crown, MessageSquare, Info, ShieldCheck, Share2, Flag } from "lucide-react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
+import ReportModal from "@/components/features/post/ReportModal";
 import { usePostStore, mapBackendPostToPostType, PostType } from "@/store/postStore";
 import { useAuthStore } from "@/store/authStore";
 import { useChatStore } from "@/store/chatStore";
@@ -48,6 +49,7 @@ export default function GroupDetailPage({ params }: PageProps) {
   // Post creation modal
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
   const [postContent, setPostContent] = useState("");
   const [isPosting, setIsPosting] = useState(false);
   const [postError, setPostError] = useState<string | null>(null);
@@ -256,6 +258,16 @@ export default function GroupDetailPage({ params }: PageProps) {
                         className="border border-[#1f2937] text-slate-200 hover:text-white"
                       >
                         {copied ? "Copied!" : "Share"}
+                      </Button>
+
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        leftIcon={<Flag size={14} className="text-amber-400" />}
+                        onClick={() => setIsReportOpen(true)}
+                        className="border border-[#1f2937] text-slate-200 hover:text-white"
+                      >
+                        Report
                       </Button>
 
                       <Button
@@ -515,6 +527,14 @@ export default function GroupDetailPage({ params }: PageProps) {
                     </Button>
                   </div>
                 </Dialog>
+
+                {/* Report Group Modal */}
+                <ReportModal
+                  isOpen={isReportOpen}
+                  onClose={() => setIsReportOpen(false)}
+                  targetId={group?.id || id}
+                  targetType="GROUP"
+                />
               </div>
             ) : (
               <div className="py-20 text-center space-y-3">
