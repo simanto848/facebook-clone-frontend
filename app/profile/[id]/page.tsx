@@ -17,10 +17,12 @@ import {
   Globe,
   Sparkles,
   UserX,
+  Flag,
 } from "lucide-react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
+import ReportModal from "@/components/features/post/ReportModal";
 import { userService } from "@/services/userService";
 import { friendshipService } from "@/services/friendshipService";
 import { blockService } from "@/services/blockService";
@@ -50,6 +52,7 @@ export default function UserProfileDetailPage({ params }: ProfilePageProps) {
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
   const [blockLoading, setBlockLoading] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   const handleBlockUser = async () => {
     if (!user?.id) return;
@@ -312,6 +315,16 @@ export default function UserProfileDetailPage({ params }: ProfilePageProps) {
                     >
                       Block
                     </Button>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      leftIcon={<Flag size={14} />}
+                      onClick={() => setShowReportModal(true)}
+                      className="border border-[#1f2937] text-slate-400 hover:text-amber-400 hover:bg-amber-500/10"
+                    >
+                      Report
+                    </Button>
                   </div>
                 )}
               </div>
@@ -512,6 +525,14 @@ export default function UserProfileDetailPage({ params }: ProfilePageProps) {
                 </div>
               </div>
             </Dialog>
+
+            {/* Report User Modal */}
+            <ReportModal
+              isOpen={showReportModal}
+              onClose={() => setShowReportModal(false)}
+              targetId={user.id}
+              targetType="USER"
+            />
           </div>
         </main>
 
