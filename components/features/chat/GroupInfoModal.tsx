@@ -68,6 +68,19 @@ export function GroupInfoModal({
     }
   };
 
+  const handleToggleRole = async (userId: string, currentRole: "ADMIN" | "MEMBER") => {
+    const newRole = currentRole === "ADMIN" ? "MEMBER" : "ADMIN";
+    setParticipants((prev) =>
+      prev.map((p) => (p.id === userId ? { ...p, role: newRole } : p))
+    );
+    try {
+      await groupChatService.updateParticipantRole(groupId, userId, newRole);
+      await fetchConversations();
+    } catch (e) {
+      console.error("Failed to update participant role:", e);
+    }
+  };
+
   const handleLeaveGroup = async () => {
     setIsLeaving(true);
     try {
@@ -158,7 +171,25 @@ export function GroupInfoModal({
                   </div>
 
                   <div className="flex items-center gap-2">
-                    {member.role === "ADMIN" ? (
+                    {isCurrentUserAdmin && !isSelf ? (
+                      <button
+                        type="button"
+                        onClick={() => handleToggleRole(member.id, member.role)}
+                        className="cursor-pointer transition hover:opacity-80"
+                        title={`Click to ${member.role === "ADMIN" ? "demote to Member" : "promote to Admin"}`}
+                      >
+                        {member.role === "ADMIN" ? (
+                          <Badge variant="primary" className="flex items-center gap-1 bg-blue-600/20 text-blue-400 border border-blue-500/30">
+                            <Shield size={10} />
+                            <span>Admin</span>
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" className="hover:bg-slate-700">
+                            Member
+                          </Badge>
+                        )}
+                      </button>
+                    ) : member.role === "ADMIN" ? (
                       <Badge variant="primary" className="flex items-center gap-1 bg-blue-600/20 text-blue-400 border border-blue-500/30">
                         <Shield size={10} />
                         <span>Admin</span>
