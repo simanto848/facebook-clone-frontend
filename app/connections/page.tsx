@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import { useChatStore } from "@/store/chatStore";
-import { Users, UserPlus, MessageSquare, Check, X, UserX, RefreshCw } from "lucide-react";
+import { Users, UserPlus, MessageSquare, Check, X, UserX, RefreshCw, Search, ArrowUpDown } from "lucide-react";
 import Link from "next/link";
 import { friendshipService } from "@/services/friendshipService";
 import {
@@ -33,6 +33,8 @@ export default function ConnectionsPage() {
   const [suggestions, setSuggestions] = useState<DisplayUser[]>([]);
   const [connections, setConnections] = useState<DisplayUser[]>([]);
   const [activeTab, setActiveTab] = useState<string>("requests");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<"name" | "mutual">("name");
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -174,6 +176,28 @@ export default function ConnectionsPage() {
     { id: "connections", label: "Your Connections", badge: connections.length },
   ];
 
+  const filterAndSortUsers = (list: DisplayUser[]) => {
+    const q = searchQuery.toLowerCase().trim();
+    let result = q
+      ? list.filter(
+          (u) =>
+            u.name.toLowerCase().includes(q) ||
+            u.role.toLowerCase().includes(q)
+        )
+      : [...list];
+
+    if (sortBy === "mutual") {
+      result.sort((a, b) => b.mutual - a.mutual);
+    } else {
+      result.sort((a, b) => a.name.localeCompare(b.name));
+    }
+    return result;
+  };
+
+  const filteredRequests = filterAndSortUsers(requests);
+  const filteredSuggestions = filterAndSortUsers(suggestions);
+  const filteredConnections = filterAndSortUsers(connections);
+
   return (
     <div className="min-h-screen bg-[#0f172a] text-white">
       <div className="flex">
@@ -209,6 +233,54 @@ export default function ConnectionsPage() {
               variant="line"
             />
 
+            {/* Search and Sort Toolbar */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3 rounded-2xl bg-[#111827] border border-[#1f2937]">
+              <div className="relative flex-1">
+                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search by name or role..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-8 py-2 rounded-xl bg-[#0f172a] border border-[#1f2937] text-xs text-white placeholder:text-slate-500 outline-none focus:border-blue-500 transition"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                  >
+                    <X size={13} />
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto text-xs">
+                <span className="text-slate-400 text-[11px] mr-1 flex items-center gap-1">
+                  <ArrowUpDown size={12} /> Sort:
+                </span>
+                <button
+                  onClick={() => setSortBy("name")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                    sortBy === "name"
+                      ? "bg-blue-600 text-white"
+                      : "bg-[#0f172a] text-slate-400 hover:text-white border border-[#1f2937]"
+                  }`}
+                >
+                  Name (A-Z)
+                </button>
+                <button
+                  onClick={() => setSortBy("mutual")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                    sortBy === "mutual"
+                      ? "bg-blue-600 text-white"
+                      : "bg-[#0f172a] text-slate-400 hover:text-white border border-[#1f2937]"
+                  }`}
+                >
+                  Mutual
+                </button>
+              </div>
+            </div>
+
             {/* Content Lists */}
             <div className="space-y-4 pt-2">
               {loading && (
@@ -219,15 +291,19 @@ export default function ConnectionsPage() {
 
               {!loading && activeTab === "requests" && (
                 <div>
-                  {requests.length === 0 ? (
+                  {filteredRequests.length === 0 ? (
                     <EmptyState
                       icon={<Users size={32} className="text-slate-400" />}
-                      title="No pending requests"
-                      description="When developers send you connection requests, they will show up here."
+                      title={searchQuery ? "No matching requests found" : "No pending requests"}
+                      description={
+                        searchQuery
+                          ? `No requests match "${searchQuery}". Try a different name or role.`
+                          : "When developers send you connection requests, they will show up here."
+                      }
                     />
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {requests.map((user) => (
+                      {filteredRequests.map((user) => (
                         <Card key={user.id} hover>
                           <CardContent className="space-y-4">
                             <Link href={`/profile/${user.id}`} className="flex items-start gap-3 group">
@@ -289,15 +365,19 @@ export default function ConnectionsPage() {
 
               {!loading && activeTab === "suggestions" && (
                 <div>
-                  {suggestions.length === 0 ? (
+                  {filteredSuggestions.length === 0 ? (
                     <EmptyState
                       icon={<Users size={32} className="text-slate-400" />}
-                      title="No new suggestions"
-                      description="Check back later for new recommended connections."
+                      title={searchQuery ? "No matching suggestions found" : "No new suggestions"}
+                      description={
+                        searchQuery
+                          ? `No suggestions match "${searchQuery}". Try a different query.`
+                          : "Check back later for new recommended connections."
+                      }
                     />
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {suggestions.map((user) => (
+                      {filteredSuggestions.map((user) => (
                         <Card key={user.id} hover>
                           <CardContent className="space-y-4">
                             <Link href={`/profile/${user.id}`} className="flex items-start gap-3 group">
@@ -349,15 +429,19 @@ export default function ConnectionsPage() {
 
               {!loading && activeTab === "connections" && (
                 <div>
-                  {connections.length === 0 ? (
+                  {filteredConnections.length === 0 ? (
                     <EmptyState
                       icon={<Users size={32} className="text-slate-400" />}
-                      title="No connections yet"
-                      description="Start connecting with other developers to build your network."
+                      title={searchQuery ? "No matching connections found" : "No connections yet"}
+                      description={
+                        searchQuery
+                          ? `No connections match "${searchQuery}". Try a different name.`
+                          : "Start connecting with other developers to build your network."
+                      }
                     />
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {connections.map((user) => (
+                      {filteredConnections.map((user) => (
                         <Card key={user.id} hover>
                           <CardContent className="space-y-4">
                             <Link href={`/profile/${user.id}`} className="flex items-start gap-3 group">
