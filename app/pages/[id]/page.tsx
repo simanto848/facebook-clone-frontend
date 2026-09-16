@@ -7,6 +7,7 @@ import { ArrowLeft, Flag, ThumbsUp, Plus, Globe, Send, MessageSquare, Image as I
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
+import ReportModal from "@/components/features/post/ReportModal";
 import { pageService } from "@/services/pageService";
 import { mapBackendPostToPostType, PostType, usePostStore } from "@/store/postStore";
 import { useChatStore } from "@/store/chatStore";
@@ -41,6 +42,7 @@ export default function BrandPageDetailPage({ params }: PageProps) {
   const [showImageInput, setShowImageInput] = useState(false);
   const [posting, setPosting] = useState(false);
   const [postError, setPostError] = useState<string | null>(null);
+  const [isReportOpen, setIsReportOpen] = useState(false);
 
   useEffect(() => {
     const fetchPageData = async () => {
@@ -246,6 +248,16 @@ export default function BrandPageDetailPage({ params }: PageProps) {
                           className="border border-[#1f2937] text-slate-200 hover:text-white"
                         >
                           {copied ? "Copied!" : "Share"}
+                        </Button>
+
+                        <Button
+                          variant="secondary"
+                          size="md"
+                          leftIcon={<Flag size={16} className="text-amber-400" />}
+                          onClick={() => setIsReportOpen(true)}
+                          className="border border-[#1f2937] text-slate-200 hover:text-white"
+                        >
+                          Report
                         </Button>
 
                         <Button
@@ -458,6 +470,14 @@ export default function BrandPageDetailPage({ params }: PageProps) {
                 )}
               </>
             )}
+
+            {/* Report Page Modal */}
+            <ReportModal
+              isOpen={isReportOpen}
+              onClose={() => setIsReportOpen(false)}
+              targetId={page?.id || id}
+              targetType="PAGE"
+            />
           </div>
         </main>
 
