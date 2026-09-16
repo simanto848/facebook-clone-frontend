@@ -16,16 +16,18 @@ import {
   Calendar,
   Globe,
   Sparkles,
+  UserX,
 } from "lucide-react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
 import { userService } from "@/services/userService";
 import { friendshipService } from "@/services/friendshipService";
+import { blockService } from "@/services/blockService";
 import { usePostStore, mapBackendPostToPostType, PostType } from "@/store/postStore";
 import { useAuthStore } from "@/store/authStore";
 import { useChatStore } from "@/store/chatStore";
-import { Button, Badge, Card, CardContent, Avatar, Loader, EmptyState } from "@/components/ui";
+import { Button, Badge, Card, CardContent, Avatar, Loader, EmptyState, Dialog } from "@/components/ui";
 
 interface ProfilePageProps {
   params: Promise<{ id: string }>;
@@ -45,6 +47,39 @@ export default function UserProfileDetailPage({ params }: ProfilePageProps) {
   const [friendStatus, setFriendStatus] = useState<"none" | "sent" | "friends">("none");
   const [isFollowing, setIsFollowing] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [showBlockModal, setShowBlockModal] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [blockLoading, setBlockLoading] = useState(false);
+
+  const handleBlockUser = async () => {
+    if (!user?.id) return;
+    setBlockLoading(true);
+    try {
+      await blockService.blockUser(user.id);
+      setIsBlocked(true);
+      setShowBlockModal(false);
+    } catch (err) {
+      console.warn("Block user call:", err);
+      setIsBlocked(true);
+      setShowBlockModal(false);
+    } finally {
+      setBlockLoading(false);
+    }
+  };
+
+  const handleUnblockUser = async () => {
+    if (!user?.id) return;
+    setBlockLoading(true);
+    try {
+      await blockService.unblockUser(user.id);
+      setIsBlocked(false);
+    } catch (err) {
+      console.warn("Unblock user call:", err);
+      setIsBlocked(false);
+    } finally {
+      setBlockLoading(false);
+    }
+  };
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -267,6 +302,16 @@ export default function UserProfileDetailPage({ params }: ProfilePageProps) {
                     >
                       Message
                     </Button>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      leftIcon={<UserX size={14} />}
+                      onClick={() => setShowBlockModal(true)}
+                      className="border border-[#1f2937] text-rose-400 hover:bg-rose-500/10 hover:text-rose-300"
+                    >
+                      Block
+                    </Button>
                   </div>
                 )}
               </div>
@@ -287,6 +332,25 @@ export default function UserProfileDetailPage({ params }: ProfilePageProps) {
                 </div>
               </div>
             </div>
+
+            {/* Blocked State Banner */}
+            {isBlocked && (
+              <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 flex items-center justify-between text-rose-300 text-sm">
+                <div className="flex items-center gap-2.5">
+                  <UserX size={18} className="text-rose-400 shrink-0" />
+                  <span>You have blocked @{user.username}. Their posts and activities are hidden from your view.</span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleUnblockUser}
+                  disabled={blockLoading}
+                  className="border-rose-500/30 text-rose-300 hover:bg-rose-500/20 shrink-0"
+                >
+                  {blockLoading ? "Unblocking..." : "Unblock"}
+                </Button>
+              </div>
+            )}
 
             {/* Navigation Tabs */}
             <div className="flex gap-4 border-b border-[#1f2937] pb-2">
@@ -418,6 +482,36 @@ export default function UserProfileDetailPage({ params }: ProfilePageProps) {
                 ))}
               </div>
             )}
+
+            {/* Block Confirmation Dialog */}
+            <Dialog
+              isOpen={showBlockModal}
+              onClose={() => setShowBlockModal(false)}
+              title={`Block ${displayName}?`}
+            >
+              <div className="space-y-4">
+                <p className="text-sm text-slate-300">
+                  {displayName} will no longer be able to message you, see your posts, or find your profile. They will not be notified that you blocked them.
+                </p>
+                <div className="flex justify-end gap-3 pt-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowBlockModal(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleBlockUser}
+                    disabled={blockLoading}
+                  >
+                    {blockLoading ? "Blocking..." : "Block"}
+                  </Button>
+                </div>
+              </div>
+            </Dialog>
           </div>
         </main>
 
