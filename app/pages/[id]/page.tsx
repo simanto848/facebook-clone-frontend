@@ -3,7 +3,7 @@
 import React, { useState, useEffect, use } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Flag, ThumbsUp, Plus, Globe, Send, MessageSquare, Image as ImageIcon, X, FileText, Info, ExternalLink, ShieldCheck, Mail } from "lucide-react";
+import { ArrowLeft, Flag, ThumbsUp, Plus, Globe, Send, MessageSquare, Image as ImageIcon, X, FileText, Info, ExternalLink, ShieldCheck, Mail, Share2, Check } from "lucide-react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
@@ -88,6 +88,20 @@ export default function BrandPageDetailPage({ params }: PageProps) {
       setLikesCount(prevCount);
     } finally {
       setLikeLoading(false);
+    }
+  };
+
+  const [copied, setCopied] = useState(false);
+
+  const handleSharePage = async () => {
+    try {
+      if (typeof window !== "undefined") {
+        await navigator.clipboard.writeText(window.location.href);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2500);
+      }
+    } catch (err) {
+      console.error("Failed to copy page link:", err);
     }
   };
 
@@ -223,7 +237,17 @@ export default function BrandPageDetailPage({ params }: PageProps) {
                       </div>
 
                       {/* Action Buttons */}
-                      <div className="flex gap-2.5 w-full sm:w-auto">
+                      <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+                        <Button
+                          variant="secondary"
+                          size="md"
+                          leftIcon={copied ? <Check size={16} className="text-emerald-400" /> : <Share2 size={16} />}
+                          onClick={handleSharePage}
+                          className="border border-[#1f2937] text-slate-200 hover:text-white"
+                        >
+                          {copied ? "Copied!" : "Share"}
+                        </Button>
+
                         <Button
                           variant={isLiked ? "secondary" : "primary"}
                           size="md"
