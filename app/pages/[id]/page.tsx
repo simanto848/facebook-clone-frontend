@@ -3,12 +3,13 @@
 import React, { useState, useEffect, use } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Flag, ThumbsUp, Plus, Globe, Send, MessageSquare, Image as ImageIcon, X } from "lucide-react";
+import { ArrowLeft, Flag, ThumbsUp, Plus, Globe, Send, MessageSquare, Image as ImageIcon, X, FileText, Info, ExternalLink, ShieldCheck, Mail } from "lucide-react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
 import { pageService } from "@/services/pageService";
 import { mapBackendPostToPostType, PostType, usePostStore } from "@/store/postStore";
+import { useChatStore } from "@/store/chatStore";
 import {
   Button,
   Badge,
@@ -26,9 +27,11 @@ interface PageProps {
 export default function BrandPageDetailPage({ params }: PageProps) {
   const router = useRouter();
   const { id } = use(params);
+  const { openChat } = useChatStore();
 
   const [page, setPage] = useState<any>(null);
   const [pagePosts, setPagePosts] = useState<PostType[]>([]);
+  const [activeTab, setActiveTab] = useState<"posts" | "about">("posts");
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
   const [likeLoading, setLikeLoading] = useState(false);
@@ -253,88 +256,182 @@ export default function BrandPageDetailPage({ params }: PageProps) {
                   </div>
                 </div>
 
-                {/* Page Post Creation Form */}
-                <div className="rounded-2xl border border-[#1f2937] bg-[#111827] p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
-                      <Plus size={14} className="text-blue-400" />
-                      <span>Publish an update as {page.name}</span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setShowImageInput(!showImageInput)}
-                      className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg border transition ${
-                        showImageInput
-                          ? "border-blue-500/50 bg-blue-500/10 text-blue-400"
-                          : "border-[#1f2937] bg-[#0f172a] text-slate-400 hover:text-white"
-                      }`}
-                    >
-                      <ImageIcon size={13} />
-                      <span>{showImageInput ? "Remove Photo" : "Add Photo"}</span>
-                    </button>
-                  </div>
-
-                  {postError && (
-                    <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl text-xs">
-                      {postError}
-                    </div>
-                  )}
-
-                  <form onSubmit={handleCreatePost} className="space-y-3">
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        placeholder={`Share an announcement or update on ${page.name}...`}
-                        value={postContent}
-                        onChange={(e) => setPostContent(e.target.value)}
-                        className="flex-1 rounded-xl border border-[#1f2937] bg-[#0f172a] px-4 py-2.5 text-xs text-white outline-none placeholder:text-slate-500 focus:border-blue-500 transition"
-                      />
-                      <Button
-                        type="submit"
-                        variant="primary"
-                        size="sm"
-                        disabled={posting || !postContent.trim()}
-                        loading={posting}
-                        leftIcon={<Send size={13} />}
+                {/* Navigation Tabs */}
+                <div className="flex items-center gap-2 border-b border-[#1f2937] pb-1">
+                  {[
+                    { key: "posts", label: "Posts & Updates", icon: FileText },
+                    { key: "about", label: "About & Info", icon: Info },
+                  ].map((tab) => {
+                    const Icon = tab.icon;
+                    const isActive = activeTab === tab.key;
+                    return (
+                      <button
+                        key={tab.key}
+                        onClick={() => setActiveTab(tab.key as any)}
+                        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                          isActive
+                            ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20"
+                            : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+                        }`}
                       >
-                        {posting ? "Posting..." : "Publish"}
-                      </Button>
-                    </div>
+                        <Icon size={14} />
+                        {tab.label}
+                      </button>
+                    );
+                  })}
+                </div>
 
-                    {showImageInput && (
-                      <div className="flex items-center gap-2 pt-1">
-                        <input
-                          type="text"
-                          placeholder="Image URL (e.g. https://images.unsplash.com/...)"
-                          value={postImageUrl}
-                          onChange={(e) => setPostImageUrl(e.target.value)}
-                          className="flex-1 rounded-xl border border-[#1f2937] bg-[#0f172a] px-3.5 py-2 text-xs text-white outline-none placeholder:text-slate-500 focus:border-blue-500 transition"
-                        />
-                        {postImageUrl && (
-                          <div className="relative h-9 w-9 rounded-lg overflow-hidden border border-blue-500 shrink-0">
-                            <Image src={postImageUrl} alt="preview" fill sizes="36px" className="object-cover" />
+                {activeTab === "posts" && (
+                  <>
+                    {/* Page Post Creation Form */}
+                    <div className="rounded-2xl border border-[#1f2937] bg-[#111827] p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
+                          <Plus size={14} className="text-blue-400" />
+                          <span>Publish an update as {page.name}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowImageInput(!showImageInput)}
+                          className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg border transition ${
+                            showImageInput
+                              ? "border-blue-500/50 bg-blue-500/10 text-blue-400"
+                              : "border-[#1f2937] bg-[#0f172a] text-slate-400 hover:text-white"
+                          }`}
+                        >
+                          <ImageIcon size={13} />
+                          <span>{showImageInput ? "Remove Photo" : "Add Photo"}</span>
+                        </button>
+                      </div>
+
+                      {postError && (
+                        <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl text-xs">
+                          {postError}
+                        </div>
+                      )}
+
+                      <form onSubmit={handleCreatePost} className="space-y-3">
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            placeholder={`Share an announcement or update on ${page.name}...`}
+                            value={postContent}
+                            onChange={(e) => setPostContent(e.target.value)}
+                            className="flex-1 rounded-xl border border-[#1f2937] bg-[#0f172a] px-4 py-2.5 text-xs text-white outline-none placeholder:text-slate-500 focus:border-blue-500 transition"
+                          />
+                          <Button
+                            type="submit"
+                            variant="primary"
+                            size="sm"
+                            disabled={posting || !postContent.trim()}
+                            loading={posting}
+                            leftIcon={<Send size={13} />}
+                          >
+                            {posting ? "Posting..." : "Publish"}
+                          </Button>
+                        </div>
+
+                        {showImageInput && (
+                          <div className="flex items-center gap-2 pt-1">
+                            <input
+                              type="text"
+                              placeholder="Image URL (e.g. https://images.unsplash.com/...)"
+                              value={postImageUrl}
+                              onChange={(e) => setPostImageUrl(e.target.value)}
+                              className="flex-1 rounded-xl border border-[#1f2937] bg-[#0f172a] px-3.5 py-2 text-xs text-white outline-none placeholder:text-slate-500 focus:border-blue-500 transition"
+                            />
+                            {postImageUrl && (
+                              <div className="relative h-9 w-9 rounded-lg overflow-hidden border border-blue-500 shrink-0">
+                                <Image src={postImageUrl} alt="preview" fill sizes="36px" className="object-cover" />
+                              </div>
+                            )}
                           </div>
                         )}
-                      </div>
-                    )}
-                  </form>
-                </div>
+                      </form>
+                    </div>
 
-                {/* Page Timeline Posts */}
-                <div className="space-y-4">
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400">
-                    Page Timeline
-                  </h3>
-                  {pagePosts.length === 0 ? (
-                    <EmptyState
-                      icon={<MessageSquare size={36} className="text-slate-500" />}
-                      title="No posts yet"
-                      description="Be the first to publish an official update to this page timeline."
-                    />
-                  ) : (
-                    pagePosts.map((post) => <PostCard key={post.id} post={post} />)
-                  )}
-                </div>
+                    {/* Page Timeline Posts */}
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400">
+                        Page Timeline
+                      </h3>
+                      {pagePosts.length === 0 ? (
+                        <EmptyState
+                          icon={<MessageSquare size={36} className="text-slate-500" />}
+                          title="No posts yet"
+                          description="Be the first to publish an official update to this page timeline."
+                        />
+                      ) : (
+                        pagePosts.map((post) => <PostCard key={post.id} post={post} />)
+                      )}
+                    </div>
+                  </>
+                )}
+
+                {activeTab === "about" && (
+                  <Card>
+                    <CardContent className="space-y-5 p-6">
+                      <div>
+                        <h3 className="text-sm font-bold text-white flex items-center gap-2 mb-2">
+                          <ShieldCheck size={16} className="text-blue-400" />
+                          About {page.name}
+                        </h3>
+                        <p className="text-xs text-slate-300 leading-relaxed">
+                          {page.description || `This is the official page for ${page.name}. Follow to stay up to date with product releases, news, and official announcements.`}
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-[#1f2937]/80 text-xs">
+                        <div className="space-y-1">
+                          <span className="text-slate-400 text-[11px]">Category</span>
+                          <p className="text-white font-medium">{page.category || "Official Brand"}</p>
+                        </div>
+                        <div className="space-y-1">
+                          <span className="text-slate-400 text-[11px]">Audience</span>
+                          <p className="text-white font-medium">{likesCount.toLocaleString()} Followers</p>
+                        </div>
+                        {page.website && (
+                          <div className="space-y-1">
+                            <span className="text-slate-400 text-[11px]">Official Website</span>
+                            <a
+                              href={page.website}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-400 hover:underline flex items-center gap-1.5 font-medium"
+                            >
+                              <Globe size={13} />
+                              <span className="truncate">{page.website.replace(/^https?:\/\//, "")}</span>
+                              <ExternalLink size={11} />
+                            </a>
+                          </div>
+                        )}
+                        <div className="space-y-1">
+                          <span className="text-slate-400 text-[11px]">Page Transparency</span>
+                          <p className="text-emerald-400 font-medium flex items-center gap-1">
+                            <ShieldCheck size={13} /> Verified Page
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="pt-4 border-t border-[#1f2937]/80 flex items-center justify-between">
+                        <span className="text-xs text-slate-400">Need support or have inquiries?</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          leftIcon={<MessageSquare size={14} />}
+                          onClick={() => openChat({
+                            id: page.ownerId || page.id,
+                            name: page.name,
+                            avatar: page.avatar || "",
+                          })}
+                          className="border border-[#1f2937] text-blue-400 hover:bg-blue-600/10 text-xs"
+                        >
+                          Message Page
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </>
             )}
           </div>
