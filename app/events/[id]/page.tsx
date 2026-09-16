@@ -15,6 +15,7 @@ import {
   Clock,
   ExternalLink,
   Sparkles,
+  Download,
 } from "lucide-react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
@@ -112,6 +113,48 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
     }
   };
 
+  const handleExportCalendar = () => {
+    if (!event) return;
+    const title = event.title || "Event";
+    const description = event.description || "";
+    const location = event.location || "";
+    const start = event.startTime ? new Date(event.startTime) : new Date();
+    const end = event.endTime ? new Date(event.endTime) : new Date(start.getTime() + 2 * 60 * 60 * 1000);
+
+    const formatIcsDate = (date: Date) => {
+      return date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+    };
+
+    const icsContent = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//Facebook Clone//Event Calendar//EN",
+      "CALSCALE:GREGORIAN",
+      "METHOD:PUBLISH",
+      "BEGIN:VEVENT",
+      `UID:${event.id || Date.now()}@facebookclone.local`,
+      `DTSTAMP:${formatIcsDate(new Date())}`,
+      `DTSTART:${formatIcsDate(start)}`,
+      `DTEND:${formatIcsDate(end)}`,
+      `SUMMARY:${title}`,
+      `DESCRIPTION:${description.replace(/\n/g, "\\n")}`,
+      `LOCATION:${location}`,
+      "STATUS:CONFIRMED",
+      "END:VEVENT",
+      "END:VCALENDAR",
+    ].join("\r\n");
+
+    const blob = new Blob([icsContent], { type: "text/calendar;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `${title.toLowerCase().replace(/[^a-z0-9]+/g, "_")}.ics`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const startDateFormatted = event?.startTime
     ? new Date(event.startTime).toLocaleDateString(undefined, {
         weekday: "long",
@@ -147,14 +190,26 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
               >
                 Back to Events
               </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                leftIcon={<Share2 size={14} />}
-                onClick={handleShare}
-              >
-                {copied ? "Link Copied!" : "Share Event"}
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  leftIcon={<Download size={14} />}
+                  onClick={handleExportCalendar}
+                  disabled={!event}
+                  className="border border-[#1f2937] text-slate-300 hover:text-white"
+                >
+                  Export .ics
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  leftIcon={copied ? <Check size={14} className="text-emerald-400" /> : <Share2 size={14} />}
+                  onClick={handleShare}
+                >
+                  {copied ? "Link Copied!" : "Share Event"}
+                </Button>
+              </div>
             </div>
 
             {loading ? (
