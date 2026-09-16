@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { UserX, ShieldOff } from "lucide-react";
+import { UserX, ShieldOff, Search } from "lucide-react";
 import Image from "next/image";
 import { blockService } from "@/services/blockService";
-import { Button, Dialog } from "@/components/ui";
+import { Button, Dialog, Input } from "@/components/ui";
 
 interface BlockedUser {
   id: string;
@@ -17,6 +17,7 @@ export default function BlockedUsersSection() {
   const [loading, setLoading] = useState(false);
   const [unblockTarget, setUnblockTarget] = useState<BlockedUser | null>(null);
   const [isUnblocking, setIsUnblocking] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const fetchBlocked = async () => {
     setLoading(true);
@@ -55,6 +56,10 @@ export default function BlockedUsersSection() {
     }
   };
 
+  const filteredBlocked = blocked.filter((user) =>
+    user.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div className="rounded-2xl border border-[#1f2937] bg-[#111827] p-6 text-white space-y-4 mt-6">
       <div className="flex items-center gap-3 border-b border-[#1f2937] pb-3">
@@ -65,13 +70,27 @@ export default function BlockedUsersSection() {
         </div>
       </div>
 
+      {blocked.length > 0 && (
+        <div className="relative">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Filter blocked accounts..."
+            className="pl-9 h-9 text-xs bg-slate-800/60 border-slate-700 w-full"
+          />
+        </div>
+      )}
+
       {loading ? (
         <p className="text-xs text-slate-400 py-4">Loading blocked users...</p>
       ) : blocked.length === 0 ? (
         <p className="text-xs text-slate-500 py-4">You have not blocked any accounts.</p>
+      ) : filteredBlocked.length === 0 ? (
+        <p className="text-xs text-slate-400 py-4 text-center">No blocked accounts found matching "{searchQuery}".</p>
       ) : (
         <div className="divide-y divide-[#1f2937]">
-          {blocked.map((user) => (
+          {filteredBlocked.map((user) => (
             <div key={user.id} className="py-3 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="relative h-9 w-9 rounded-full overflow-hidden border border-[#1f2937]">
