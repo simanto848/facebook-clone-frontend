@@ -333,26 +333,65 @@ export default function MemoriesPage() {
       >
         {activeShareMemory && (
           <form onSubmit={handleConfirmShare} className="space-y-4 pt-2">
-            <div className="p-3.5 rounded-xl border border-purple-500/30 bg-purple-500/10 space-y-2">
-              <div className="flex items-center gap-2 text-xs font-semibold text-purple-300">
-                <Sparkles size={14} />
-                <span>{activeShareMemory.yearsAgo} Year{activeShareMemory.yearsAgo > 1 ? "s" : ""} Ago Today • {activeShareMemory.dateStr}</span>
+            {/* Memory Card Preview */}
+            <div className="p-3.5 rounded-2xl border border-purple-500/30 bg-purple-500/10 space-y-3">
+              <div className="flex items-center justify-between text-xs font-semibold text-purple-300">
+                <div className="flex items-center gap-2">
+                  <Sparkles size={14} />
+                  <span>{activeShareMemory.yearsAgo} Year{activeShareMemory.yearsAgo > 1 ? "s" : ""} Ago Today • {activeShareMemory.dateStr}</span>
+                </div>
+                <Badge variant="primary" size="sm" className="bg-purple-600/30 text-purple-300 border-purple-400/30 text-[10px]">
+                  {activeShareMemory.type === "friendship" ? "Friendship" : "Past Post"}
+                </Badge>
               </div>
-              <p className="text-xs text-slate-200 line-clamp-3 italic">
-                "{activeShareMemory.content}"
-              </p>
+
+              <div className="flex gap-3 items-start">
+                {activeShareMemory.type === "friendship" && activeShareMemory.friendAvatar ? (
+                  <div className="relative shrink-0">
+                    <Avatar src={activeShareMemory.friendAvatar} name={activeShareMemory.friendName || "Friend"} size="md" />
+                    <span className="absolute -bottom-1 -right-1 text-xs">❤️</span>
+                  </div>
+                ) : activeShareMemory.mediaUrl ? (
+                  <div className="relative h-16 w-24 rounded-xl overflow-hidden shrink-0 border border-purple-500/20">
+                    <Image
+                      src={activeShareMemory.mediaUrl}
+                      alt="Memory Media"
+                      fill
+                      sizes="96px"
+                      className="object-cover"
+                    />
+                  </div>
+                ) : null}
+
+                <p className="text-xs text-slate-200 leading-relaxed italic flex-1">
+                  "{activeShareMemory.content}"
+                </p>
+              </div>
             </div>
 
+            {/* Custom Caption Input */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-300">Add a note or reflection (Optional)</label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-slate-300">Add a note or reflection (Optional)</label>
+                <span className="text-[10px] text-slate-400">{customCaption.length}/280</span>
+              </div>
               <textarea
                 rows={3}
+                maxLength={280}
                 placeholder="What are you thinking looking back on this today?..."
                 value={customCaption}
                 onChange={(e) => setCustomCaption(e.target.value)}
                 className="w-full rounded-xl border border-[#374151] bg-[#1f2937] p-3 text-xs text-white placeholder-slate-500 outline-none focus:border-purple-500 transition resize-none"
               />
             </div>
+
+            {/* Live Feed Output Preview */}
+            {customCaption.trim() && (
+              <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Preview on Feed</span>
+                <p className="text-xs text-slate-100 whitespace-pre-line">{customCaption}</p>
+              </div>
+            )}
 
             <div className="flex justify-end gap-2 pt-2 border-t border-[#1f2937]">
               <Button
