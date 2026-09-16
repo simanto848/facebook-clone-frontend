@@ -8,6 +8,7 @@ import { useChatStore } from "@/store/chatStore";
 import { useToast, Avatar } from "@/components/ui";
 import { CallModal } from "@/components/features/chat/CallModal";
 import { Phone, PhoneOff, Video } from "lucide-react";
+import { activeStatusService } from "@/services/activeStatusService";
 
 interface IncomingCallInfo {
   callId: string;
@@ -130,6 +131,13 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     }
 
     let activeSocket: Socket | null = null;
+
+    // Periodic active status heartbeat
+    const sendHeartbeat = () => {
+      activeStatusService.sendHeartbeat().catch(() => {});
+    };
+    sendHeartbeat();
+    const heartbeatInterval = setInterval(sendHeartbeat, 60000);
 
     const initSocketConnection = async () => {
       activeSocket = await getSocket();
@@ -317,6 +325,7 @@ const playNotificationSound = () => {
     initSocketConnection();
 
     return () => {
+      clearInterval(heartbeatInterval);
       if (activeSocket) {
         activeSocket.off("connect");
         activeSocket.off("disconnect");
