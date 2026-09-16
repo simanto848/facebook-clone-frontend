@@ -119,6 +119,26 @@ export default function ActivityLogSection() {
     },
   ];
 
+  const [filterCategory, setFilterCategory] = useState<string>("ALL");
+
+  const categories = [
+    { id: "ALL", label: "All Events" },
+    { id: "LOGIN", label: "Logins & Auth" },
+    { id: "POST", label: "Posts & Community" },
+    { id: "PROFILE", label: "Profile Updates" },
+    { id: "SECURITY", label: "Security" },
+  ];
+
+  const filteredLogs = logs.filter((log) => {
+    if (filterCategory === "ALL") return true;
+    const action = log.action.toUpperCase();
+    if (filterCategory === "LOGIN") return action.includes("LOGIN") || action.includes("AUTH");
+    if (filterCategory === "POST") return action.includes("POST") || action.includes("FEED") || action.includes("COMMENT");
+    if (filterCategory === "PROFILE") return action.includes("PROFILE") || action.includes("AVATAR") || action.includes("COVER");
+    if (filterCategory === "SECURITY") return action.includes("SECURITY") || action.includes("PASSWORD") || action.includes("2FA");
+    return true;
+  });
+
   return (
     <div className="rounded-2xl border border-[#1f2937] bg-[#111827] p-6 text-white space-y-6">
       <div className="flex items-center justify-between border-b border-[#1f2937] pb-4">
@@ -145,12 +165,45 @@ export default function ActivityLogSection() {
         )}
       </div>
 
+      {/* Category filter pills */}
+      <div className="flex flex-wrap gap-2">
+        {categories.map((cat) => {
+          const count = logs.filter((log) => {
+            if (cat.id === "ALL") return true;
+            const action = log.action.toUpperCase();
+            if (cat.id === "LOGIN") return action.includes("LOGIN") || action.includes("AUTH");
+            if (cat.id === "POST") return action.includes("POST") || action.includes("FEED") || action.includes("COMMENT");
+            if (cat.id === "PROFILE") return action.includes("PROFILE") || action.includes("AVATAR") || action.includes("COVER");
+            if (cat.id === "SECURITY") return action.includes("SECURITY") || action.includes("PASSWORD") || action.includes("2FA");
+            return true;
+          }).length;
+
+          const isActive = filterCategory === cat.id;
+          return (
+            <button
+              key={cat.id}
+              onClick={() => setFilterCategory(cat.id)}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                isActive
+                  ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
+                  : "bg-[#1f2937] text-slate-400 hover:text-white hover:bg-[#263345]"
+              }`}
+            >
+              <span>{cat.label}</span>
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${isActive ? "bg-white/20" : "bg-slate-800"}`}>
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
       {loading ? (
         <p className="text-xs text-slate-400 py-8 text-center">Loading audit log...</p>
       ) : (
         <DataTable
           columns={columns}
-          data={logs}
+          data={filteredLogs}
           searchPlaceholder="Filter audit logs..."
           pageSize={5}
         />
