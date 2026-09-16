@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
-import { Bookmark, BookmarkX, Search, X } from "lucide-react";
+import { Bookmark, BookmarkX, Search, X, Tag } from "lucide-react";
 import { bookmarkService } from "@/services/bookmarkService";
 import { mapBackendPostToPostType, PostType, usePostStore } from "@/store/postStore";
 import { PageHeader, Badge, EmptyState, Loader } from "@/components/ui";
@@ -22,11 +22,23 @@ export default function SavedPostsPage() {
       const posts = items.map((b: any) => {
         const rawPost = b.post || b;
         const mapped = mapBackendPostToPostType(rawPost);
+        let defaultCategory = "discussions";
+        if (mapped.type === "image" || mapped.type === "video" || (mapped.images && mapped.images.length > 0)) {
+          defaultCategory = "media";
+        } else if (mapped.article) {
+          defaultCategory = "articles";
+        }
+
+        if (typeof window !== "undefined") {
+          const stored = localStorage.getItem(`saved_cat_${mapped.id}`);
+          if (stored) defaultCategory = stored;
+        }
+
         return {
           ...mapped,
           bookmarkId: b.id,
           saved: true,
-          category: b.category || "All",
+          category: b.category || defaultCategory,
         };
       });
       setSavedPosts(posts);
@@ -44,6 +56,15 @@ export default function SavedPostsPage() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
+  const handleAssignCategory = (postId: string, newCategory: string) => {
+    setSavedPosts((prev) =>
+      prev.map((p) => (p.id === postId ? { ...p, category: newCategory } : p))
+    );
+    if (typeof window !== "undefined") {
+      localStorage.setItem(`saved_cat_${postId}`, newCategory);
+    }
+  };
+
   const searchedPosts = savedPosts.filter((post) => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
@@ -56,9 +77,9 @@ export default function SavedPostsPage() {
 
   const categoryCounts: Record<string, number> = {
     all: searchedPosts.length,
-    media: searchedPosts.filter((p) => p.type === "image" || p.type === "video" || (p.images && p.images.length > 0)).length,
-    discussions: searchedPosts.filter((p) => p.type === "text" || (!p.article && (!p.images || p.images.length === 0))).length,
-    articles: searchedPosts.filter((p) => !!p.article).length,
+    media: searchedPosts.filter((p) => p.category === "media").length,
+    discussions: searchedPosts.filter((p) => p.category === "discussions").length,
+    articles: searchedPosts.filter((p) => p.category === "articles").length,
   };
 
   const categories = [
@@ -81,10 +102,7 @@ export default function SavedPostsPage() {
 
   const filteredPosts = searchedPosts.filter((post) => {
     if (selectedCategory === "all") return true;
-    if (selectedCategory === "media") return post.type === "image" || post.type === "video" || (post.images && post.images.length > 0);
-    if (selectedCategory === "discussions") return post.type === "text" || (!post.article && (!post.images || post.images.length === 0));
-    if (selectedCategory === "articles") return !!post.article;
-    return true;
+    return post.category === selectedCategory;
   });
 
   return (
@@ -173,11 +191,25 @@ export default function SavedPostsPage() {
               <div className="space-y-6">
                 {filteredPosts.map((post) => (
                   <div key={post.id} className="relative group">
-                    <div className="absolute top-4 right-14 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="absolute top-4 right-14 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
+                      <div className="relative flex items-center">
+                        <Tag size={12} className="absolute left-2 text-slate-400 pointer-events-none" />
+                        <select
+                          value={post.category || "discussions"}
+                          onChange={(e) => handleAssignCategory(post.id, e.target.value)}
+                          className="bg-slate-800/90 text-slate-200 text-[11px] font-medium rounded-lg pl-6 pr-2 py-1 border border-slate-700 outline-none hover:border-slate-500 transition cursor-pointer shadow-md"
+                          title="Assign category tag"
+                        >
+                          <option value="discussions">Discussions</option>
+                          <option value="media">Media</option>
+                          <option value="articles">Articles</option>
+                        </select>
+                      </div>
+
                       <button
                         type="button"
                         onClick={() => handleUnbookmark(post.bookmarkId || "", post.id)}
-                        className="px-2.5 py-1 text-[11px] font-medium bg-rose-600/90 hover:bg-rose-600 text-white rounded-lg shadow-md backdrop-blur-xs flex items-center gap-1 transition"
+                        className="px-2.5 py-1 text-[11px] font-medium bg-rose-600/90 hover:bg-rose-600 text-white rounded-lg shadow-md backdrop-blur-xs flex items-center gap-1 transition cursor-pointer"
                         title="Remove from saved bookmarks"
                       >
                         <BookmarkX size={13} />
