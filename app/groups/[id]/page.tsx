@@ -39,6 +39,7 @@ export default function GroupDetailPage({ params }: PageProps) {
 
   // Post creation modal
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false);
   const [postContent, setPostContent] = useState("");
   const [isPosting, setIsPosting] = useState(false);
   const [postError, setPostError] = useState<string | null>(null);
@@ -107,30 +108,49 @@ export default function GroupDetailPage({ params }: PageProps) {
       setPostContent("");
       setIsCreateOpen(false);
     } catch (err: any) {
+      console.error("Create group post error:", err);
       setPostError(err.response?.data?.message || err.message || "Failed to publish group post");
     } finally {
       setIsPosting(false);
     }
   };
 
-  const toggleJoin = async () => {
-    const nextJoined = !isJoined;
-    setIsJoined(nextJoined);
-    setMemberCount((c) => (nextJoined ? c + 1 : Math.max(1, c - 1)));
+  const handleJoinGroup = async () => {
+    setIsJoined(true);
+    setMemberCount((c) => c + 1);
     setIsJoinLoading(true);
     try {
-      if (nextJoined) {
-        await groupService.joinGroup(id);
-      } else {
-        await groupService.leaveGroup(id);
-      }
+      await groupService.joinGroup(id);
     } catch (err) {
-      console.error("Group toggle join error:", err);
-      // Revert on error
-      setIsJoined(!nextJoined);
-      setMemberCount((c) => (nextJoined ? Math.max(1, c - 1) : c + 1));
+      console.error("Group join error:", err);
+      setIsJoined(false);
+      setMemberCount((c) => Math.max(1, c - 1));
     } finally {
       setIsJoinLoading(false);
+    }
+  };
+
+  const handleLeaveGroup = async () => {
+    setIsLeaveDialogOpen(false);
+    setIsJoined(false);
+    setMemberCount((c) => Math.max(1, c - 1));
+    setIsJoinLoading(true);
+    try {
+      await groupService.leaveGroup(id);
+    } catch (err) {
+      console.error("Group leave error:", err);
+      setIsJoined(true);
+      setMemberCount((c) => c + 1);
+    } finally {
+      setIsJoinLoading(false);
+    }
+  };
+
+  const handleMembershipClick = () => {
+    if (isJoined) {
+      setIsLeaveDialogOpen(true);
+    } else {
+      handleJoinGroup();
     }
   };
 
@@ -194,7 +214,7 @@ export default function GroupDetailPage({ params }: PageProps) {
                       size="sm"
                       leftIcon={isJoined ? <Check size={14} /> : <UserPlus size={14} />}
                       loading={isJoinLoading}
-                      onClick={toggleJoin}
+                      onClick={handleMembershipClick}
                       className={isJoined ? "" : "bg-blue-600 hover:bg-blue-500"}
                     >
                       {isJoined ? "Joined Guild" : "Join Guild"}
@@ -293,6 +313,32 @@ export default function GroupDetailPage({ params }: PageProps) {
                       </Button>
                     </div>
                   </form>
+                </Dialog>
+
+                {/* Leave Group Confirmation Dialog */}
+                <Dialog
+                  isOpen={isLeaveDialogOpen}
+                  onClose={() => setIsLeaveDialogOpen(false)}
+                  title="Leave Group"
+                  description={`Are you sure you want to leave ${group.name}? You will lose access to member updates and community posts.`}
+                >
+                  <div className="flex justify-end gap-3 pt-4">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsLeaveDialogOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      disabled={isJoinLoading}
+                      onClick={handleLeaveGroup}
+                    >
+                      {isJoinLoading ? "Leaving..." : "Leave Group"}
+                    </Button>
+                  </div>
                 </Dialog>
               </div>
             ) : (
