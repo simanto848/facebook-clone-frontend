@@ -1,12 +1,16 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import SettingsSection from "@/components/features/settings/SettingsSection";
-import { PasswordStrength, Input, Button, Switch } from "@/components/ui";
+import { PasswordStrength, Input, Button, Switch, Dialog } from "@/components/ui";
 import { userService } from "@/services/userService";
-import { CheckCircle2, AlertCircle } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { CheckCircle2, AlertCircle, AlertTriangle } from "lucide-react";
 
 export default function SecuritySection() {
+  const router = useRouter();
+  const { logout } = useAuth();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -14,6 +18,31 @@ export default function SecuritySection() {
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Delete account modal state
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmationText.trim() !== "DELETE") {
+      setDeleteError('Please type "DELETE" exactly to confirm account deletion.');
+      return;
+    }
+
+    setDeletingAccount(true);
+    setDeleteError(null);
+    try {
+      await userService.deleteAccount();
+      logout();
+      router.push("/login");
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.message || "Failed to delete account";
+      setDeleteError(msg);
+      setDeletingAccount(false);
+    }
+  };
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,7 +136,15 @@ export default function SecuritySection() {
         </div>
 
         <div className="flex items-center justify-between pt-4 border-t border-[#1f2937]">
-          <Button variant="danger" type="button">
+          <Button
+            variant="danger"
+            type="button"
+            onClick={() => {
+              setDeleteConfirmationText("");
+              setDeleteError(null);
+              setIsDeleteModalOpen(true);
+            }}
+          >
             Delete Account
           </Button>
 
@@ -116,6 +153,60 @@ export default function SecuritySection() {
           </Button>
         </div>
       </form>
+
+      {/* DELETE ACCOUNT CONFIRMATION MODAL */}
+      <Dialog
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        title="Delete Account Permanently"
+        description="This action cannot be undone. All your timeline posts, bookmarks, friendships, and messages will be permanently erased."
+        size="md"
+      >
+        <div className="space-y-4 pt-2">
+          <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-start gap-2.5">
+            <AlertTriangle size={18} className="shrink-0 text-rose-400 mt-0.5" />
+            <p>
+              Please be aware that your account will be immediately wiped from the database. Type <strong className="text-white">DELETE</strong> below to confirm.
+            </p>
+          </div>
+
+          {deleteError && (
+            <div className="p-2.5 rounded-lg bg-rose-500/20 text-rose-300 text-xs">
+              {deleteError}
+            </div>
+          )}
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-300">Type DELETE to confirm</label>
+            <Input
+              value={deleteConfirmationText}
+              onChange={(e) => setDeleteConfirmationText(e.target.value)}
+              placeholder="DELETE"
+              className="bg-[#111827] border-[#1f2937]"
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#1f2937]">
+            <Button
+              variant="secondary"
+              type="button"
+              onClick={() => setIsDeleteModalOpen(false)}
+              disabled={deletingAccount}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              type="button"
+              loading={deletingAccount}
+              disabled={deleteConfirmationText.trim() !== "DELETE"}
+              onClick={handleDeleteAccount}
+            >
+              Confirm Permanent Deletion
+            </Button>
+          </div>
+        </div>
+      </Dialog>
     </SettingsSection>
   );
 }
