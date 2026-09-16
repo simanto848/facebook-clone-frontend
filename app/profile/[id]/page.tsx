@@ -24,6 +24,7 @@ import { userService } from "@/services/userService";
 import { friendshipService } from "@/services/friendshipService";
 import { usePostStore, mapBackendPostToPostType, PostType } from "@/store/postStore";
 import { useAuthStore } from "@/store/authStore";
+import { useChatStore } from "@/store/chatStore";
 import { Button, Badge, Card, CardContent, Avatar, Loader, EmptyState } from "@/components/ui";
 
 interface ProfilePageProps {
@@ -35,6 +36,7 @@ export default function UserProfileDetailPage({ params }: ProfilePageProps) {
   const { id: rawId } = use(params);
   const { user: currentAuthUser } = useAuthStore();
   const { posts: storePosts } = usePostStore();
+  const { openChat } = useChatStore();
 
   const [user, setUser] = useState<any>(null);
   const [userPosts, setUserPosts] = useState<PostType[]>([]);
@@ -256,7 +258,11 @@ export default function UserProfileDetailPage({ params }: ProfilePageProps) {
                       variant="ghost"
                       size="sm"
                       leftIcon={<MessageSquare size={14} />}
-                      onClick={() => router.push("/messages")}
+                      onClick={() => openChat({
+                        id: user.id,
+                        name: `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.username || "User",
+                        avatar: user.avatar || user.profilePicture || "",
+                      })}
                       className="border border-[#1f2937] text-blue-400 hover:bg-blue-600/10"
                     >
                       Message
@@ -384,9 +390,9 @@ export default function UserProfileDetailPage({ params }: ProfilePageProps) {
             {activeTab === "connections" && (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 {[
-                  { name: "Sarah Connor", avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100", handle: "sarahc" },
-                  { name: "Elena Rostova", avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100", handle: "elena" },
-                  { name: "David Kim", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100", handle: "davidk" },
+                  { id: "friend-sarah", name: "Sarah Connor", avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100", handle: "sarahc" },
+                  { id: "friend-elena", name: "Elena Rostova", avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100", handle: "elena" },
+                  { id: "friend-david", name: "David Kim", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100", handle: "davidk" },
                 ].map((friend, i) => (
                   <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-[#111827] border border-[#1f2937]">
                     <div className="flex items-center gap-3">
@@ -399,7 +405,11 @@ export default function UserProfileDetailPage({ params }: ProfilePageProps) {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => router.push("/messages")}
+                      onClick={() => openChat({
+                        id: friend.id || `friend-${i}`,
+                        name: friend.name,
+                        avatar: friend.avatar || "",
+                      })}
                       className="text-blue-400 hover:bg-blue-600/10 text-xs"
                     >
                       Message
