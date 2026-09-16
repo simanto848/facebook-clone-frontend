@@ -12,6 +12,7 @@ import PostGallery from "./PostGallery";
 import PostVideo from "./PostVideo";
 import PostComments from "./PostComments";
 import ReportModal from "./ReportModal";
+import ReactionsModal from "./ReactionsModal";
 import { Button } from "@/components/ui";
 import { reactionService } from "@/services/reactionService";
 import { bookmarkService } from "@/services/bookmarkService";
@@ -38,6 +39,7 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
   const [showReactionPicker, setShowReactionPicker] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
+  const [showReactionsModal, setShowReactionsModal] = useState(false);
 
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -305,7 +307,12 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
       {/* Reaction / Comment Count Display */}
       { (totalReactions > 0 || post.comments.length > 0) && (
         <div className="flex justify-between items-center px-5 py-3 text-xs text-slate-400 border-t border-[#1f2937]/50 mt-4">
-          <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setShowReactionsModal(true)}
+            className="flex items-center gap-1.5 hover:underline focus:outline-none"
+            title="View who reacted"
+          >
             <div className="flex items-center -space-x-1.5">
               {topReactions.map((r, i) => (
                 <span key={i} className="text-[13px] bg-[#111827] rounded-full p-0.5 border border-[#1f2937]">
@@ -314,7 +321,7 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
               ))}
             </div>
             <span>{totalReactions}</span>
-          </div>
+          </button>
 
           <button onClick={() => setShowComments(!showComments)} className="hover:underline">
             {post.comments.length} comments
@@ -414,6 +421,14 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
         targetType="POST"
         isOpen={isReportOpen}
         onClose={() => setIsReportOpen(false)}
+      />
+
+      {/* Reactions List Breakdown Modal */}
+      <ReactionsModal
+        targetId={post.id}
+        targetType="POST"
+        isOpen={showReactionsModal}
+        onClose={() => setShowReactionsModal(false)}
       />
 
       {/* Render Nested Comments section */}
