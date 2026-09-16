@@ -297,6 +297,7 @@ export default function ExplorePage() {
     { id: "people", label: searchQuery.trim() ? `People (${matchedUsers.length})` : "People" },
     { id: "groups", label: searchQuery.trim() ? `Groups (${matchedGroups.length})` : "Groups" },
     { id: "pages", label: searchQuery.trim() ? `Pages (${matchedPages.length})` : "Pages" },
+    { id: "hashtags", label: searchQuery.trim() ? `Hashtags (${matchedHashtags.length})` : "Hashtags" },
   ];
 
   return (
@@ -548,6 +549,70 @@ export default function ExplorePage() {
                     </Link>
                   </div>
                 )
+              ) : activeCategory === "hashtags" ? (
+                (() => {
+                  const displayTags =
+                    matchedHashtags.length > 0
+                      ? matchedHashtags
+                      : popularTags.map((t, idx) => ({ name: t, postCount: 120 - idx * 15, isTrending: true }));
+
+                  return (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                          <Hash size={16} className="text-blue-400" />
+                          <span>{searchQuery ? `Hashtags for "${searchQuery}"` : "Trending Topics & Hashtags"}</span>
+                        </h3>
+                        <span className="text-xs text-slate-400">{displayTags.length} topics</span>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {displayTags.map((item: any, idx: number) => {
+                          const tagName = typeof item === "string" ? item : item.name || item.tag;
+                          const count = item.postCount || item.count || (100 - idx * 10);
+                          const isTrending = item.isTrending ?? true;
+
+                          return (
+                            <Card
+                              key={tagName + idx}
+                              hover
+                              className="p-4 flex items-center justify-between cursor-pointer border-[#1f2937] hover:border-blue-500/40 transition"
+                              onClick={() => handleSelectHashtag(tagName)}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="p-2.5 rounded-xl bg-blue-600/15 text-blue-400 border border-blue-500/20">
+                                  <Hash size={18} />
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <h4 className="text-sm font-bold text-white hover:text-blue-400 transition">
+                                      #{tagName}
+                                    </h4>
+                                    {isTrending && (
+                                      <Badge variant="primary" size="sm" className="text-[10px] py-0 px-1.5 bg-blue-600/20 text-blue-400 border-blue-500/30">
+                                        Trending
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <p className="text-xs text-slate-400 mt-0.5">{count} posts</p>
+                                </div>
+                              </div>
+
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                rightIcon={<ArrowRight size={14} />}
+                                className="text-xs text-slate-400 hover:text-white"
+                              >
+                                View
+                              </Button>
+                            </Card>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()
               ) : filteredPosts.length === 0 ? (
                 <EmptyState
                   icon={<Search size={36} className="text-slate-400" />}
