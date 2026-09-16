@@ -19,6 +19,8 @@ export default function Stories() {
   const [newStoryMedia, setNewStoryMedia] = useState("");
   const [isSubmittingStory, setIsSubmittingStory] = useState(false);
   const [storyError, setStoryError] = useState<string | null>(null);
+  const [storyToDelete, setStoryToDelete] = useState<string | null>(null);
+  const [isDeletingStory, setIsDeletingStory] = useState(false);
 
   const handleDeleteStory = async (storyId: string) => {
     try {
@@ -195,9 +197,45 @@ export default function Stories() {
           currentIndex={activeStoryIndex}
           onNavigate={(newIndex) => setActiveStoryIndex(newIndex)}
           onLike={(id) => reactStory(id)}
-          onDelete={handleDeleteStory}
+          onDelete={(id) => setStoryToDelete(id)}
         />
       )}
+
+      {/* Delete Story Confirmation Dialog */}
+      <Dialog
+        isOpen={!!storyToDelete}
+        onClose={() => setStoryToDelete(null)}
+        title="Delete Story?"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-slate-300">
+            Are you sure you want to delete this story? It will disappear immediately from your friends' story feeds.
+          </p>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setStoryToDelete(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              loading={isDeletingStory}
+              onClick={async () => {
+                if (!storyToDelete) return;
+                setIsDeletingStory(true);
+                await handleDeleteStory(storyToDelete);
+                setIsDeletingStory(false);
+                setStoryToDelete(null);
+              }}
+            >
+              Delete
+            </Button>
+          </div>
+        </div>
+      </Dialog>
 
       {/* CREATE STORY DIALOG */}
       <Dialog
