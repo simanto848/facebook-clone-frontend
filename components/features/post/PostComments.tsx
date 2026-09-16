@@ -111,9 +111,60 @@ export default function PostComments({ postId, comments }: Props) {
   };
 
   const handleReply = async (commentId: string, replyText: string) => {
+    const tempId = Math.random().toString(36).substring(7);
+    const newReplyItem: CommentType = {
+      id: tempId,
+      author: {
+        name: user?.displayName || user?.username || "You",
+        username: user?.username || "you",
+        avatar: user?.avatar || "https://images.unsplash.com/photo-1779040622687-42bb00790c67?w=100",
+      },
+      content: replyText,
+      createdAt: "Just now",
+      likes: 0,
+    };
+
+    const addReplyRecursive = (list: CommentType[]): CommentType[] => {
+      return list.map((item) => {
+        if (item.id === commentId) {
+          return {
+            ...item,
+            replies: [...(item.replies || []), newReplyItem],
+          };
+        }
+        if (item.replies && item.replies.length > 0) {
+          return {
+            ...item,
+            replies: addReplyRecursive(item.replies),
+          };
+        }
+        return item;
+      });
+    };
+
+    setCommentList((prev) => addReplyRecursive(prev));
     addReplyToComment(postId, commentId, replyText);
+
     try {
-      await commentService.createComment({ postId, parentId: commentId, content: replyText });
+      const res = await commentService.createComment({ postId, parentId: commentId, content: replyText });
+      const data = res?.data || res;
+      if (data?.id) {
+        const backendId = data.id;
+        setCommentList((prev) => {
+          const updateIdRecursive = (list: CommentType[]): CommentType[] => {
+            return list.map((item) => {
+              if (item.id === tempId) {
+                return { ...item, id: backendId };
+              }
+              if (item.replies && item.replies.length > 0) {
+                return { ...item, replies: updateIdRecursive(item.replies) };
+              }
+              return item;
+            });
+          };
+          return updateIdRecursive(prev);
+        });
+      }
     } catch (err) {
       console.warn("Backend reply creation failed, using local store:", err);
     }
