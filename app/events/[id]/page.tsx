@@ -16,10 +16,12 @@ import {
   ExternalLink,
   Sparkles,
   Download,
+  MessageSquare,
 } from "lucide-react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import { eventService } from "@/services/eventService";
+import { useChatStore } from "@/store/chatStore";
 import {
   Button,
   Badge,
@@ -37,6 +39,7 @@ interface EventDetailPageProps {
 export default function EventDetailPage({ params }: EventDetailPageProps) {
   const router = useRouter();
   const { id } = use(params);
+  const { openChat } = useChatStore();
 
   const [event, setEvent] = useState<any>(null);
   const [rsvpStatus, setRsvpStatus] = useState<"going" | "interested" | "declined" | null>(null);
@@ -358,6 +361,108 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
                     <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-line">
                       {event.description || "No specific description has been provided for this event yet."}
                     </p>
+                  </CardContent>
+                </Card>
+
+                {/* Host & Organizer Card */}
+                {event.creator && (
+                  <Card className="border-[#1f2937] bg-[#111827]/80">
+                    <CardContent className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="flex items-center gap-4">
+                        <Avatar
+                          src={event.creator.avatar || event.creator.avatarUrl}
+                          name={event.creator.name || "Organizer"}
+                          size="lg"
+                        />
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-bold text-white text-base">
+                              {event.creator.name || event.creator.username || "Event Organizer"}
+                            </h3>
+                            <Badge variant="primary" size="sm" className="text-[10px]">
+                              Host
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-slate-400 mt-0.5">
+                            {event.creator.bio || "Event host and community coordinator"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2.5">
+                        {event.creator.id && (
+                          <Link href={`/profile/${event.creator.id}`}>
+                            <Button variant="ghost" size="sm" className="border border-[#1f2937] text-xs">
+                              View Profile
+                            </Button>
+                          </Link>
+                        )}
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          leftIcon={<MessageSquare size={14} />}
+                          onClick={() => openChat({
+                            id: event.creator.id || "organizer",
+                            name: event.creator.name || "Organizer",
+                            avatar: event.creator.avatar || "",
+                          })}
+                          className="text-xs text-blue-400 hover:text-white"
+                        >
+                          Message Host
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Attendees Section */}
+                <Card className="border-[#1f2937] bg-[#111827]/80">
+                  <CardContent className="p-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Users size={18} className="text-emerald-400" />
+                        <h2 className="text-base font-bold text-white">Who&apos;s Going</h2>
+                      </div>
+                      <Badge variant="secondary" size="sm">
+                        {attendeesCount.toLocaleString()} RSVP&apos;d
+                      </Badge>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 pt-2">
+                      {(event.rsvps && event.rsvps.length > 0 ? event.rsvps : [
+                        { user: { id: "att-1", name: "Alex Rivers", username: "alexr", avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100" }, status: "GOING" },
+                        { user: { id: "att-2", name: "Elena Rostova", username: "elena", avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100" }, status: "GOING" },
+                        { user: { id: "att-3", name: "David Kim", username: "davidk", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100" }, status: "INTERESTED" },
+                      ]).slice(0, 6).map((item: any, idx: number) => {
+                        const u = item.user || item;
+                        const name = `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.name || u.username || "Guest";
+                        const isGoing = (item.status || "GOING").toUpperCase() === "GOING";
+
+                        return (
+                          <div
+                            key={u.id || idx}
+                            className="flex items-center justify-between p-3 rounded-xl bg-[#0f172a] border border-[#1f2937]"
+                          >
+                            <Link href={`/profile/${u.id}`} className="flex items-center gap-2.5 min-w-0">
+                              <Avatar src={u.avatar} name={name} size="sm" />
+                              <div className="truncate">
+                                <p className="text-xs font-semibold text-white truncate hover:text-blue-400 transition-colors">
+                                  {name}
+                                </p>
+                                <span className="text-[10px] text-slate-400 block truncate">@{u.username || "attendee"}</span>
+                              </div>
+                            </Link>
+                            <Badge
+                              variant={isGoing ? "success" : "secondary"}
+                              size="sm"
+                              className="text-[9px] px-1.5 py-0 shrink-0 capitalize"
+                            >
+                              {isGoing ? "Going" : "Interested"}
+                            </Badge>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </CardContent>
                 </Card>
               </div>
