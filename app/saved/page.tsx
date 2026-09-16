@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
-import { Bookmark, BookmarkX } from "lucide-react";
+import { Bookmark, BookmarkX, Search, X } from "lucide-react";
 import { bookmarkService } from "@/services/bookmarkService";
 import { mapBackendPostToPostType, PostType, usePostStore } from "@/store/postStore";
 import { PageHeader, Badge, EmptyState, Loader } from "@/components/ui";
@@ -42,12 +42,23 @@ export default function SavedPostsPage() {
   }, []);
 
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const searchedPosts = savedPosts.filter((post) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      post.content?.toLowerCase().includes(q) ||
+      post.author?.name?.toLowerCase().includes(q) ||
+      post.author?.username?.toLowerCase().includes(q)
+    );
+  });
 
   const categoryCounts: Record<string, number> = {
-    all: savedPosts.length,
-    media: savedPosts.filter((p) => p.type === "image" || p.type === "video" || (p.images && p.images.length > 0)).length,
-    discussions: savedPosts.filter((p) => p.type === "text" || (!p.article && (!p.images || p.images.length === 0))).length,
-    articles: savedPosts.filter((p) => !!p.article).length,
+    all: searchedPosts.length,
+    media: searchedPosts.filter((p) => p.type === "image" || p.type === "video" || (p.images && p.images.length > 0)).length,
+    discussions: searchedPosts.filter((p) => p.type === "text" || (!p.article && (!p.images || p.images.length === 0))).length,
+    articles: searchedPosts.filter((p) => !!p.article).length,
   };
 
   const categories = [
@@ -68,7 +79,7 @@ export default function SavedPostsPage() {
     }
   };
 
-  const filteredPosts = savedPosts.filter((post) => {
+  const filteredPosts = searchedPosts.filter((post) => {
     if (selectedCategory === "all") return true;
     if (selectedCategory === "media") return post.type === "image" || post.type === "video" || (post.images && post.images.length > 0);
     if (selectedCategory === "discussions") return post.type === "text" || (!post.article && (!post.images || post.images.length === 0));
@@ -94,6 +105,26 @@ export default function SavedPostsPage() {
               badge={<Badge variant="warning">{savedPosts.length} Saved</Badge>}
             />
 
+            {/* Search Input Bar */}
+            <div className="relative">
+              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search saved posts by keyword, content, or author..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-9 py-2.5 rounded-2xl bg-[#111827] border border-[#1f2937] text-xs text-white placeholder:text-slate-500 outline-none focus:border-blue-500 transition shadow-inner"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+
             {/* CATEGORY FILTER TABS */}
             <div className="flex items-center gap-2 overflow-x-auto pb-1">
               {categories.map((cat) => {
@@ -103,7 +134,7 @@ export default function SavedPostsPage() {
                   <button
                     key={cat.id}
                     onClick={() => setSelectedCategory(cat.id)}
-                    className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap flex items-center gap-1.5 transition-all ${
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap flex items-center gap-1.5 transition-all cursor-pointer ${
                       isActive
                         ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20"
                         : "bg-slate-800/80 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-700/50"
@@ -129,9 +160,11 @@ export default function SavedPostsPage() {
             ) : filteredPosts.length === 0 ? (
               <EmptyState
                 icon={<Bookmark size={36} className="text-yellow-400 fill-yellow-400/20" />}
-                title="No bookmarked posts found"
+                title={searchQuery ? "No matching saved posts found" : "No bookmarked posts found"}
                 description={
-                  selectedCategory === "all"
+                  searchQuery
+                    ? `No saved items match "${searchQuery}". Try searching for another keyword or author.`
+                    : selectedCategory === "all"
                     ? "Save posts from your main feed or community channels to access them quickly anytime."
                     : `No saved posts match the "${selectedCategory}" category filter.`
                 }
