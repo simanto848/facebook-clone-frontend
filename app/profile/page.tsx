@@ -8,6 +8,7 @@ import { useAuthStore } from "@/store/authStore";
 import { userService } from "@/services/userService";
 import { bookmarkService } from "@/services/bookmarkService";
 import { friendshipService, FriendUser } from "@/services/friendshipService";
+import { mentionService } from "@/services/mentionService";
 import {
   BadgeInfo,
   Pencil,
@@ -31,6 +32,7 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<any>(null);
   const [userPosts, setUserPosts] = useState<PostType[]>([]);
   const [savedPosts, setSavedPosts] = useState<PostType[]>([]);
+  const [taggedPosts, setTaggedPosts] = useState<PostType[]>([]);
   const [friends, setFriends] = useState<FriendUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"posts" | "media" | "likes" | "saved" | "tagged">("posts");
@@ -119,6 +121,22 @@ export default function ProfilePage() {
         } catch {
           // Keep defaults
         }
+
+        // Fetch tagged mentions
+        try {
+          const mRes = await mentionService.getUserMentions();
+          const mItems = mRes.data?.mentions || mRes.data || mRes.mentions || mRes || [];
+          if (Array.isArray(mItems)) {
+            const mappedMentions = mItems
+              .map((m: any) => (m.post ? mapBackendPostToPostType(m.post) : null))
+              .filter(Boolean) as PostType[];
+            if (mappedMentions.length > 0) {
+              setTaggedPosts(mappedMentions);
+            }
+          }
+        } catch {
+          // Keep fallback
+        }
       } catch (err) {
         console.error("Profile load error:", err);
       } finally {
@@ -168,7 +186,7 @@ export default function ProfilePage() {
   const likedPosts = posts.filter((post) => !!post.userReaction);
 
   // Tagged posts
-  const taggedPosts = posts.filter(
+  const displayedTaggedPosts = taggedPosts.length > 0 ? taggedPosts : posts.filter(
     (post) => post.author.username !== profile?.username && post.content.toLowerCase().includes(profile?.username || "user")
   );
 
@@ -177,7 +195,7 @@ export default function ProfilePage() {
     if (activeTab === "media") list = mediaPosts;
     else if (activeTab === "likes") list = likedPosts;
     else if (activeTab === "saved") list = savedPosts;
-    else if (activeTab === "tagged") list = taggedPosts;
+    else if (activeTab === "tagged") list = displayedTaggedPosts;
 
     if (list.length === 0) {
       return (
@@ -202,7 +220,7 @@ export default function ProfilePage() {
     { id: "media", label: "Media", icon: ImageIcon, count: mediaPosts.length },
     { id: "likes", label: "Likes", icon: Heart, count: likedPosts.length },
     { id: "saved", label: "Saved", icon: Bookmark, count: savedPosts.length },
-    { id: "tagged", label: "Tagged", icon: UserCheck, count: taggedPosts.length },
+    { id: "tagged", label: "Tagged", icon: UserCheck, count: displayedTaggedPosts.length },
   ] as const;
 
   const displayName = profile?.displayName || profile?.name || authUser?.displayName || "Alex Morgan";
