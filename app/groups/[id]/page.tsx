@@ -2,13 +2,15 @@
 
 import React, { useState, useEffect, use } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Users, Shield, Plus, Check, UserPlus } from "lucide-react";
+import { ArrowLeft, Users, Shield, Plus, Check, UserPlus, Crown, MessageSquare, Info, ShieldCheck } from "lucide-react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
 import { usePostStore, mapBackendPostToPostType, PostType } from "@/store/postStore";
 import { useAuthStore } from "@/store/authStore";
+import { useChatStore } from "@/store/chatStore";
 import { groupService } from "@/services/groupService";
 import {
   Button,
@@ -30,12 +32,18 @@ export default function GroupDetailPage({ params }: PageProps) {
   const { id } = use(params);
   const { posts: storePosts } = usePostStore();
   const { user: authUser } = useAuthStore();
+  const { openChat } = useChatStore();
   const [group, setGroup] = useState<any>(null);
   const [groupPosts, setGroupPosts] = useState<PostType[]>([]);
   const [isJoined, setIsJoined] = useState(false);
   const [memberCount, setMemberCount] = useState(1);
   const [isJoinLoading, setIsJoinLoading] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Tabs and members
+  const [activeTab, setActiveTab] = useState<"feed" | "members" | "about">("feed");
+  const [members, setMembers] = useState<any[]>([]);
+  const [isMembersLoading, setIsMembersLoading] = useState(false);
 
   // Post creation modal
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -74,8 +82,24 @@ export default function GroupDetailPage({ params }: PageProps) {
     }
   };
 
+  const fetchMembers = async () => {
+    setIsMembersLoading(true);
+    try {
+      const res = await groupService.getGroupMembers(id);
+      const mItems = res.data?.members || res.members || res.data || [];
+      if (Array.isArray(mItems) && mItems.length > 0) {
+        setMembers(mItems);
+      }
+    } catch (err) {
+      console.error("Fetch group members error:", err);
+    } finally {
+      setIsMembersLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchGroupData();
+    fetchMembers();
   }, [id]);
 
   const handleCreatePost = async (e: React.FormEvent) => {
@@ -222,50 +246,175 @@ export default function GroupDetailPage({ params }: PageProps) {
                   </div>
                 </div>
 
-                {/* About Guild */}
-                <Card>
-                  <CardContent className="space-y-2 p-5">
-                    <h3 className="font-bold text-sm text-white flex items-center gap-2">
-                      <Shield size={16} className="text-blue-400" />
-                      About this Group
-                    </h3>
-                    <p className="text-xs text-slate-300 leading-relaxed">
-                      {group.description || "Welcome to our group community! Share code snippets, designs, and developer discussions."}
-                    </p>
-                  </CardContent>
-                </Card>
-
-                {/* Group Timeline Feed */}
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-bold text-sm text-white">Group Feed</h3>
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      leftIcon={<Plus size={14} />}
-                      onClick={() => setIsCreateOpen(true)}
-                    >
-                      New Post
-                    </Button>
-                  </div>
-
-                  {groupPosts.length === 0 ? (
-                    <EmptyState
-                      icon={<Users size={36} className="text-slate-500" />}
-                      title="No posts in this group yet"
-                      description="Be the first to share an update, question, or design in this community."
-                      action={
-                        <Button size="sm" onClick={() => setIsCreateOpen(true)}>
-                          Create First Post
-                        </Button>
-                      }
-                    />
-                  ) : (
-                    groupPosts.map((post) => (
-                      <PostCard key={post.id} post={post} />
-                    ))
-                  )}
+                {/* Navigation Tabs */}
+                <div className="flex items-center gap-2 border-b border-[#1f2937] pb-1">
+                  {[
+                    { key: "feed", label: "Group Feed", icon: Users },
+                    { key: "members", label: `Members (${memberCount})`, icon: ShieldCheck },
+                    { key: "about", label: "About", icon: Info },
+                  ].map((tab) => {
+                    const Icon = tab.icon;
+                    const isActive = activeTab === tab.key;
+                    return (
+                      <button
+                        key={tab.key}
+                        onClick={() => setActiveTab(tab.key as any)}
+                        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                          isActive
+                            ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20"
+                            : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+                        }`}
+                      >
+                        <Icon size={14} />
+                        {tab.label}
+                      </button>
+                    );
+                  })}
                 </div>
+
+                {/* Tab: Feed */}
+                {activeTab === "feed" && (
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-bold text-sm text-white">Group Feed</h3>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        leftIcon={<Plus size={14} />}
+                        onClick={() => setIsCreateOpen(true)}
+                      >
+                        New Post
+                      </Button>
+                    </div>
+
+                    {groupPosts.length === 0 ? (
+                      <EmptyState
+                        icon={<Users size={36} className="text-slate-500" />}
+                        title="No posts in this group yet"
+                        description="Be the first to share an update, question, or design in this community."
+                        action={
+                          <Button size="sm" onClick={() => setIsCreateOpen(true)}>
+                            Create First Post
+                          </Button>
+                        }
+                      />
+                    ) : (
+                      groupPosts.map((post) => (
+                        <PostCard key={post.id} post={post} />
+                      ))
+                    )}
+                  </div>
+                )}
+
+                {/* Tab: Members */}
+                {activeTab === "members" && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-bold text-sm text-white">Community Members</h3>
+                        <p className="text-xs text-slate-400">People who joined {group.name}</p>
+                      </div>
+                      <Badge variant="primary" size="sm">{memberCount} Total</Badge>
+                    </div>
+
+                    {isMembersLoading ? (
+                      <div className="py-12 text-center">
+                        <Loader label="Loading members..." />
+                      </div>
+                    ) : members.length === 0 ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="p-4 rounded-2xl bg-[#111827] border border-[#1f2937] flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <Avatar src={authUser?.avatar} name={authUser?.displayName || "Admin"} size="md" />
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-bold text-white">{authUser?.displayName || "Group Admin"}</span>
+                                <Badge variant="warning" size="sm" className="text-[10px] px-1.5 py-0 flex items-center gap-1">
+                                  <Crown size={10} /> Admin
+                                </Badge>
+                              </div>
+                              <span className="text-[11px] text-slate-400">@{authUser?.username || "creator"}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {members.map((m: any, idx: number) => {
+                          const u = m.user || m;
+                          const name = `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.name || u.username || "Member";
+                          const isAdmin = m.role === "ADMIN" || m.role === "OWNER" || idx === 0;
+                          const isMod = m.role === "MODERATOR";
+
+                          return (
+                            <div key={m.id || idx} className="p-4 rounded-2xl bg-[#111827] border border-[#1f2937] flex items-center justify-between transition-all hover:border-slate-700">
+                              <Link href={`/profile/${u.id || ""}`} className="flex items-center gap-3 flex-1 min-w-0">
+                                <Avatar src={u.avatar || u.profilePicture} name={name} size="md" />
+                                <div className="truncate">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-xs font-bold text-white hover:text-blue-400 truncate transition-colors">
+                                      {name}
+                                    </span>
+                                    {isAdmin && (
+                                      <Badge variant="warning" size="sm" className="text-[9px] px-1.5 py-0 shrink-0 flex items-center gap-1">
+                                        <Crown size={9} /> Admin
+                                      </Badge>
+                                    )}
+                                    {isMod && (
+                                      <Badge variant="secondary" size="sm" className="text-[9px] px-1.5 py-0 shrink-0">
+                                        Mod
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <span className="text-[11px] text-slate-400 block truncate">@{u.username || "member"}</span>
+                                </div>
+                              </Link>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => openChat({ id: u.id || `user-${idx}`, name, avatar: u.avatar || "" })}
+                                className="text-blue-400 hover:bg-blue-600/10 text-xs shrink-0 ml-2"
+                              >
+                                <MessageSquare size={13} />
+                              </Button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Tab: About */}
+                {activeTab === "about" && (
+                  <Card>
+                    <CardContent className="space-y-4 p-6">
+                      <div>
+                        <h3 className="font-bold text-sm text-white flex items-center gap-2 mb-2">
+                          <Shield size={16} className="text-blue-400" />
+                          About this Group
+                        </h3>
+                        <p className="text-xs text-slate-300 leading-relaxed">
+                          {group.description || "Welcome to our group community! Share code snippets, designs, and developer discussions."}
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-4 border-t border-[#1f2937]/80 text-xs">
+                        <div>
+                          <p className="text-slate-400 text-[11px]">Privacy</p>
+                          <p className="text-white font-medium capitalize">{group.privacy?.toLowerCase() || "Public"}</p>
+                        </div>
+                        <div>
+                          <p className="text-slate-400 text-[11px]">Category</p>
+                          <p className="text-white font-medium">{group.category || "Community"}</p>
+                        </div>
+                        <div>
+                          <p className="text-slate-400 text-[11px]">Total Members</p>
+                          <p className="text-white font-medium">{memberCount}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
 
                 {/* Create Group Post Modal */}
                 <Dialog

@@ -59,6 +59,12 @@ export const groupService = {
     return response.data;
   },
 
+  getGroupMembers: async (id: string, page = 1, limit = 20) => {
+    const axios = await useAxios();
+    const response = await axios.get(`/groups/${id}/members?page=${page}&limit=${limit}`);
+    return response.data;
+  },
+
   createGroupPost: async (id: string, content: string) => {
     const axios = await useAxios();
     const response = await axios.post(`/groups/${id}/posts`, { content });
