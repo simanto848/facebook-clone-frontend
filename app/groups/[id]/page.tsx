@@ -4,7 +4,7 @@ import React, { useState, useEffect, use } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Users, Shield, Plus, Check, UserPlus, Crown, MessageSquare, Info, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Users, Shield, Plus, Check, UserPlus, Crown, MessageSquare, Info, ShieldCheck, Share2 } from "lucide-react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
@@ -178,6 +178,20 @@ export default function GroupDetailPage({ params }: PageProps) {
     }
   };
 
+  const [copied, setCopied] = useState(false);
+
+  const handleShareGroup = async () => {
+    try {
+      if (typeof window !== "undefined") {
+        await navigator.clipboard.writeText(window.location.href);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2500);
+      }
+    } catch (err) {
+      console.error("Failed to copy link:", err);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#0f172a] text-white">
       <div className="flex">
@@ -233,16 +247,28 @@ export default function GroupDetailPage({ params }: PageProps) {
                       </div>
                     </div>
 
-                    <Button
-                      variant={isJoined ? "secondary" : "primary"}
-                      size="sm"
-                      leftIcon={isJoined ? <Check size={14} /> : <UserPlus size={14} />}
-                      loading={isJoinLoading}
-                      onClick={handleMembershipClick}
-                      className={isJoined ? "" : "bg-blue-600 hover:bg-blue-500"}
-                    >
-                      {isJoined ? "Joined Guild" : "Join Guild"}
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        leftIcon={copied ? <Check size={14} className="text-emerald-400" /> : <Share2 size={14} />}
+                        onClick={handleShareGroup}
+                        className="border border-[#1f2937] text-slate-200 hover:text-white"
+                      >
+                        {copied ? "Copied!" : "Share"}
+                      </Button>
+
+                      <Button
+                        variant={isJoined ? "secondary" : "primary"}
+                        size="sm"
+                        leftIcon={isJoined ? <Check size={14} /> : <UserPlus size={14} />}
+                        loading={isJoinLoading}
+                        onClick={handleMembershipClick}
+                        className={isJoined ? "" : "bg-blue-600 hover:bg-blue-500"}
+                      >
+                        {isJoined ? "Joined Guild" : "Join Guild"}
+                      </Button>
+                    </div>
                   </div>
                 </div>
 
