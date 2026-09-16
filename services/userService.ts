@@ -8,6 +8,13 @@ export interface UpdateProfilePayload {
   coverPhoto?: string;
   location?: string;
   website?: string;
+  isPrivate?: boolean;
+  showOnlineStatus?: boolean;
+}
+
+export interface ChangePasswordPayload {
+  currentPassword: string;
+  newPassword: string;
 }
 
 export const userService = {
@@ -74,6 +81,18 @@ export const userService = {
   getFollowing: async (id: string) => {
     const axios = await useAxios();
     const response = await axios.get(`/users/${id}/following`);
+    return response.data;
+  },
+
+  changePassword: async (payload: ChangePasswordPayload) => {
+    const axios = await useAxios();
+    const response = await axios.post("/users/me/change-password", payload);
+    return response.data;
+  },
+
+  deleteAccount: async () => {
+    const axios = await useAxios();
+    const response = await axios.delete("/users/me");
     return response.data;
   },
 };
