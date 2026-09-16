@@ -31,6 +31,7 @@ export default function BrandPageDetailPage({ params }: PageProps) {
   const [pagePosts, setPagePosts] = useState<PostType[]>([]);
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
+  const [likeLoading, setLikeLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [postContent, setPostContent] = useState("");
   const [postImageUrl, setPostImageUrl] = useState("");
@@ -66,14 +67,24 @@ export default function BrandPageDetailPage({ params }: PageProps) {
   }, [id]);
 
   const handleToggleLike = async () => {
-    const nextLiked = !isLiked;
+    if (likeLoading) return;
+    const prevLiked = isLiked;
+    const prevCount = likesCount;
+
+    const nextLiked = !prevLiked;
     setIsLiked(nextLiked);
-    setLikesCount((prev) => (nextLiked ? prev + 1 : Math.max(0, prev - 1)));
+    setLikesCount(nextLiked ? prevCount + 1 : Math.max(0, prevCount - 1));
+    setLikeLoading(true);
 
     try {
       await pageService.toggleLike(id);
     } catch (err) {
       console.error("Toggle page like error:", err);
+      // Revert on error
+      setIsLiked(prevLiked);
+      setLikesCount(prevCount);
+    } finally {
+      setLikeLoading(false);
     }
   };
 
@@ -214,6 +225,7 @@ export default function BrandPageDetailPage({ params }: PageProps) {
                           variant={isLiked ? "secondary" : "primary"}
                           size="md"
                           leftIcon={<ThumbsUp size={16} className={isLiked ? "text-blue-400 fill-blue-400" : ""} />}
+                          loading={likeLoading}
                           onClick={handleToggleLike}
                           className="flex-1 sm:flex-none"
                         >
