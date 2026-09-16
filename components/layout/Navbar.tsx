@@ -87,6 +87,8 @@ export default function Navbar() {
             text: n.message || n.title || "sent a notification.",
             time: new Date(n.createdAt || Date.now()).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
             unread: !n.isRead,
+            targetId: n.targetId || n.entityId,
+            targetType: n.targetType || n.type,
           };
         });
 
@@ -442,6 +444,16 @@ export default function Navbar() {
                             setUnreadNotifCount((c) => Math.max(0, c - 1));
                             notificationService.markAsRead([notif.id]).catch(() => {});
                           }
+                          setActiveDropdown(null);
+                          if (notif.targetId) {
+                            if (notif.targetType?.toLowerCase().includes("post") || notif.targetType?.toLowerCase().includes("comment")) {
+                              router.push(`/post/${notif.targetId}`);
+                            } else if (notif.targetType?.toLowerCase().includes("friend")) {
+                              router.push("/connections");
+                            } else if (notif.targetType?.toLowerCase().includes("message")) {
+                              router.push("/messages");
+                            }
+                          }
                         }}
                         className={`flex items-start gap-3 p-3.5 hover:bg-[#1f2937]/50 transition cursor-pointer group/notif ${
                           notif.unread ? "bg-blue-500/5" : ""
@@ -481,7 +493,13 @@ export default function Navbar() {
                 </div>
 
                 <div className="border-t border-[#1f2937] bg-[#1f2937]/20 p-2.5 text-center">
-                  <button className="text-xs font-semibold text-slate-400 hover:text-white transition">
+                  <button
+                    onClick={() => {
+                      setActiveDropdown(null);
+                      router.push("/settings?tab=notifications");
+                    }}
+                    className="text-xs font-semibold text-slate-400 hover:text-white transition"
+                  >
                     View All Notifications
                   </button>
                 </div>
