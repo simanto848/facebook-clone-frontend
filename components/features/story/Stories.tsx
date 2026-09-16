@@ -262,15 +262,27 @@ export default function Stories() {
           />
 
           {newStoryType === "text" ? (
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-300 block">Story Text</label>
-              <textarea
-                placeholder="What is on your mind?"
-                value={newStoryText}
-                onChange={(e) => setNewStoryText(e.target.value)}
-                className="w-full h-24 rounded-xl border border-[#374151] bg-[#1f2937] p-3 text-xs text-white outline-none resize-none focus:border-blue-500"
-                required
-              />
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-300 block">Story Text</label>
+                <textarea
+                  placeholder="What is on your mind?"
+                  value={newStoryText}
+                  onChange={(e) => setNewStoryText(e.target.value)}
+                  className="w-full h-24 rounded-xl border border-[#374151] bg-[#1f2937] p-3 text-xs text-white outline-none resize-none focus:border-blue-500"
+                  required
+                />
+              </div>
+
+              {/* Text Card Preview */}
+              {newStoryText.trim() && (
+                <div className="space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Card Preview</span>
+                  <div className="h-28 rounded-xl bg-linear-to-br from-indigo-900 via-purple-900 to-slate-900 p-3 flex items-center justify-center text-center">
+                    <p className="text-xs font-bold text-white line-clamp-3">{newStoryText}</p>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="space-y-3">
@@ -281,12 +293,70 @@ export default function Stories() {
                 onChange={(e) => setNewStoryMedia(e.target.value)}
                 required
               />
+
+              {/* Preset Image Suggestions */}
+              {newStoryType === "image" && (
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-semibold text-slate-400 uppercase">Quick Presets:</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      { label: "Night City", url: "https://images.unsplash.com/photo-1519608487953-e999c86e7455?w=800" },
+                      { label: "Workspace", url: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=800" },
+                      { label: "Cyberpunk", url: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800" },
+                    ].map((preset) => (
+                      <button
+                        key={preset.label}
+                        type="button"
+                        onClick={() => setNewStoryMedia(preset.url)}
+                        className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[11px] border border-slate-700 transition"
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Media Thumbnail Preview */}
+              {newStoryMedia.trim() && (
+                <div className="space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Media Preview</span>
+                  <div className="relative h-28 w-full rounded-xl overflow-hidden bg-black border border-slate-700">
+                    {newStoryType === "video" ? (
+                      <video src={newStoryMedia} className="h-full w-full object-cover" />
+                    ) : (
+                      <img
+                        src={newStoryMedia}
+                        alt="Preview"
+                        className="h-full w-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = "none";
+                        }}
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
+
               <Input
                 label="Caption (Optional)"
                 placeholder="Add a short caption..."
                 value={newStoryText}
                 onChange={(e) => setNewStoryText(e.target.value)}
               />
+            </div>
+          )}
+
+          {/* Upload Progress Indicator */}
+          {isSubmittingStory && (
+            <div className="space-y-1.5 p-3 rounded-xl bg-blue-600/10 border border-blue-500/20">
+              <div className="flex justify-between text-xs font-semibold text-blue-400">
+                <span>Publishing story to friends...</span>
+                <span>Uploading...</span>
+              </div>
+              <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                <div className="h-full bg-blue-500 animate-pulse rounded-full w-4/5 transition-all duration-500" />
+              </div>
             </div>
           )}
 
