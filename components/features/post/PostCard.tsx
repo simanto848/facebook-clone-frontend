@@ -13,7 +13,7 @@ import PostVideo from "./PostVideo";
 import PostComments from "./PostComments";
 import ReportModal from "./ReportModal";
 import ReactionsModal from "./ReactionsModal";
-import { Button } from "@/components/ui";
+import { Dialog, Button } from "@/components/ui";
 import { reactionService } from "@/services/reactionService";
 import { bookmarkService } from "@/services/bookmarkService";
 import { postService } from "@/services/postService";
@@ -40,6 +40,7 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [showReactionsModal, setShowReactionsModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -181,7 +182,7 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
           isSaved={!!post.saved}
           isPinned={!!post.pinned}
           onEdit={() => setIsEditing(true)}
-          onDelete={handleDeletePost}
+          onDelete={() => setShowDeleteConfirm(true)}
           onPin={() => togglePinPost(post.id)}
           onSave={handleToggleSave}
           onHide={() => alert("Post hidden.")}
@@ -430,6 +431,38 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
         isOpen={showReactionsModal}
         onClose={() => setShowReactionsModal(false)}
       />
+
+      {/* Delete Confirmation Modal */}
+      <Dialog
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        title="Delete Post?"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-slate-300">
+            Are you sure you want to delete this post? This action cannot be undone and will permanently remove it from your timeline.
+          </p>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowDeleteConfirm(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={async () => {
+                setShowDeleteConfirm(false);
+                await handleDeletePost();
+              }}
+            >
+              Delete
+            </Button>
+          </div>
+        </div>
+      </Dialog>
 
       {/* Render Nested Comments section */}
       {showComments && (
