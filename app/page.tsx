@@ -9,6 +9,7 @@ import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import { usePostStore, mapBackendPostToPostType } from "@/store/postStore";
 import { postService } from "@/services/postService";
+import { feedService } from "@/services/feedService";
 import { ShieldAlert, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui";
 
@@ -68,14 +69,26 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const fetchFeed = async (showLoading = true) => {
+  const fetchFeed = async (activeFilter = filter, showLoading = true) => {
     if (showLoading) setIsLoading(true);
     try {
-      const res = await postService.getFeed(1, 25);
-      const items = res.data?.posts || res.data || res.posts || res;
+      let res;
+      if (activeFilter === "trending") {
+        res = await feedService.getTrendingFeed({ page: 1, pageSize: 25 });
+      } else {
+        res = await feedService.getChronologicalFeed({ page: 1, pageSize: 25 });
+      }
+      const items = res?.data?.posts || res?.data || res?.posts || res;
       if (Array.isArray(items) && items.length > 0) {
         const mapped = items.map(mapBackendPostToPostType);
         setPosts(mapped);
+      } else {
+        // Fallback to postService feed if needed
+        const fallbackRes = await postService.getFeed(1, 25);
+        const fallbackItems = fallbackRes.data?.posts || fallbackRes.data || fallbackRes.posts || fallbackRes;
+        if (Array.isArray(fallbackItems) && fallbackItems.length > 0) {
+          setPosts(fallbackItems.map(mapBackendPostToPostType));
+        }
       }
     } catch (err) {
       console.warn("Backend feed unavailable or returned error, using fallback feed:", err);
@@ -86,12 +99,12 @@ export default function Home() {
   };
 
   useEffect(() => {
-    fetchFeed();
-  }, []);
+    fetchFeed(filter, false);
+  }, [filter]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await fetchFeed(false);
+    await fetchFeed(filter, false);
   };
 
   const getFilteredPosts = () => {
