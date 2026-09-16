@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { MessageSquare, Share2, Send, Heart, ShieldAlert, Globe, Users, Lock } from "lucide-react";
+import { MessageSquare, Share2, Send, Heart, ShieldAlert, Globe, Users, Lock, EyeOff } from "lucide-react";
 import { PostType, usePostStore } from "@/store/postStore";
 import PostDropdown from "./PostDropdown";
 import ReactionPicker, { reactionsList } from "./ReactionPicker";
@@ -41,6 +41,7 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [showReactionsModal, setShowReactionsModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isHidden, setIsHidden] = useState(false);
 
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,6 +125,30 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
     }
   };
 
+  if (isHidden) {
+    return (
+      <div className="flex items-center justify-between rounded-2xl border border-[#1f2937] bg-[#111827]/60 p-4 text-slate-300 transition-all">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-slate-800 text-slate-400">
+            <EyeOff size={18} />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-white">Post hidden</p>
+            <p className="text-xs text-slate-400">This post will not appear in your feed.</p>
+          </div>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setIsHidden(false)}
+          className="text-xs border-slate-700 hover:bg-slate-800 text-blue-400"
+        >
+          Undo
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <article
       className={`
@@ -185,7 +210,7 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
           onDelete={() => setShowDeleteConfirm(true)}
           onPin={() => togglePinPost(post.id)}
           onSave={handleToggleSave}
-          onHide={() => alert("Post hidden.")}
+          onHide={() => setIsHidden(true)}
           onReport={() => setIsReportOpen(true)}
         />
       </div>
