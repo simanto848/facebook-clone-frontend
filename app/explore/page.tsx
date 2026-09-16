@@ -38,10 +38,38 @@ export default function ExplorePage() {
   const [matchedPosts, setMatchedPosts] = useState<PostType[]>([]);
   const [matchedGroups, setMatchedGroups] = useState<any[]>([]);
   const [matchedPages, setMatchedPages] = useState<any[]>([]);
+  const [matchedHashtags, setMatchedHashtags] = useState<any[]>([]);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [followedUserIds, setFollowedUserIds] = useState<Set<string>>(new Set());
   const [joinedGroupIds, setJoinedGroupIds] = useState<Set<string>>(new Set());
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  const handleSelectHashtag = async (tag: string) => {
+    setSelectedTag(tag);
+    setSearchQuery("");
+    setSearching(true);
+    try {
+      const res = await hashtagService.getHashtagPosts(tag);
+      const items = res?.data?.posts || res?.data || res?.posts || res || [];
+      if (Array.isArray(items) && items.length > 0) {
+        setMatchedPosts(items.map(mapBackendPostToPostType));
+      } else {
+        // Filter local posts with the tag
+        const filtered = posts.filter(
+          (p) => p.content.toLowerCase().includes(`#${tag.toLowerCase()}`) || p.content.toLowerCase().includes(tag.toLowerCase())
+        );
+        setMatchedPosts(filtered);
+      }
+    } catch (e) {
+      console.warn("Could not fetch hashtag posts from backend, using fallback filter:", e);
+      const filtered = posts.filter(
+        (p) => p.content.toLowerCase().includes(`#${tag.toLowerCase()}`) || p.content.toLowerCase().includes(tag.toLowerCase())
+      );
+      setMatchedPosts(filtered);
+    } finally {
+      setSearching(false);
+    }
+  };
 
   useEffect(() => {
     try {
@@ -96,6 +124,7 @@ export default function ExplorePage() {
       setMatchedPosts([]);
       setMatchedGroups([]);
       setMatchedPages([]);
+      setMatchedHashtags([]);
       setSearching(false);
       return;
     }
@@ -139,6 +168,24 @@ export default function ExplorePage() {
           setMatchedPages(data.pages);
         } else {
           setMatchedPages([]);
+        }
+
+        // Query hashtags
+        const tagClean = searchQuery.replace(/^#/, "").trim();
+        if (tagClean) {
+          try {
+            const hashRes = await hashtagService.searchHashtags(tagClean);
+            const hashData = hashRes?.data || hashRes || [];
+            if (Array.isArray(hashData)) {
+              setMatchedHashtags(hashData);
+            } else {
+              setMatchedHashtags([]);
+            }
+          } catch {
+            setMatchedHashtags([]);
+          }
+        } else {
+          setMatchedHashtags([]);
         }
 
         saveRecentSearch(searchQuery);
@@ -331,10 +378,9 @@ export default function ExplorePage() {
                         onClick={() => {
                           if (isActive) {
                             setSelectedTag(null);
-                            setSearchQuery("");
+                            setMatchedPosts([]);
                           } else {
-                            setSelectedTag(tag);
-                            setSearchQuery("");
+                            handleSelectHashtag(tag);
                           }
                         }}
                       >
