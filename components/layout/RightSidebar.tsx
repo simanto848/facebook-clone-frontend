@@ -4,6 +4,7 @@ import Link from "next/link";
 import React, { useState, useEffect } from "react";
 import { hashtagService } from "@/services/hashtagService";
 import { friendshipService } from "@/services/friendshipService";
+import { activeStatusService } from "@/services/activeStatusService";
 import { useChatStore } from "@/store/chatStore";
 
 interface FriendItem {
@@ -11,26 +12,33 @@ interface FriendItem {
   name: string;
   username?: string;
   image: string;
+  isOnline?: boolean;
 }
 
 const fallbackFriends: FriendItem[] = [
   {
+    id: "u1",
     name: "Sarah Wilson",
     username: "sarahw",
     image:
       "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80",
+    isOnline: true,
   },
   {
+    id: "u2",
     name: "Alex Johnson",
     username: "alexj",
     image:
       "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&q=80",
+    isOnline: false,
   },
   {
+    id: "u3",
     name: "Emma Brown",
     username: "emmab",
     image:
       "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&q=80",
+    isOnline: true,
   },
 ];
 
@@ -83,12 +91,36 @@ const RightSidebar = () => {
           const mapped: FriendItem[] = items.map((f: any) => {
             const u = f.friend || f;
             return {
-              id: u.id,
+              id: u.id || u._id,
               name: `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.username || "Friend",
               username: u.username || "user",
               image: u.profilePicture || u.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80",
+              isOnline: false,
             };
           });
+
+          // Fetch active presence for friends
+          const validIds = mapped.map((m) => m.id).filter(Boolean) as string[];
+          if (validIds.length > 0) {
+            try {
+              const statusRes = await activeStatusService.getBatchStatus(validIds);
+              const statuses: any[] = statusRes?.data || statusRes || [];
+              if (Array.isArray(statuses)) {
+                const statusMap = new Map<string, boolean>();
+                statuses.forEach((s) => {
+                  if (s.userId) statusMap.set(s.userId, !!s.isOnline);
+                });
+                mapped.forEach((m) => {
+                  if (m.id && statusMap.has(m.id)) {
+                    m.isOnline = statusMap.get(m.id);
+                  }
+                });
+              }
+            } catch {
+              // Ignore presence fetch errors gracefully
+            }
+          }
+
           setFriendsList(mapped);
         }
       } catch (err) {
@@ -173,14 +205,20 @@ const RightSidebar = () => {
                     height={36}
                     className="h-9 w-9 rounded-full object-cover"
                   />
-                  <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-[#111827] bg-green-500" />
+                  <span
+                    className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-[#111827] ${
+                      friend.isOnline ? "bg-emerald-500 ring-2 ring-emerald-500/20" : "bg-slate-500"
+                    }`}
+                  />
                 </div>
 
                 <div className="min-w-0">
                   <h3 className="text-xs font-semibold text-slate-200 truncate group-hover:text-white transition">
                     {friend.name}
                   </h3>
-                  <p className="text-[10px] text-green-400 font-medium">Active now</p>
+                  <p className={`text-[10px] font-medium ${friend.isOnline ? "text-emerald-400" : "text-slate-500"}`}>
+                    {friend.isOnline ? "Active now" : "Offline"}
+                  </p>
                 </div>
               </Link>
 
