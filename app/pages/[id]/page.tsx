@@ -11,6 +11,7 @@ import ReportModal from "@/components/features/post/ReportModal";
 import { pageService } from "@/services/pageService";
 import { mapBackendPostToPostType, PostType, usePostStore } from "@/store/postStore";
 import { useChatStore } from "@/store/chatStore";
+import { useAuthStore } from "@/store/authStore";
 import {
   Button,
   Badge,
@@ -29,6 +30,7 @@ export default function BrandPageDetailPage({ params }: PageProps) {
   const router = useRouter();
   const { id } = use(params);
   const { openChat } = useChatStore();
+  const { user } = useAuthStore();
 
   const [page, setPage] = useState<any>(null);
   const [pagePosts, setPagePosts] = useState<PostType[]>([]);
@@ -40,7 +42,9 @@ export default function BrandPageDetailPage({ params }: PageProps) {
   const [postContent, setPostContent] = useState("");
   const [postImageUrl, setPostImageUrl] = useState("");
   const [showImageInput, setShowImageInput] = useState(false);
+  const [postCategory, setPostCategory] = useState<"Announcement" | "Update" | "Discussion">("Announcement");
   const [posting, setPosting] = useState(false);
+  const [postSuccess, setPostSuccess] = useState(false);
   const [postError, setPostError] = useState<string | null>(null);
   const [isReportOpen, setIsReportOpen] = useState(false);
 
@@ -113,11 +117,12 @@ export default function BrandPageDetailPage({ params }: PageProps) {
 
     setPosting(true);
     setPostError(null);
-    const content = postContent.trim();
+    const trimmed = postContent.trim();
+    const finalContent = postCategory !== "Update" ? `[${postCategory}] ${trimmed}` : trimmed;
     const media = postImageUrl.trim() ? [postImageUrl.trim()] : [];
 
     try {
-      const res = await pageService.createPagePost(id, content);
+      const res = await pageService.createPagePost(id, finalContent);
       const newP = res?.data || res;
       let createdPost: PostType;
       if (newP && newP.id) {
@@ -134,7 +139,7 @@ export default function BrandPageDetailPage({ params }: PageProps) {
             username: page?.name?.toLowerCase().replace(/\s+/g, "") || "page",
             avatar: page?.avatar || "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=200",
           },
-          content,
+          content: finalContent,
           images: media,
           createdAt: "Just now",
           visibility: "public",
@@ -144,9 +149,17 @@ export default function BrandPageDetailPage({ params }: PageProps) {
         };
       }
       setPagePosts((prev) => [createdPost, ...prev]);
+      try {
+        const currentStorePosts = usePostStore.getState().posts;
+        usePostStore.getState().setPosts([createdPost, ...currentStorePosts]);
+      } catch {
+        // ignore
+      }
       setPostContent("");
       setPostImageUrl("");
       setShowImageInput(false);
+      setPostSuccess(true);
+      setTimeout(() => setPostSuccess(false), 3500);
     } catch (err: any) {
       console.error("Create page post error:", err);
       setPostError(err.response?.data?.message || err.message || "Failed to publish page post");
@@ -322,23 +335,43 @@ export default function BrandPageDetailPage({ params }: PageProps) {
                     {/* Page Post Creation Form */}
                     <div className="rounded-2xl border border-[#1f2937] bg-[#111827] p-4 space-y-3">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
-                          <Plus size={14} className="text-blue-400" />
-                          <span>Publish an update as {page.name}</span>
+                        <div className="flex items-center gap-2">
+                          <Avatar
+                            src={page.avatar || "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=200"}
+                            name={page.name}
+                            size="sm"
+                          />
+                          <div>
+                            <span className="text-xs font-bold text-white block">Post as {page.name}</span>
+                            <span className="text-[10px] text-slate-400">Official Page Administrator</span>
+                          </div>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => setShowImageInput(!showImageInput)}
-                          className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg border transition ${
-                            showImageInput
-                              ? "border-blue-500/50 bg-blue-500/10 text-blue-400"
-                              : "border-[#1f2937] bg-[#0f172a] text-slate-400 hover:text-white"
-                          }`}
-                        >
-                          <ImageIcon size={13} />
-                          <span>{showImageInput ? "Remove Photo" : "Add Photo"}</span>
-                        </button>
+
+                        {/* Category selection tag */}
+                        <div className="flex items-center gap-1 bg-[#0f172a] p-1 rounded-lg border border-[#1f2937]">
+                          {(["Announcement", "Update", "Discussion"] as const).map((cat) => (
+                            <button
+                              key={cat}
+                              type="button"
+                              onClick={() => setPostCategory(cat)}
+                              className={`px-2 py-0.5 rounded text-[10px] font-medium transition ${
+                                postCategory === cat
+                                  ? "bg-blue-600 text-white shadow-xs"
+                                  : "text-slate-400 hover:text-white"
+                              }`}
+                            >
+                              {cat}
+                            </button>
+                          ))}
+                        </div>
                       </div>
+
+                      {postSuccess && (
+                        <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-xs flex items-center gap-2">
+                          <Check size={14} />
+                          <span>Page post published successfully!</span>
+                        </div>
+                      )}
 
                       {postError && (
                         <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl text-xs">
@@ -347,14 +380,61 @@ export default function BrandPageDetailPage({ params }: PageProps) {
                       )}
 
                       <form onSubmit={handleCreatePost} className="space-y-3">
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
-                            placeholder={`Share an announcement or update on ${page.name}...`}
+                        <div>
+                          <textarea
+                            rows={3}
+                            placeholder={`Share an official ${postCategory.toLowerCase()} or news update for ${page.name}...`}
                             value={postContent}
                             onChange={(e) => setPostContent(e.target.value)}
-                            className="flex-1 rounded-xl border border-[#1f2937] bg-[#0f172a] px-4 py-2.5 text-xs text-white outline-none placeholder:text-slate-500 focus:border-blue-500 transition"
+                            className="w-full rounded-xl border border-[#1f2937] bg-[#0f172a] px-3.5 py-2.5 text-xs text-white outline-none placeholder:text-slate-500 focus:border-blue-500 transition resize-none"
                           />
+                          <div className="flex items-center justify-between mt-1 text-[10px] text-slate-500 px-1">
+                            <span>Markdown & links supported</span>
+                            <span>{postContent.length}/1000</span>
+                          </div>
+                        </div>
+
+                        {showImageInput && (
+                          <div className="flex items-center gap-2 p-2 rounded-xl bg-[#0f172a] border border-[#1f2937]">
+                            <ImageIcon size={14} className="text-slate-400 ml-1" />
+                            <input
+                              type="text"
+                              placeholder="Image URL (e.g. https://images.unsplash.com/...)"
+                              value={postImageUrl}
+                              onChange={(e) => setPostImageUrl(e.target.value)}
+                              className="flex-1 bg-transparent text-xs text-white outline-none placeholder:text-slate-500"
+                            />
+                            {postImageUrl && (
+                              <div className="flex items-center gap-2">
+                                <div className="relative h-7 w-7 rounded overflow-hidden border border-blue-500 shrink-0">
+                                  <Image src={postImageUrl} alt="preview" fill sizes="28px" className="object-cover" />
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => setPostImageUrl("")}
+                                  className="text-slate-400 hover:text-red-400 p-1"
+                                >
+                                  <X size={12} />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        <div className="flex items-center justify-between pt-1 border-t border-[#1f2937]/50">
+                          <button
+                            type="button"
+                            onClick={() => setShowImageInput(!showImageInput)}
+                            className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border transition ${
+                              showImageInput || postImageUrl
+                                ? "border-blue-500/50 bg-blue-500/10 text-blue-400"
+                                : "border-[#1f2937] bg-[#0f172a] text-slate-400 hover:text-white"
+                            }`}
+                          >
+                            <ImageIcon size={13} />
+                            <span>{showImageInput ? "Hide Photo URL" : "Attach Image"}</span>
+                          </button>
+
                           <Button
                             type="submit"
                             variant="primary"
@@ -363,26 +443,9 @@ export default function BrandPageDetailPage({ params }: PageProps) {
                             loading={posting}
                             leftIcon={<Send size={13} />}
                           >
-                            {posting ? "Posting..." : "Publish"}
+                            {posting ? "Publishing..." : "Publish Post"}
                           </Button>
                         </div>
-
-                        {showImageInput && (
-                          <div className="flex items-center gap-2 pt-1">
-                            <input
-                              type="text"
-                              placeholder="Image URL (e.g. https://images.unsplash.com/...)"
-                              value={postImageUrl}
-                              onChange={(e) => setPostImageUrl(e.target.value)}
-                              className="flex-1 rounded-xl border border-[#1f2937] bg-[#0f172a] px-3.5 py-2 text-xs text-white outline-none placeholder:text-slate-500 focus:border-blue-500 transition"
-                            />
-                            {postImageUrl && (
-                              <div className="relative h-9 w-9 rounded-lg overflow-hidden border border-blue-500 shrink-0">
-                                <Image src={postImageUrl} alt="preview" fill sizes="36px" className="object-cover" />
-                              </div>
-                            )}
-                          </div>
-                        )}
                       </form>
                     </div>
 
