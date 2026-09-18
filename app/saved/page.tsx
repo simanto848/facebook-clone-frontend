@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
-import { Bookmark, BookmarkX, Search, X, Tag } from "lucide-react";
+import { Bookmark, BookmarkX, Search, X, Tag, Download, Check } from "lucide-react";
 import { bookmarkService } from "@/services/bookmarkService";
 import { mapBackendPostToPostType, PostType, usePostStore } from "@/store/postStore";
 import { PageHeader, Badge, EmptyState, Loader } from "@/components/ui";
@@ -12,7 +12,36 @@ import { PageHeader, Badge, EmptyState, Loader } from "@/components/ui";
 export default function SavedPostsPage() {
   const [savedPosts, setSavedPosts] = useState<(PostType & { bookmarkId?: string; category?: string })[]>([]);
   const [loading, setLoading] = useState(true);
+  const [copiedExport, setCopiedExport] = useState(false);
   const { toggleSavePost } = usePostStore();
+
+  const handleExportBookmarks = () => {
+    if (savedPosts.length === 0) return;
+    const exportData = savedPosts.map((p) => ({
+      id: p.id,
+      author: p.author?.name || p.author?.username || "Unknown",
+      content: p.content,
+      category: p.category || "discussions",
+      type: p.type,
+      mediaCount: p.images?.length || 0,
+      createdAt: p.createdAt,
+      exportedAt: new Date().toISOString(),
+    }));
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `facebook-bookmarks-export-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setCopiedExport(true);
+    setTimeout(() => setCopiedExport(false), 3000);
+  };
 
   const fetchBookmarks = async () => {
     setLoading(true);
@@ -120,7 +149,22 @@ export default function SavedPostsPage() {
               title="Saved Posts"
               description="Access your bookmarked articles, discussions, and saved timeline posts."
               icon={<Bookmark size={22} className="fill-yellow-400 text-yellow-400" />}
-              badge={<Badge variant="warning">{savedPosts.length} Saved</Badge>}
+              badge={
+                <div className="flex items-center gap-2">
+                  <Badge variant="warning">{savedPosts.length} Saved</Badge>
+                  {savedPosts.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleExportBookmarks}
+                      className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer"
+                      title="Export bookmarks as JSON"
+                    >
+                      {copiedExport ? <Check size={13} className="text-emerald-400" /> : <Download size={13} />}
+                      <span>{copiedExport ? "Exported!" : "Export"}</span>
+                    </button>
+                  )}
+                </div>
+              }
             />
 
             {/* Search Input Bar */}
