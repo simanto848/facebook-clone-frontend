@@ -80,8 +80,22 @@ export default function ReelsPage() {
   const router = useRouter();
   const [reels, setReels] = useState<ReelItem[]>(DEFAULT_REELS);
   const [activeReelIndex, setActiveReelIndex] = useState(0);
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
+  const [soundBadge, setSoundBadge] = useState<"muted" | "unmuted" | null>(null);
   const [isPlaying, setIsPlaying] = useState(true);
+
+  const toggleSound = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const nextMuted = !isMuted;
+    setIsMuted(nextMuted);
+    if (videoRef.current) {
+      videoRef.current.muted = nextMuted;
+    }
+    setSoundBadge(nextMuted ? "muted" : "unmuted");
+    setTimeout(() => {
+      setSoundBadge(null);
+    }, 1200);
+  };
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const currentReel = reels[activeReelIndex] || reels[0];
@@ -343,8 +357,10 @@ export default function ReelsPage() {
                   {activeReelIndex + 1} / {reels.length}
                 </span>
                 <button
-                  onClick={() => setIsMuted(!isMuted)}
+                  type="button"
+                  onClick={toggleSound}
                   className="p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition cursor-pointer"
+                  title={isMuted ? "Unmute audio" : "Mute audio"}
                 >
                   {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
                 </button>
@@ -368,6 +384,25 @@ export default function ReelsPage() {
                 <div className="absolute inset-0 flex items-center justify-center bg-black/30">
                   <div className="h-16 w-16 rounded-full bg-black/60 flex items-center justify-center text-white">
                     <Play size={28} className="fill-current ml-1" />
+                  </div>
+                </div>
+              )}
+
+              {/* Sound Status Animated Pill */}
+              {soundBadge && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
+                  <div className="flex items-center gap-2 rounded-full bg-black/80 px-4 py-2 text-xs font-semibold text-white shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-90 duration-200">
+                    {soundBadge === "muted" ? (
+                      <>
+                        <VolumeX size={18} className="text-red-400" />
+                        <span>Muted</span>
+                      </>
+                    ) : (
+                      <>
+                        <Volume2 size={18} className="text-emerald-400" />
+                        <span>Sound On</span>
+                      </>
+                    )}
                   </div>
                 </div>
               )}
