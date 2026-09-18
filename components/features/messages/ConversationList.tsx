@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Search, Users, Plus } from "lucide-react";
+import { Search, Users, X } from "lucide-react";
 import Image from "next/image";
 import { useChatStore } from "@/store/chatStore";
 import { CreateGroupModal } from "../chat/CreateGroupModal";
@@ -9,15 +9,26 @@ import { CreateGroupModal } from "../chat/CreateGroupModal";
 export default function ConversationList() {
   const { conversations, activeConversationId, setActiveConversationId, fetchConversations } = useChatStore();
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterTab, setFilterTab] = useState<"all" | "unread" | "online">("all");
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
 
   useEffect(() => {
     fetchConversations();
-  }, []);
+  }, [fetchConversations]);
 
-  const filteredConversations = conversations.filter((c) =>
-    c.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const unreadCount = conversations.filter((c) => c.hasUnread).length;
+  const onlineCount = conversations.filter((c) => c.online).length;
+
+  const filteredConversations = conversations.filter((c) => {
+    if (filterTab === "unread" && !c.hasUnread) return false;
+    if (filterTab === "online" && !c.online) return false;
+
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    const matchesName = c.name.toLowerCase().includes(q);
+    const matchesMessage = c.messages.some((m) => m.text?.toLowerCase().includes(q));
+    return matchesName || matchesMessage;
+  });
 
   return (
     <div className="h-full">
@@ -35,15 +46,60 @@ export default function ConversationList() {
           </button>
         </div>
 
-        <div className="flex items-center rounded-xl bg-[#1f2937] px-4">
-          <Search size={18} className="text-slate-400" />
+        {/* Search input with clear button */}
+        <div className="flex items-center rounded-xl bg-[#1f2937] px-4 relative">
+          <Search size={16} className="text-slate-400 shrink-0" />
 
           <input
-            placeholder="Search messages..."
+            placeholder="Search messages or people..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-11 flex-1 bg-transparent px-3 text-white outline-none text-xs"
+            className="h-10 flex-1 bg-transparent px-3 text-white outline-none text-xs placeholder:text-slate-500"
           />
+
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              className="text-slate-400 hover:text-white p-1 transition cursor-pointer"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
+        {/* Filter Pills */}
+        <div className="flex items-center gap-2">
+          {[
+            { id: "all" as const, label: "All", count: conversations.length },
+            { id: "unread" as const, label: "Unread", count: unreadCount },
+            { id: "online" as const, label: "Online", count: onlineCount },
+          ].map((tab) => {
+            const isActive = filterTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setFilterTab(tab.id)}
+                className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  isActive
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "bg-[#1f2937]/70 text-slate-400 hover:text-white hover:bg-[#1f2937]"
+                }`}
+              >
+                <span>{tab.label}</span>
+                {tab.count > 0 && (
+                  <span
+                    className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                      isActive ? "bg-white/20 text-white" : "bg-slate-700 text-slate-400"
+                    }`}
+                  >
+                    {tab.count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -56,7 +112,15 @@ export default function ConversationList() {
         {filteredConversations.length === 0 ? (
           <div className="p-8 text-center text-slate-400 space-y-2">
             <p className="text-xs font-semibold text-slate-300">No conversations found</p>
-            <p className="text-[11px] text-slate-500">Search for friends or send a message to start chatting.</p>
+            <p className="text-[11px] text-slate-500">
+              {searchQuery
+                ? `No messages or contacts match "${searchQuery}".`
+                : filterTab === "unread"
+                ? "You're all caught up! No unread conversations."
+                : filterTab === "online"
+                ? "None of your friends are currently active."
+                : "Search for friends or send a message to start chatting."}
+            </p>
           </div>
         ) : (
           filteredConversations.map((user) => {
@@ -95,6 +159,10 @@ export default function ConversationList() {
                     {lastMsg ? `${lastMsg.sender === "me" ? "You: " : ""}${lastMsg.text}` : "No messages yet"}
                   </p>
                 </div>
+
+                {user.hasUnread && (
+                  <span className="h-2.5 w-2.5 rounded-full bg-blue-500 shrink-0 self-center" />
+                )}
               </button>
             );
           })
