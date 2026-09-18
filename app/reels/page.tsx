@@ -15,12 +15,16 @@ import {
   ArrowLeft,
   ChevronUp,
   ChevronDown,
+  X,
+  Send,
+  Loader2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import { postService } from "@/services/postService";
 import { reactionService } from "@/services/reactionService";
+import { commentService } from "@/services/commentService";
 import { friendshipService } from "@/services/friendshipService";
 
 interface ReelItem {
@@ -156,6 +160,56 @@ export default function ReelsPage() {
   const [shareToast, setShareToast] = useState<string | null>(null);
   const [followedAuthors, setFollowedAuthors] = useState<Record<string, boolean>>({});
   const [showReactionPicker, setShowReactionPicker] = useState(false);
+  const [showComments, setShowComments] = useState(false);
+  const [reelComments, setReelComments] = useState<any[]>([]);
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [newComment, setNewComment] = useState("");
+  const [submittingComment, setSubmittingComment] = useState(false);
+
+  const handleOpenComments = async () => {
+    setShowComments(true);
+    setLoadingComments(true);
+    try {
+      const res = await commentService.getPostComments(currentReel.id, 1, 30);
+      const list = res?.data?.comments || res?.data || (Array.isArray(res) ? res : []);
+      setReelComments(list);
+    } catch (err) {
+      console.warn("Failed to load reel comments:", err);
+      setReelComments([]);
+    } finally {
+      setLoadingComments(false);
+    }
+  };
+
+  const handleAddComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newComment.trim() || submittingComment) return;
+    const text = newComment.trim();
+    setSubmittingComment(true);
+    try {
+      const created = await commentService.createComment({
+        postId: currentReel.id,
+        content: text,
+      });
+      const commentObj = created?.data || created || {
+        id: `local-${Date.now()}`,
+        content: text,
+        createdAt: new Date().toISOString(),
+        user: { name: "You", avatar: "" },
+      };
+      setReelComments((prev) => [commentObj, ...prev]);
+      setNewComment("");
+      setReels((prev) =>
+        prev.map((r) =>
+          r.id === currentReel.id ? { ...r, comments: r.comments + 1 } : r
+        )
+      );
+    } catch (err) {
+      console.warn("Failed to post comment:", err);
+    } finally {
+      setSubmittingComment(false);
+    }
+  };
 
   const selectReaction = async (reelId: string, reactionType: "LIKE" | "LOVE" | "HAHA" | "WOW") => {
     const target = reels.find((r) => r.id === reelId);
@@ -404,7 +458,12 @@ export default function ReelsPage() {
 
               {/* Comments Button */}
               <div className="flex flex-col items-center gap-1">
-                <button className="flex h-12 w-12 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70 transition cursor-pointer shadow-lg">
+                <button
+                  type="button"
+                  onClick={handleOpenComments}
+                  className="flex h-12 w-12 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70 transition cursor-pointer shadow-lg"
+                  title="View and add comments"
+                >
                   <MessageCircle size={22} />
                 </button>
                 <span className="text-[11px] font-bold drop-shadow-md">{currentReel.comments}</span>
@@ -461,6 +520,73 @@ export default function ReelsPage() {
                 <span className="truncate">{currentReel.musicTitle}</span>
               </div>
             </div>
+
+            {/* Reel Comments Drawer */}
+            {showComments && (
+              <div className="absolute inset-x-0 bottom-0 top-1/4 z-30 flex flex-col rounded-t-2xl bg-slate-900/95 backdrop-blur-md border-t border-slate-700 text-white shadow-2xl animate-in slide-in-from-bottom-5">
+                <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <MessageCircle size={16} className="text-blue-400" />
+                    <span className="text-sm font-semibold">Comments ({currentReel.comments})</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowComments(false)}
+                    className="rounded-full p-1 text-slate-400 hover:bg-slate-800 hover:text-white transition cursor-pointer"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                  {loadingComments ? (
+                    <div className="flex flex-col items-center justify-center py-8 text-slate-400 gap-2">
+                      <Loader2 size={24} className="animate-spin text-blue-500" />
+                      <span className="text-xs">Loading comments...</span>
+                    </div>
+                  ) : reelComments.length === 0 ? (
+                    <div className="py-8 text-center text-xs text-slate-400">
+                      No comments yet. Be the first to comment!
+                    </div>
+                  ) : (
+                    reelComments.map((c, i) => (
+                      <div key={c.id || i} className="flex items-start gap-2.5 text-xs">
+                        <div className="h-7 w-7 rounded-full overflow-hidden bg-slate-700 shrink-0 mt-0.5">
+                          <img
+                            src={c.user?.avatar || c.author?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100"}
+                            alt=""
+                            className="h-full w-full object-cover"
+                          />
+                        </div>
+                        <div className="flex-1 rounded-xl bg-slate-800/80 px-3 py-2 border border-slate-700/50">
+                          <span className="font-semibold text-slate-200 block text-[11px]">
+                            {c.user?.name || c.author?.name || "User"}
+                          </span>
+                          <p className="text-slate-300 mt-0.5 text-xs break-words">{c.content}</p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <form onSubmit={handleAddComment} className="flex items-center gap-2 border-t border-slate-800 p-3 bg-slate-900">
+                  <input
+                    type="text"
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    placeholder="Add a comment..."
+                    className="flex-1 rounded-full bg-slate-800 px-4 py-2 text-xs text-white placeholder-slate-400 border border-slate-700 focus:outline-none focus:border-blue-500"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!newComment.trim() || submittingComment}
+                    className="rounded-full bg-blue-600 p-2 text-white hover:bg-blue-500 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {submittingComment ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                  </button>
+                </form>
+              </div>
+            )}
           </div>
         </main>
 
