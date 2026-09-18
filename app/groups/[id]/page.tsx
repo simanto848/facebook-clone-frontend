@@ -4,7 +4,7 @@ import React, { useState, useEffect, use } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Users, Shield, Plus, Check, UserPlus, Crown, MessageSquare, Info, ShieldCheck, Share2, Flag } from "lucide-react";
+import { ArrowLeft, Users, Shield, Plus, Check, UserPlus, Crown, MessageSquare, Info, ShieldCheck, Share2, Flag, Search, X } from "lucide-react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
@@ -45,6 +45,7 @@ export default function GroupDetailPage({ params }: PageProps) {
   const [activeTab, setActiveTab] = useState<"feed" | "members" | "about">("feed");
   const [members, setMembers] = useState<any[]>([]);
   const [isMembersLoading, setIsMembersLoading] = useState(false);
+  const [memberSearchQuery, setMemberSearchQuery] = useState("");
 
   // Post creation modal
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -347,12 +348,33 @@ export default function GroupDetailPage({ params }: PageProps) {
                 {/* Tab: Members */}
                 {activeTab === "members" && (
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div>
                         <h3 className="font-bold text-sm text-white">Community Members</h3>
                         <p className="text-xs text-slate-400">People who joined {group.name}</p>
                       </div>
                       <Badge variant="primary" size="sm">{memberCount} Total</Badge>
+                    </div>
+
+                    {/* Member Search Bar */}
+                    <div className="relative">
+                      <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="text"
+                        placeholder="Search members by name, username, or role..."
+                        value={memberSearchQuery}
+                        onChange={(e) => setMemberSearchQuery(e.target.value)}
+                        className="w-full pl-9 pr-8 py-2 rounded-xl bg-[#111827] border border-[#1f2937] text-xs text-white placeholder:text-slate-500 outline-none focus:border-blue-500 transition shadow-inner"
+                      />
+                      {memberSearchQuery && (
+                        <button
+                          type="button"
+                          onClick={() => setMemberSearchQuery("")}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                        >
+                          <X size={14} />
+                        </button>
+                      )}
                     </div>
 
                     {isMembersLoading ? (
@@ -376,50 +398,72 @@ export default function GroupDetailPage({ params }: PageProps) {
                           </div>
                         </div>
                       </div>
-                    ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {members.map((m: any, idx: number) => {
-                          const u = m.user || m;
-                          const name = `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.name || u.username || "Member";
-                          const isAdmin = m.role === "ADMIN" || m.role === "OWNER" || idx === 0;
-                          const isMod = m.role === "MODERATOR";
+                    ) : (() => {
+                      const filteredMembers = members.filter((m: any, idx: number) => {
+                        if (!memberSearchQuery.trim()) return true;
+                        const q = memberSearchQuery.toLowerCase();
+                        const u = m.user || m;
+                        const name = `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.name || u.displayName || u.username || "";
+                        const username = u.username || "";
+                        const role = (m.role || (idx === 0 ? "admin" : "member")).toLowerCase();
+                        return name.toLowerCase().includes(q) || username.toLowerCase().includes(q) || role.includes(q);
+                      });
 
-                          return (
-                            <div key={m.id || idx} className="p-4 rounded-2xl bg-[#111827] border border-[#1f2937] flex items-center justify-between transition-all hover:border-slate-700">
-                              <Link href={`/profile/${u.id || ""}`} className="flex items-center gap-3 flex-1 min-w-0">
-                                <Avatar src={u.avatar || u.profilePicture} name={name} size="md" />
-                                <div className="truncate">
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="text-xs font-bold text-white hover:text-blue-400 truncate transition-colors">
-                                      {name}
-                                    </span>
-                                    {isAdmin && (
-                                      <Badge variant="warning" size="sm" className="text-[9px] px-1.5 py-0 shrink-0 flex items-center gap-1">
-                                        <Crown size={9} /> Admin
-                                      </Badge>
-                                    )}
-                                    {isMod && (
-                                      <Badge variant="secondary" size="sm" className="text-[9px] px-1.5 py-0 shrink-0">
-                                        Mod
-                                      </Badge>
-                                    )}
+                      if (filteredMembers.length === 0) {
+                        return (
+                          <EmptyState
+                            icon={<Users size={32} className="text-slate-500" />}
+                            title="No matching members"
+                            description={`No group members match "${memberSearchQuery}". Try a different name.`}
+                          />
+                        );
+                      }
+
+                      return (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {filteredMembers.map((m: any, idx: number) => {
+                            const u = m.user || m;
+                            const name = `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.name || u.username || "Member";
+                            const isAdmin = m.role === "ADMIN" || m.role === "OWNER" || idx === 0;
+                            const isMod = m.role === "MODERATOR";
+
+                            return (
+                              <div key={m.id || idx} className="p-4 rounded-2xl bg-[#111827] border border-[#1f2937] flex items-center justify-between transition-all hover:border-slate-700">
+                                <Link href={`/profile/${u.id || ""}`} className="flex items-center gap-3 flex-1 min-w-0">
+                                  <Avatar src={u.avatar || u.profilePicture} name={name} size="md" />
+                                  <div className="truncate">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="text-xs font-bold text-white hover:text-blue-400 truncate transition-colors">
+                                        {name}
+                                      </span>
+                                      {isAdmin && (
+                                        <Badge variant="warning" size="sm" className="text-[9px] px-1.5 py-0 shrink-0 flex items-center gap-1">
+                                          <Crown size={9} /> Admin
+                                        </Badge>
+                                      )}
+                                      {isMod && (
+                                        <Badge variant="secondary" size="sm" className="text-[9px] px-1.5 py-0 shrink-0">
+                                          Mod
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <span className="text-[11px] text-slate-400 block truncate">@{u.username || "member"}</span>
                                   </div>
-                                  <span className="text-[11px] text-slate-400 block truncate">@{u.username || "member"}</span>
-                                </div>
-                              </Link>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => openChat({ id: u.id || `user-${idx}`, name, avatar: u.avatar || "" })}
-                                className="text-blue-400 hover:bg-blue-600/10 text-xs shrink-0 ml-2"
-                              >
-                                <MessageSquare size={13} />
-                              </Button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
+                                </Link>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => openChat({ id: u.id || `user-${idx}`, name, avatar: u.avatar || "" })}
+                                  className="text-blue-400 hover:bg-blue-600/10 text-xs shrink-0 ml-2"
+                                >
+                                  <MessageSquare size={13} />
+                                </Button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
 
