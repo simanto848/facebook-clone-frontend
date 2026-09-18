@@ -6,7 +6,7 @@ import Link from "next/link";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
-import { Hash, Flame, Bell, Loader2, Sparkles, TrendingUp, Check, Send, Plus, Image as ImageIcon } from "lucide-react";
+import { Hash, Flame, Bell, Loader2, Sparkles, TrendingUp, Check, Send, Plus, Clock, Image as ImageIcon } from "lucide-react";
 import { usePostStore, mapBackendPostToPostType, PostType } from "@/store/postStore";
 import { useAuthStore } from "@/store/authStore";
 import { hashtagService } from "@/services/hashtagService";
@@ -23,6 +23,7 @@ export default function HashtagPage() {
   const [followerCount, setFollowerCount] = useState(1420);
   const [followFeedback, setFollowFeedback] = useState<string | null>(null);
   const [hashtagPosts, setHashtagPosts] = useState<PostType[]>([]);
+  const [sortBy, setSortBy] = useState<"top" | "latest">("latest");
   const [trendingTopics, setTrendingTopics] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [newPostText, setNewPostText] = useState("");
@@ -174,6 +175,29 @@ export default function HashtagPage() {
     fetchTagPosts();
   }, [tag, posts]);
 
+  const sortedHashtagPosts = [...hashtagPosts].sort((a, b) => {
+    if (sortBy === "top") {
+      const reactionsA =
+        (a.reactions?.like || 0) +
+        (a.reactions?.love || 0) +
+        (a.reactions?.haha || 0) +
+        (a.reactions?.wow || 0) +
+        (a.reactions?.sad || 0) +
+        (a.reactions?.angry || 0);
+      const reactionsB =
+        (b.reactions?.like || 0) +
+        (b.reactions?.love || 0) +
+        (b.reactions?.haha || 0) +
+        (b.reactions?.wow || 0) +
+        (b.reactions?.sad || 0) +
+        (b.reactions?.angry || 0);
+      return reactionsB - reactionsA;
+    }
+    const timeA = new Date(a.createdAt).getTime() || 0;
+    const timeB = new Date(b.createdAt).getTime() || 0;
+    return timeB - timeA;
+  });
+
   return (
     <div className="min-h-screen bg-[#0f172a] text-white">
       <div className="flex">
@@ -295,11 +319,39 @@ export default function HashtagPage() {
               </form>
             </div>
 
-            <div className="flex items-center gap-2 border-b border-[#1f2937] pb-3">
-              <Flame size={16} className="text-blue-400" />
-              <span className="text-xs font-bold tracking-wider uppercase text-slate-400">
-                Trending #{tag} Posts
-              </span>
+            <div className="flex items-center justify-between border-b border-[#1f2937] pb-3">
+              <div className="flex items-center gap-2">
+                <Flame size={16} className="text-blue-400" />
+                <span className="text-xs font-bold tracking-wider uppercase text-slate-400">
+                  #{tag} Posts ({hashtagPosts.length})
+                </span>
+              </div>
+              <div className="flex items-center gap-1 bg-[#111827] border border-[#1f2937] rounded-xl p-1 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setSortBy("latest")}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-semibold transition cursor-pointer ${
+                    sortBy === "latest"
+                      ? "bg-blue-600 text-white shadow-xs"
+                      : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  <Clock size={12} />
+                  <span>Latest</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSortBy("top")}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-semibold transition cursor-pointer ${
+                    sortBy === "top"
+                      ? "bg-blue-600 text-white shadow-xs"
+                      : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  <TrendingUp size={12} />
+                  <span>Top</span>
+                </button>
+              </div>
             </div>
 
             {loading ? (
@@ -307,7 +359,7 @@ export default function HashtagPage() {
                 <Loader2 size={32} className="animate-spin text-blue-500" />
                 <span className="text-xs">Loading posts tagged with #{tag}...</span>
               </div>
-            ) : hashtagPosts.length === 0 ? (
+            ) : sortedHashtagPosts.length === 0 ? (
               <EmptyState
                 icon={<Hash size={36} className="text-slate-400" />}
                 title={`No posts found for #${tag}`}
@@ -315,7 +367,7 @@ export default function HashtagPage() {
               />
             ) : (
               <div className="space-y-6">
-                {hashtagPosts.map((post) => (
+                {sortedHashtagPosts.map((post) => (
                   <PostCard key={post.id} post={post} />
                 ))}
               </div>
