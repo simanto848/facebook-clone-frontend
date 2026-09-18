@@ -496,7 +496,7 @@ export default function Navbar() {
                   <button
                     onClick={() => {
                       setActiveDropdown(null);
-                      router.push("/settings?tab=notifications");
+                      router.push("/notifications");
                     }}
                     className="text-xs font-semibold text-slate-400 hover:text-white transition"
                   >
