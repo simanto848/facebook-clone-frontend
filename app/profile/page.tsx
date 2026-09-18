@@ -23,6 +23,8 @@ import {
   MapPin,
   Globe,
   Camera,
+  Share2,
+  Check,
 } from "lucide-react";
 import Image from "next/image";
 import { Dialog, Input, Button, Avatar, Loader } from "@/components/ui";
@@ -38,6 +40,16 @@ export default function ProfilePage() {
   const [friends, setFriends] = useState<FriendUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"posts" | "media" | "likes" | "saved" | "tagged">("posts");
+  const [copiedProfile, setCopiedProfile] = useState(false);
+
+  const handleShareProfile = () => {
+    if (typeof window !== "undefined") {
+      const shareUrl = `${window.location.origin}/profile/${profile?.username || authUser?.username || "alex"}`;
+      navigator.clipboard.writeText(shareUrl);
+      setCopiedProfile(true);
+      setTimeout(() => setCopiedProfile(false), 2500);
+    }
+  };
 
   // Avatar Modal State
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
@@ -352,13 +364,25 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <button
-          onClick={() => setIsEditOpen(true)}
-          className="flex items-center gap-2 rounded-full bg-blue-600 px-5 py-2 text-xs font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-600/10 cursor-pointer"
-        >
-          <Pencil size={14} />
-          Edit Profile
-        </button>
+        <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={handleShareProfile}
+            className="flex items-center gap-1.5 rounded-full bg-[#1f2937] px-4 py-2 text-xs font-bold text-slate-200 hover:text-white hover:bg-[#2e3b4e] transition border border-slate-700 cursor-pointer"
+            title="Share profile link"
+          >
+            {copiedProfile ? <Check size={14} className="text-emerald-400" /> : <Share2 size={14} />}
+            <span>{copiedProfile ? "Link Copied!" : "Share Profile"}</span>
+          </button>
+
+          <button
+            onClick={() => setIsEditOpen(true)}
+            className="flex items-center gap-2 rounded-full bg-blue-600 px-5 py-2 text-xs font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-600/10 cursor-pointer"
+          >
+            <Pencil size={14} />
+            Edit Profile
+          </button>
+        </div>
       </div>
 
       {/* Profile Navigation Tabs Bar */}
