@@ -55,11 +55,21 @@ const samplePages: BrandPage[] = [
   },
 ];
 
+const PAGE_CATEGORIES = [
+  "All",
+  "Software & Technology",
+  "Design & Arts",
+  "Business & Finance",
+  "Community",
+  "Education",
+];
+
 export default function PagesHubPage() {
   const [pages, setPages] = useState<BrandPage[]>(samplePages);
   const [likedMap, setLikedMap] = useState<Record<string, boolean>>({});
   const [copiedPageId, setCopiedPageId] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<string>("all");
+  const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [name, setName] = useState("");
@@ -227,8 +237,6 @@ export default function PagesHubPage() {
     { id: "all", label: "All Pages" },
     { id: "liked", label: "Liked Pages" },
     { id: "owned", label: "Your Pages" },
-    { id: "tech", label: "Technology" },
-    { id: "design", label: "Design" },
   ];
 
   const filteredPages = pages.filter((p) => {
@@ -239,10 +247,12 @@ export default function PagesHubPage() {
       const matchCat = p.category.toLowerCase().includes(q);
       if (!matchName && !matchDesc && !matchCat) return false;
     }
+    if (selectedCategory !== "All") {
+      const catLower = selectedCategory.toLowerCase();
+      if (!p.category.toLowerCase().includes(catLower)) return false;
+    }
     if (activeFilter === "liked") return likedMap[p.id] ?? p.isLiked;
     if (activeFilter === "owned") return p.isOwner;
-    if (activeFilter === "tech") return p.category.toLowerCase().includes("tech") || p.category.toLowerCase().includes("software");
-    if (activeFilter === "design") return p.category.toLowerCase().includes("design") || p.category.toLowerCase().includes("art");
     return true;
   });
 
@@ -291,6 +301,26 @@ export default function PagesHubPage() {
               onChange={setActiveFilter}
               variant="line"
             />
+
+            {/* Category Filter Pills */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+              {PAGE_CATEGORIES.map((cat) => {
+                const isSelected = selectedCategory === cat;
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(isSelected && cat !== "All" ? "All" : cat)}
+                    className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
+                      isSelected
+                        ? "bg-blue-600 text-white shadow-sm shadow-blue-500/20"
+                        : "bg-[#1e293b] text-slate-400 hover:text-slate-200 hover:bg-[#334155]"
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                );
+              })}
+            </div>
 
             {filteredPages.length === 0 ? (
               <div className="py-16 text-center space-y-3 rounded-2xl border border-dashed border-[#1f2937] bg-[#111827]/40 p-8">
