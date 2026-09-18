@@ -25,6 +25,7 @@ import {
   Camera,
   Share2,
   Check,
+  X,
 } from "lucide-react";
 import Image from "next/image";
 import { Dialog, Input, Button, Avatar, Loader } from "@/components/ui";
@@ -41,6 +42,45 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"posts" | "media" | "likes" | "saved" | "tagged">("posts");
   const [copiedProfile, setCopiedProfile] = useState(false);
+  const [skills, setSkills] = useState<string[]>(["UI/UX", "Fullstack", "React 19", "TypeScript"]);
+  const [newSkillInput, setNewSkillInput] = useState("");
+  const [isAddingSkill, setIsAddingSkill] = useState(false);
+
+  useEffect(() => {
+    try {
+      const storedSkills = localStorage.getItem("user_profile_skills");
+      if (storedSkills) {
+        setSkills(JSON.parse(storedSkills));
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const handleAddSkill = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = newSkillInput.trim();
+    if (!trimmed || skills.includes(trimmed)) return;
+    const updated = [...skills, trimmed];
+    setSkills(updated);
+    setNewSkillInput("");
+    setIsAddingSkill(false);
+    try {
+      localStorage.setItem("user_profile_skills", JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleRemoveSkill = (skillToRemove: string) => {
+    const updated = skills.filter((s) => s !== skillToRemove);
+    setSkills(updated);
+    try {
+      localStorage.setItem("user_profile_skills", JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
+  };
 
   const handleShareProfile = () => {
     if (typeof window !== "undefined") {
@@ -432,16 +472,58 @@ export default function ProfilePage() {
                 {bio}
               </p>
 
-              <div className="mt-5 flex flex-wrap gap-2">
-                <span className="rounded-full bg-[#1f2937] px-3 py-1 text-[10px] font-semibold text-slate-300">
-                  UI/UX
-                </span>
-                <span className="rounded-full bg-[#1f2937] px-3 py-1 text-[10px] font-semibold text-slate-300">
-                  Fullstack
-                </span>
-                <span className="rounded-full bg-[#1f2937] px-3 py-1 text-[10px] font-semibold text-slate-300">
-                  React 19
-                </span>
+              <div className="mt-5 flex flex-wrap items-center gap-1.5">
+                {skills.map((skill) => (
+                  <span
+                    key={skill}
+                    className="inline-flex items-center gap-1 rounded-full bg-[#1f2937] pl-3 pr-2 py-1 text-[10px] font-semibold text-slate-300 border border-slate-700/50 group"
+                  >
+                    <span>{skill}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveSkill(skill)}
+                      className="text-slate-500 hover:text-rose-400 transition cursor-pointer p-0.5"
+                      title="Remove skill"
+                    >
+                      <X size={10} />
+                    </button>
+                  </span>
+                ))}
+
+                {isAddingSkill ? (
+                  <form onSubmit={handleAddSkill} className="inline-flex items-center gap-1">
+                    <input
+                      type="text"
+                      value={newSkillInput}
+                      onChange={(e) => setNewSkillInput(e.target.value)}
+                      placeholder="Skill..."
+                      className="h-6 w-20 rounded-full bg-[#111827] border border-blue-500 px-2 text-[10px] text-white outline-none"
+                      autoFocus
+                    />
+                    <button
+                      type="submit"
+                      className="h-6 w-6 rounded-full bg-blue-600 hover:bg-blue-500 flex items-center justify-center text-white text-xs cursor-pointer"
+                    >
+                      <Plus size={12} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingSkill(false)}
+                      className="h-6 w-6 rounded-full bg-slate-700 hover:bg-slate-600 flex items-center justify-center text-slate-300 text-xs cursor-pointer"
+                    >
+                      <X size={12} />
+                    </button>
+                  </form>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setIsAddingSkill(true)}
+                    className="inline-flex items-center gap-1 rounded-full bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 px-2.5 py-1 text-[10px] font-semibold border border-blue-500/30 transition cursor-pointer"
+                  >
+                    <Plus size={11} />
+                    <span>Add</span>
+                  </button>
+                )}
               </div>
             </div>
 
