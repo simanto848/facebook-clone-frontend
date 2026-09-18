@@ -50,6 +50,25 @@ export const eventService = {
     return response.data;
   },
 
+  updateEvent: async (id: string, data: Partial<CreateEventInput>) => {
+    const axios = await useAxios();
+    const payload: Record<string, any> = {};
+    if (data.title !== undefined) payload.title = data.title;
+    if (data.description !== undefined) payload.description = data.description;
+    if (data.location !== undefined) payload.location = data.location;
+    if (data.startTime || data.startDate) {
+      payload.startTime = data.startTime || new Date(data.startDate!).toISOString();
+    }
+    if (data.endTime || data.endDate) {
+      payload.endTime = data.endTime || new Date(data.endDate!).toISOString();
+    }
+    if (data.coverUrl || data.coverImage) {
+      payload.coverUrl = data.coverUrl || data.coverImage;
+    }
+    const response = await axios.patch(`/events/${id}`, payload);
+    return response.data;
+  },
+
   deleteEvent: async (id: string) => {
     const axios = await useAxios();
     const response = await axios.delete(`/events/${id}`);
