@@ -14,6 +14,7 @@ export default function SecuritySection() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [twoFactor, setTwoFactor] = useState(false);
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -71,6 +72,7 @@ export default function SecuritySection() {
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
+      setIsPasswordModalOpen(false);
     } catch (err: any) {
       const msg = err.response?.data?.message || err.message || "Failed to update password";
       setErrorMsg(msg);
@@ -84,7 +86,7 @@ export default function SecuritySection() {
       title="Security & Authentication"
       description="Protect your account with strong passwords and 2FA authentication."
     >
-      <form onSubmit={handlePasswordSubmit} className="space-y-6">
+      <div className="space-y-6">
         {successMsg && (
           <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center gap-2">
             <CheckCircle2 size={16} className="shrink-0" />
@@ -99,7 +101,67 @@ export default function SecuritySection() {
           </div>
         )}
 
-        <div className="space-y-4 max-w-md">
+        {/* Password Status Card */}
+        <div className="p-4 rounded-2xl bg-[#111827] border border-[#1f2937] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <h3 className="text-sm font-bold text-white">Login Password</h3>
+            <p className="text-xs text-slate-400">
+              Ensure your account is using a long, random password to stay secure.
+            </p>
+            <p className="text-[11px] text-slate-500">Last changed: Recently</p>
+          </div>
+
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => {
+              setCurrentPassword("");
+              setNewPassword("");
+              setConfirmPassword("");
+              setErrorMsg(null);
+              setIsPasswordModalOpen(true);
+            }}
+            className="shrink-0 border border-[#1f2937] text-white"
+          >
+            Change Password
+          </Button>
+        </div>
+
+        {/* 2FA Card */}
+        <div className="p-4 rounded-2xl bg-[#111827] border border-[#1f2937] space-y-4">
+          <Switch
+            label="Two-Factor Authentication (2FA)"
+            description="Require an authentication code when signing in from unrecognized browsers or mobile apps."
+            checked={twoFactor}
+            onChange={(e) => setTwoFactor(e.target.checked)}
+          />
+        </div>
+
+        {/* Delete Account Trigger */}
+        <div className="flex items-center justify-between pt-4 border-t border-[#1f2937]">
+          <Button
+            variant="danger"
+            type="button"
+            onClick={() => {
+              setDeleteConfirmationText("");
+              setDeleteError(null);
+              setIsDeleteModalOpen(true);
+            }}
+          >
+            Delete Account
+          </Button>
+        </div>
+      </div>
+
+      {/* CHANGE PASSWORD MODAL */}
+      <Dialog
+        isOpen={isPasswordModalOpen}
+        onClose={() => setIsPasswordModalOpen(false)}
+        title="Change Password"
+        description="Update your current password to maintain account security."
+        size="md"
+      >
+        <form onSubmit={handlePasswordSubmit} className="space-y-4 pt-2">
           <Input
             label="Current Password"
             type="password"
@@ -107,6 +169,7 @@ export default function SecuritySection() {
             value={currentPassword}
             onChange={(e) => setCurrentPassword(e.target.value)}
             required
+            className="bg-[#0f172a] border-[#1f2937]"
           />
 
           <PasswordStrength
@@ -123,36 +186,36 @@ export default function SecuritySection() {
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
+            className="bg-[#0f172a] border-[#1f2937]"
           />
-        </div>
 
-        <div className="pt-4 border-t border-[#1f2937] space-y-4">
-          <Switch
-            label="Two-Factor Authentication (2FA)"
-            description="Require a verification code when signing in from an unknown device."
-            checked={twoFactor}
-            onChange={(e) => setTwoFactor(e.target.checked)}
-          />
-        </div>
+          {errorMsg && (
+            <div className="p-2.5 rounded-lg bg-rose-500/20 text-rose-300 text-xs">
+              {errorMsg}
+            </div>
+          )}
 
-        <div className="flex items-center justify-between pt-4 border-t border-[#1f2937]">
-          <Button
-            variant="danger"
-            type="button"
-            onClick={() => {
-              setDeleteConfirmationText("");
-              setDeleteError(null);
-              setIsDeleteModalOpen(true);
-            }}
-          >
-            Delete Account
-          </Button>
-
-          <Button variant="primary" type="submit" loading={loading}>
-            Update Security
-          </Button>
-        </div>
-      </form>
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#1f2937]">
+            <Button
+              variant="ghost"
+              size="sm"
+              type="button"
+              onClick={() => setIsPasswordModalOpen(false)}
+              disabled={loading}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              type="submit"
+              loading={loading}
+            >
+              Update Password
+            </Button>
+          </div>
+        </form>
+      </Dialog>
 
       {/* DELETE ACCOUNT CONFIRMATION MODAL */}
       <Dialog
