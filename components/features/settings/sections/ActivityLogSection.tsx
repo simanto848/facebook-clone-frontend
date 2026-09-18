@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Trash2, History, AlertTriangle } from "lucide-react";
+import { Trash2, History, AlertTriangle, Download, Check } from "lucide-react";
 import { activityLogService } from "@/services/activityLogService";
 import { DataTable, Button, Dialog, type Column } from "@/components/ui";
 
@@ -59,6 +59,22 @@ export default function ActivityLogSection() {
 
   const [isClearing, setIsClearing] = useState(false);
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
+  const [exported, setExported] = useState(false);
+
+  const handleExport = () => {
+    if (logs.length === 0) return;
+    const blob = new Blob([JSON.stringify(logs, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `activity-log-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setExported(true);
+    setTimeout(() => setExported(false), 2500);
+  };
 
   const handleDelete = async (id: string) => {
     setLogs((prev) => prev.filter((l) => l.id !== id));
@@ -155,14 +171,24 @@ export default function ActivityLogSection() {
         </div>
 
         {logs.length > 0 && (
-          <Button
-            size="sm"
-            variant="danger"
-            leftIcon={<Trash2 size={13} />}
-            onClick={() => setIsClearModalOpen(true)}
-          >
-            Clear Log
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="secondary"
+              leftIcon={exported ? <Check size={13} className="text-emerald-400" /> : <Download size={13} />}
+              onClick={handleExport}
+            >
+              {exported ? "Exported" : "Export JSON"}
+            </Button>
+            <Button
+              size="sm"
+              variant="danger"
+              leftIcon={<Trash2 size={13} />}
+              onClick={() => setIsClearModalOpen(true)}
+            >
+              Clear Log
+            </Button>
+          </div>
         )}
       </div>
 
