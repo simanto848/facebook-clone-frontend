@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
-import { Sparkles, Calendar, Share2, Check, Users, Heart } from "lucide-react";
+import { Sparkles, Calendar, Share2, Check, Users, Heart, Search, X } from "lucide-react";
 import Image from "next/image";
 import { memoryService } from "@/services/memoryService";
 import { postService } from "@/services/postService";
@@ -19,6 +19,7 @@ import {
   Avatar,
   Dialog,
   Tabs,
+  Input,
 } from "@/components/ui";
 
 interface MemoryItem {
@@ -72,6 +73,8 @@ export default function MemoriesPage() {
   const [sharedMap, setSharedMap] = useState<Record<string, boolean>>({});
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedYear, setSelectedYear] = useState<string>("all");
   const [activeShareMemory, setActiveShareMemory] = useState<MemoryItem | null>(null);
   const [customCaption, setCustomCaption] = useState("");
   const [isSharing, setIsSharing] = useState(false);
@@ -175,6 +178,15 @@ export default function MemoriesPage() {
     fetchMemories();
   }, []);
 
+  const availableYears = Array.from(
+    new Set(
+      memories.map((m) => {
+        const year = new Date(m.dateStr).getFullYear();
+        return isNaN(year) ? new Date().getFullYear() - m.yearsAgo : year;
+      })
+    )
+  ).sort((a, b) => b - a);
+
   const memoryTabs = [
     { id: "all", label: "All Memories" },
     { id: "1yr", label: "1 Year Ago" },
@@ -184,6 +196,22 @@ export default function MemoriesPage() {
   ];
 
   const filteredMemories = memories.filter((m) => {
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const matchContent = m.content.toLowerCase().includes(q);
+      const matchDate = m.dateStr.toLowerCase().includes(q);
+      const matchAuthor = (m.authorName || "").toLowerCase().includes(q);
+      const matchFriend = (m.friendName || "").toLowerCase().includes(q);
+      const matchYear = String(m.yearsAgo).includes(q);
+      if (!matchContent && !matchDate && !matchAuthor && !matchFriend && !matchYear) {
+        return false;
+      }
+    }
+    if (selectedYear !== "all") {
+      const memYear = new Date(m.dateStr).getFullYear();
+      const actualYear = isNaN(memYear) ? new Date().getFullYear() - m.yearsAgo : memYear;
+      if (String(actualYear) !== selectedYear) return false;
+    }
     if (activeFilter === "1yr") return m.yearsAgo === 1;
     if (activeFilter === "2yr") return m.yearsAgo === 2;
     if (activeFilter === "3yr_plus") return m.yearsAgo >= 3;
@@ -231,6 +259,47 @@ export default function MemoriesPage() {
               </div>
             </div>
 
+            {/* Search & Year Filters */}
+            <div className="flex flex-col sm:flex-row gap-3 items-center">
+              <div className="flex-1 w-full">
+                <Input
+                  placeholder="Search memories by keyword, friend, or year..."
+                  leftIcon={<Search size={16} />}
+                  clearable
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="bg-[#111827] border-[#1f2937] text-xs py-2.5"
+                />
+              </div>
+              <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 scrollbar-none">
+                <button
+                  type="button"
+                  onClick={() => setSelectedYear("all")}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
+                    selectedYear === "all"
+                      ? "bg-purple-600 text-white shadow-xs"
+                      : "bg-[#111827] border border-[#1f2937] text-slate-400 hover:text-white"
+                  }`}
+                >
+                  All Years
+                </button>
+                {availableYears.map((yr) => (
+                  <button
+                    key={yr}
+                    type="button"
+                    onClick={() => setSelectedYear(selectedYear === String(yr) ? "all" : String(yr))}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
+                      selectedYear === String(yr)
+                        ? "bg-purple-600 text-white shadow-xs"
+                        : "bg-[#111827] border border-[#1f2937] text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    {yr}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <Tabs
               tabs={memoryTabs}
               activeTab={activeFilter}
@@ -247,7 +316,9 @@ export default function MemoriesPage() {
                 icon={<Sparkles size={36} className="text-purple-400" />}
                 title="No memories in this view"
                 description={
-                  activeFilter === "friendships"
+                  searchQuery.trim() || selectedYear !== "all"
+                    ? `No memories match your filter${searchQuery ? ` for "${searchQuery}"` : ""}${selectedYear !== "all" ? ` in year ${selectedYear}` : ""}.`
+                    : activeFilter === "friendships"
                     ? "No friendship anniversaries recorded on this day yet."
                     : activeFilter === "all"
                     ? "Check back tomorrow to see your past activity and timeline posts!"
