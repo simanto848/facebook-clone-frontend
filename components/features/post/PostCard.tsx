@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { MessageSquare, Share2, Send, Heart, ShieldAlert, Globe, Users, Lock, EyeOff } from "lucide-react";
@@ -18,6 +18,7 @@ import { Dialog, Button } from "@/components/ui";
 import { reactionService } from "@/services/reactionService";
 import { bookmarkService } from "@/services/bookmarkService";
 import { postService } from "@/services/postService";
+import { shareService } from "@/services/shareService";
 
 interface Props {
   post: PostType;
@@ -44,6 +45,22 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
   const [showReactionsModal, setShowReactionsModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
+  const [sharesCount, setSharesCount] = useState<number>((post as any).sharesCount || 0);
+
+  useEffect(() => {
+    const fetchShares = async () => {
+      try {
+        const res = await shareService.getPostShares(post.id);
+        const count = res?.count ?? (Array.isArray(res?.data) ? res.data.length : res?.shares?.length ?? 0);
+        if (typeof count === "number" && count >= 0) {
+          setSharesCount(count);
+        }
+      } catch {
+        // Silent fallback
+      }
+    };
+    fetchShares();
+  }, [post.id]);
 
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -332,8 +349,8 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
         )}
       </div>
 
-      {/* Reaction / Comment Count Display */}
-      { (totalReactions > 0 || post.comments.length > 0) && (
+      {/* Reaction / Comment / Share Count Display */}
+      { (totalReactions > 0 || post.comments.length > 0 || sharesCount > 0) && (
         <div className="flex justify-between items-center px-5 py-3 text-xs text-slate-400 border-t border-[#1f2937]/50 mt-4">
           <button
             type="button"
@@ -351,9 +368,18 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
             <span>{totalReactions}</span>
           </button>
 
-          <button onClick={() => setShowComments(!showComments)} className="hover:underline">
-            {post.comments.length} comments
-          </button>
+          <div className="flex items-center gap-3">
+            {post.comments.length > 0 && (
+              <button onClick={() => setShowComments(!showComments)} className="hover:underline">
+                {post.comments.length} comments
+              </button>
+            )}
+            {sharesCount > 0 && (
+              <button onClick={() => setShareModalOpen(true)} className="hover:underline">
+                {sharesCount} {sharesCount === 1 ? "share" : "shares"}
+              </button>
+            )}
+          </div>
         </div>
       )}
 
