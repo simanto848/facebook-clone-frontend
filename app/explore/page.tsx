@@ -632,17 +632,101 @@ export default function ExplorePage() {
                     </div>
                   );
                 })()
-              ) : filteredPosts.length === 0 ? (
-                <EmptyState
-                  icon={<Search size={36} className="text-slate-400" />}
-                  title="No matches found"
-                  description="Try selecting a different topic tag or adjusting your search phrase."
-                />
+              ) : activeCategory === "posts" ? (
+                filteredPosts.length === 0 ? (
+                  <EmptyState
+                    icon={<MessageSquare size={36} className="text-slate-400" />}
+                    title="No posts found"
+                    description={searchQuery ? `No posts matched your search for "${searchQuery}".` : "No posts found in this topic."}
+                  />
+                ) : (
+                  <div className="space-y-6">
+                    {filteredPosts.map((post) => (
+                      <PostCard key={post.id} post={post} />
+                    ))}
+                  </div>
+                )
               ) : (
                 <div className="space-y-6">
-                  {filteredPosts.map((post) => (
-                    <PostCard key={post.id} post={post} />
-                  ))}
+                  {searchQuery.trim() && matchedUsers.length > 0 && (
+                    <div className="p-4 rounded-xl bg-[#1e293b]/50 border border-[#334155]/40 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                          <User size={14} className="text-blue-400" />
+                          People matching "{searchQuery}" ({matchedUsers.length})
+                        </span>
+                        <button
+                          onClick={() => setActiveCategory("people")}
+                          className="text-xs text-blue-400 hover:text-blue-300 font-medium"
+                        >
+                          View all people &rarr;
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {matchedUsers.slice(0, 2).map((u) => {
+                          const name = `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.username || "Member";
+                          const avatar = u.profilePicture || u.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100";
+                          return (
+                            <Link
+                              key={u.id}
+                              href={`/profile/${u.username || u.id}`}
+                              className="p-2 rounded-lg bg-[#0f172a]/60 hover:bg-[#0f172a] border border-[#1f2937] flex items-center gap-2.5 transition"
+                            >
+                              <Avatar src={avatar} name={name} size="sm" />
+                              <div className="min-w-0">
+                                <p className="text-xs font-bold text-white truncate">{name}</p>
+                                <p className="text-[10px] text-slate-400 truncate">@{u.username || "user"}</p>
+                              </div>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {searchQuery.trim() && matchedGroups.length > 0 && (
+                    <div className="p-4 rounded-xl bg-[#1e293b]/50 border border-[#334155]/40 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                          <Users size={14} className="text-emerald-400" />
+                          Groups matching "{searchQuery}" ({matchedGroups.length})
+                        </span>
+                        <button
+                          onClick={() => setActiveCategory("groups")}
+                          className="text-xs text-emerald-400 hover:text-emerald-300 font-medium"
+                        >
+                          View all groups &rarr;
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {matchedGroups.slice(0, 2).map((g) => (
+                          <Link
+                            key={g.id}
+                            href={`/groups/${g.id}`}
+                            className="p-2 rounded-lg bg-[#0f172a]/60 hover:bg-[#0f172a] border border-[#1f2937] flex items-center gap-2.5 transition"
+                          >
+                            <Avatar src={g.coverImage || g.avatar} name={g.name} size="sm" />
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold text-white truncate">{g.name}</p>
+                              <p className="text-[10px] text-slate-400 truncate">{g.category || "Community"}</p>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {filteredPosts.length === 0 ? (
+                    <EmptyState
+                      icon={<Search size={36} className="text-slate-400" />}
+                      title="No matches found"
+                      description="Try selecting a different topic tag or adjusting your search phrase."
+                    />
+                  ) : (
+                    filteredPosts.map((post) => (
+                      <PostCard key={post.id} post={post} />
+                    ))
+                  )}
                 </div>
               )}
             </div>
