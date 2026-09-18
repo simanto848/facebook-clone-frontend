@@ -38,6 +38,7 @@ interface ReelItem {
   comments: number;
   shares: number;
   hasLiked?: boolean;
+  userReaction?: string;
 }
 
 const DEFAULT_REELS: ReelItem[] = [
@@ -154,6 +155,36 @@ export default function ReelsPage() {
 
   const [shareToast, setShareToast] = useState<string | null>(null);
   const [followedAuthors, setFollowedAuthors] = useState<Record<string, boolean>>({});
+  const [showReactionPicker, setShowReactionPicker] = useState(false);
+
+  const selectReaction = async (reelId: string, reactionType: "LIKE" | "LOVE" | "HAHA" | "WOW") => {
+    const target = reels.find((r) => r.id === reelId);
+    if (!target) return;
+
+    setReels((prev) =>
+      prev.map((r) => {
+        if (r.id !== reelId) return r;
+        const wasLiked = r.hasLiked;
+        return {
+          ...r,
+          hasLiked: true,
+          userReaction: reactionType,
+          likes: wasLiked ? r.likes : r.likes + 1,
+        };
+      })
+    );
+    setShowReactionPicker(false);
+
+    try {
+      await reactionService.addReaction({
+        targetId: reelId,
+        targetType: "POST",
+        type: reactionType,
+      });
+    } catch (err) {
+      console.warn("Backend reaction failed:", err);
+    }
+  };
 
   const toggleLike = async (reelId: string) => {
     const target = reels.find((r) => r.id === reelId);
@@ -166,6 +197,7 @@ export default function ReelsPage() {
         return {
           ...r,
           hasLiked: isLiking,
+          userReaction: isLiking ? (r.userReaction || "LIKE") : undefined,
           likes: isLiking ? r.likes + 1 : Math.max(0, r.likes - 1),
         };
       })
@@ -322,17 +354,50 @@ export default function ReelsPage() {
 
             {/* Right Action Icons Sidebar */}
             <div className="absolute right-4 bottom-16 z-20 flex flex-col items-center gap-5">
-              {/* Like Button */}
-              <div className="flex flex-col items-center gap-1">
+              {/* Like / Reaction Button */}
+              <div className="relative flex flex-col items-center gap-1">
+                {showReactionPicker && (
+                  <div className="absolute right-0 bottom-full mb-3 flex items-center gap-1.5 p-2 rounded-full bg-black/85 backdrop-blur-md border border-white/20 shadow-2xl z-30 animate-in fade-in zoom-in-95">
+                    {[
+                      { type: "LIKE" as const, emoji: "👍" },
+                      { type: "LOVE" as const, emoji: "❤️" },
+                      { type: "HAHA" as const, emoji: "😂" },
+                      { type: "WOW" as const, emoji: "🔥" },
+                    ].map((r) => (
+                      <button
+                        key={r.type}
+                        type="button"
+                        onClick={() => selectReaction(currentReel.id, r.type)}
+                        className="text-lg hover:scale-130 transition-transform cursor-pointer p-1"
+                      >
+                        {r.emoji}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 <button
                   onClick={() => toggleLike(currentReel.id)}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    setShowReactionPicker(!showReactionPicker);
+                  }}
                   className={`flex h-12 w-12 items-center justify-center rounded-full transition cursor-pointer shadow-lg ${
                     currentReel.hasLiked
                       ? "bg-red-600/30 text-red-500 border border-red-500/50 scale-110"
                       : "bg-black/50 text-white hover:bg-black/70"
                   }`}
+                  title="Like or long-press for reactions"
                 >
-                  <Heart size={22} className={currentReel.hasLiked ? "fill-current" : ""} />
+                  {currentReel.userReaction === "LOVE" ? (
+                    <span className="text-xl">❤️</span>
+                  ) : currentReel.userReaction === "HAHA" ? (
+                    <span className="text-xl">😂</span>
+                  ) : currentReel.userReaction === "WOW" ? (
+                    <span className="text-xl">🔥</span>
+                  ) : (
+                    <Heart size={22} className={currentReel.hasLiked ? "fill-current" : ""} />
+                  )}
                 </button>
                 <span className="text-[11px] font-bold drop-shadow-md">{currentReel.likes}</span>
               </div>
