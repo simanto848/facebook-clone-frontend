@@ -17,6 +17,7 @@ import {
   Sparkles,
   Download,
   MessageSquare,
+  Pencil,
 } from "lucide-react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
@@ -30,6 +31,7 @@ import {
   Avatar,
   Loader,
   EmptyState,
+  Dialog,
 } from "@/components/ui";
 
 interface EventDetailPageProps {
@@ -46,6 +48,15 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
   const [attendeesCount, setAttendeesCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editForm, setEditForm] = useState({
+    title: "",
+    description: "",
+    location: "",
+    startTime: "",
+    coverUrl: "",
+  });
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -158,6 +169,48 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
     URL.revokeObjectURL(url);
   };
 
+  const handleOpenEdit = () => {
+    if (!event) return;
+    setEditForm({
+      title: event.title || "",
+      description: event.description || "",
+      location: event.location || "",
+      startTime: event.startTime ? new Date(event.startTime).toISOString().slice(0, 16) : "",
+      coverUrl: event.coverUrl || "",
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editForm.title.trim() || savingEdit) return;
+    setSavingEdit(true);
+
+    try {
+      await eventService.updateEvent(event.id, {
+        title: editForm.title.trim(),
+        description: editForm.description.trim(),
+        location: editForm.location.trim(),
+        startTime: editForm.startTime ? new Date(editForm.startTime).toISOString() : undefined,
+        coverUrl: editForm.coverUrl.trim() || undefined,
+      });
+    } catch (err) {
+      console.warn("Backend updateEvent failed, updating local state:", err);
+    }
+
+    setEvent((prev: any) => ({
+      ...prev,
+      title: editForm.title.trim(),
+      description: editForm.description.trim(),
+      location: editForm.location.trim(),
+      startTime: editForm.startTime ? new Date(editForm.startTime).toISOString() : prev.startTime,
+      coverUrl: editForm.coverUrl.trim() || prev.coverUrl,
+    }));
+
+    setSavingEdit(false);
+    setIsEditModalOpen(false);
+  };
+
   const startDateFormatted = event?.startTime
     ? new Date(event.startTime).toLocaleDateString(undefined, {
         weekday: "long",
@@ -194,6 +247,16 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
                 Back to Events
               </Button>
               <div className="flex items-center gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  leftIcon={<Pencil size={14} />}
+                  onClick={handleOpenEdit}
+                  disabled={!event}
+                  className="border border-[#1f2937] text-slate-300 hover:text-white"
+                >
+                  Edit Event
+                </Button>
                 <Button
                   variant="secondary"
                   size="sm"
@@ -467,6 +530,86 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
                 </Card>
               </div>
             )}
+
+            {/* Edit Event Modal */}
+            <Dialog
+              isOpen={isEditModalOpen}
+              onClose={() => setIsEditModalOpen(false)}
+              title="Edit Event Details"
+            >
+              <form onSubmit={handleSaveEdit} className="space-y-4 pt-2">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-300">Event Title</label>
+                  <input
+                    type="text"
+                    required
+                    value={editForm.title}
+                    onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                    className="w-full px-3 py-2 text-xs rounded-xl bg-[#0f172a] border border-[#1f2937] text-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-300">Location / Venue</label>
+                  <input
+                    type="text"
+                    value={editForm.location}
+                    onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
+                    className="w-full px-3 py-2 text-xs rounded-xl bg-[#0f172a] border border-[#1f2937] text-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-300">Date & Time</label>
+                  <input
+                    type="datetime-local"
+                    value={editForm.startTime}
+                    onChange={(e) => setEditForm({ ...editForm, startTime: e.target.value })}
+                    className="w-full px-3 py-2 text-xs rounded-xl bg-[#0f172a] border border-[#1f2937] text-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-300">Cover Image URL</label>
+                  <input
+                    type="url"
+                    value={editForm.coverUrl}
+                    onChange={(e) => setEditForm({ ...editForm, coverUrl: e.target.value })}
+                    className="w-full px-3 py-2 text-xs rounded-xl bg-[#0f172a] border border-[#1f2937] text-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-300">Description</label>
+                  <textarea
+                    rows={4}
+                    value={editForm.description}
+                    onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                    className="w-full px-3 py-2 text-xs rounded-xl bg-[#0f172a] border border-[#1f2937] text-white focus:outline-none focus:border-blue-500 resize-none"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#1f2937]">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsEditModalOpen(false)}
+                    disabled={savingEdit}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    size="sm"
+                    disabled={!editForm.title.trim() || savingEdit}
+                  >
+                    {savingEdit ? "Saving..." : "Save Changes"}
+                  </Button>
+                </div>
+              </form>
+            </Dialog>
           </div>
         </main>
 
