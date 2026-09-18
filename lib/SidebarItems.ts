@@ -1,10 +1,15 @@
-import { Bell, Bookmark, House, User, Compass, Users, UserPlus, Calendar, Flag, Film } from "lucide-react";
+import { Bell, Bookmark, House, User, Compass, Users, UserPlus, Calendar, Flag, Film, MessageSquare } from "lucide-react";
 
 export const LeftSidebarItems = [
   {
     label: "Home",
     href: "/",
     icon: House,
+  },
+  {
+    label: "Notifications",
+    href: "/notifications",
+    icon: Bell,
   },
   {
     label: "Reels",
@@ -44,7 +49,7 @@ export const LeftSidebarItems = [
   {
     label: "Messages",
     href: "/messages",
-    icon: Bell,
+    icon: MessageSquare,
   },
   {
     label: "Bookmarks",
