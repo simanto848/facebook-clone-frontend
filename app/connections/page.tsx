@@ -35,6 +35,7 @@ export default function ConnectionsPage() {
   const [activeTab, setActiveTab] = useState<string>("requests");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"name" | "mutual">("name");
+  const [mutualFilter, setMutualFilter] = useState<"all" | "has_mutual">("all");
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -186,6 +187,10 @@ export default function ConnectionsPage() {
         )
       : [...list];
 
+    if (mutualFilter === "has_mutual") {
+      result = result.filter((u) => u.mutual > 0);
+    }
+
     if (sortBy === "mutual") {
       result.sort((a, b) => b.mutual - a.mutual);
     } else {
@@ -254,7 +259,19 @@ export default function ConnectionsPage() {
                 )}
               </div>
 
-              <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto text-xs">
+              <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto text-xs flex-wrap">
+                <button
+                  onClick={() => setMutualFilter((curr) => (curr === "all" ? "has_mutual" : "all"))}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                    mutualFilter === "has_mutual"
+                      ? "bg-purple-600 text-white"
+                      : "bg-[#0f172a] text-slate-400 hover:text-white border border-[#1f2937]"
+                  }`}
+                  title="Filter contacts with mutual connections"
+                >
+                  With Mutual
+                </button>
+
                 <span className="text-slate-400 text-[11px] mr-1 flex items-center gap-1">
                   <ArrowUpDown size={12} /> Sort:
                 </span>
