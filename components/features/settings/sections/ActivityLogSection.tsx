@@ -138,22 +138,35 @@ export default function ActivityLogSection() {
   ];
 
   const [filterCategory, setFilterCategory] = useState<string>("ALL");
+  const [timeFilter, setTimeFilter] = useState<"ALL" | "24H" | "7D">("ALL");
 
   const categories = [
     { id: "ALL", label: "All Events" },
     { id: "LOGIN", label: "Logins & Auth" },
-    { id: "POST", label: "Posts & Community" },
+    { id: "POST", label: "Posts & Comments" },
+    { id: "FRIENDSHIP", label: "Connections" },
     { id: "PROFILE", label: "Profile Updates" },
-    { id: "SECURITY", label: "Security" },
+    { id: "SECURITY", label: "Security & 2FA" },
   ];
 
   const filteredLogs = logs.filter((log) => {
-    if (filterCategory === "ALL") return true;
-    const action = log.action.toUpperCase();
-    if (filterCategory === "LOGIN") return action.includes("LOGIN") || action.includes("AUTH");
-    if (filterCategory === "POST") return action.includes("POST") || action.includes("FEED") || action.includes("COMMENT");
-    if (filterCategory === "PROFILE") return action.includes("PROFILE") || action.includes("AVATAR") || action.includes("COVER");
-    if (filterCategory === "SECURITY") return action.includes("SECURITY") || action.includes("PASSWORD") || action.includes("2FA");
+    if (filterCategory !== "ALL") {
+      const action = log.action.toUpperCase();
+      if (filterCategory === "LOGIN" && !action.includes("LOGIN") && !action.includes("AUTH")) return false;
+      if (filterCategory === "POST" && !action.includes("POST") && !action.includes("FEED") && !action.includes("COMMENT")) return false;
+      if (filterCategory === "FRIENDSHIP" && !action.includes("FRIEND") && !action.includes("FOLLOW") && !action.includes("CONNECTION")) return false;
+      if (filterCategory === "PROFILE" && !action.includes("PROFILE") && !action.includes("AVATAR") && !action.includes("COVER")) return false;
+      if (filterCategory === "SECURITY" && !action.includes("SECURITY") && !action.includes("PASSWORD") && !action.includes("2FA")) return false;
+    }
+
+    if (timeFilter !== "ALL") {
+      const logDate = new Date(log.createdAt).getTime();
+      if (!isNaN(logDate)) {
+        const now = Date.now();
+        if (timeFilter === "24H" && now - logDate > 24 * 60 * 60 * 1000) return false;
+        if (timeFilter === "7D" && now - logDate > 7 * 24 * 60 * 60 * 1000) return false;
+      }
+    }
     return true;
   });
 
@@ -192,37 +205,55 @@ export default function ActivityLogSection() {
         )}
       </div>
 
-      {/* Category filter pills */}
-      <div className="flex flex-wrap gap-2">
-        {categories.map((cat) => {
-          const count = logs.filter((log) => {
-            if (cat.id === "ALL") return true;
-            const action = log.action.toUpperCase();
-            if (cat.id === "LOGIN") return action.includes("LOGIN") || action.includes("AUTH");
-            if (cat.id === "POST") return action.includes("POST") || action.includes("FEED") || action.includes("COMMENT");
-            if (cat.id === "PROFILE") return action.includes("PROFILE") || action.includes("AVATAR") || action.includes("COVER");
-            if (cat.id === "SECURITY") return action.includes("SECURITY") || action.includes("PASSWORD") || action.includes("2FA");
-            return true;
-          }).length;
+      {/* Category and time filter pills */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-2">
+          {categories.map((cat) => {
+            const count = logs.filter((log) => {
+              if (cat.id === "ALL") return true;
+              const action = log.action.toUpperCase();
+              if (cat.id === "LOGIN") return action.includes("LOGIN") || action.includes("AUTH");
+              if (cat.id === "POST") return action.includes("POST") || action.includes("FEED") || action.includes("COMMENT");
+              if (cat.id === "FRIENDSHIP") return action.includes("FRIEND") || action.includes("FOLLOW") || action.includes("CONNECTION");
+              if (cat.id === "PROFILE") return action.includes("PROFILE") || action.includes("AVATAR") || action.includes("COVER");
+              if (cat.id === "SECURITY") return action.includes("SECURITY") || action.includes("PASSWORD") || action.includes("2FA");
+              return true;
+            }).length;
 
-          const isActive = filterCategory === cat.id;
-          return (
+            const isActive = filterCategory === cat.id;
+            return (
+              <button
+                key={cat.id}
+                onClick={() => setFilterCategory(cat.id)}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  isActive
+                    ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
+                    : "bg-[#1f2937] text-slate-400 hover:text-white hover:bg-[#263345]"
+                }`}
+              >
+                <span>{cat.label}</span>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${isActive ? "bg-white/20" : "bg-slate-800"}`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Time Filter Toggle */}
+        <div className="flex items-center rounded-xl bg-slate-800/80 p-1 border border-slate-700 text-xs shrink-0 self-start md:self-auto">
+          {(["ALL", "24H", "7D"] as const).map((t) => (
             <button
-              key={cat.id}
-              onClick={() => setFilterCategory(cat.id)}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                isActive
-                  ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
-                  : "bg-[#1f2937] text-slate-400 hover:text-white hover:bg-[#263345]"
+              key={t}
+              onClick={() => setTimeFilter(t)}
+              className={`px-2.5 py-1 rounded-lg font-medium transition cursor-pointer ${
+                timeFilter === t ? "bg-blue-600 text-white" : "text-slate-400 hover:text-white"
               }`}
             >
-              <span>{cat.label}</span>
-              <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${isActive ? "bg-white/20" : "bg-slate-800"}`}>
-                {count}
-              </span>
+              {t === "ALL" ? "All Time" : t === "24H" ? "Last 24h" : "Last 7d"}
             </button>
-          );
-        })}
+          ))}
+        </div>
       </div>
 
       {loading ? (
