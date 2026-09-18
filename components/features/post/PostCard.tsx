@@ -14,6 +14,7 @@ import PostComments from "./PostComments";
 import ReportModal from "./ReportModal";
 import ReactionsModal from "./ReactionsModal";
 import { DirectMessageModal } from "./DirectMessageModal";
+import { PostAnalyticsModal } from "./PostAnalyticsModal";
 import { Dialog, Button } from "@/components/ui";
 import { reactionService } from "@/services/reactionService";
 import { bookmarkService } from "@/services/bookmarkService";
@@ -41,8 +42,9 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
   const [showReactionPicker, setShowReactionPicker] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [directMessageModalOpen, setDirectMessageModalOpen] = useState(false);
-  const [isReportOpen, setIsReportOpen] = useState(false);
   const [showReactionsModal, setShowReactionsModal] = useState(false);
+  const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
   const [sharesCount, setSharesCount] = useState<number>((post as any).sharesCount || 0);
@@ -231,6 +233,7 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
           onSave={handleToggleSave}
           onHide={() => setIsHidden(true)}
           onReport={() => setIsReportOpen(true)}
+          onAnalytics={() => setShowAnalyticsModal(true)}
         />
       </div>
 
@@ -523,6 +526,19 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
           </div>
         </div>
       </Dialog>
+
+      {/* Post Analytics Modal */}
+      <PostAnalyticsModal
+        isOpen={showAnalyticsModal}
+        onClose={() => setShowAnalyticsModal(false)}
+        post={{
+          id: post.id,
+          views: (totalReactions * 12) + (post.comments.length * 5) + 142,
+          likes: totalReactions,
+          commentsCount: post.comments.length,
+          sharesCount: sharesCount || 0,
+        }}
+      />
 
       {/* Render Nested Comments section */}
       {showComments && (

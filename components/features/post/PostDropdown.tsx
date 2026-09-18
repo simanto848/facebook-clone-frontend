@@ -9,6 +9,7 @@ import {
   AlertTriangle,
   Link,
   Check,
+  BarChart3,
 } from "lucide-react";
 
 interface Props {
@@ -20,6 +21,7 @@ interface Props {
   onSave: () => void;
   onHide: () => void;
   onReport: () => void;
+  onAnalytics?: () => void;
   postId: string;
 }
 
@@ -32,6 +34,7 @@ export default function PostDropdown({
   onSave,
   onHide,
   onReport,
+  onAnalytics,
   postId,
 }: Props) {
   const [isOpen, setIsOpen] = useState(false);
@@ -71,6 +74,19 @@ export default function PostDropdown({
               <Pencil size={16} />
               <span>Edit Post</span>
             </button>
+
+            {onAnalytics && (
+              <button
+                onClick={() => {
+                  onAnalytics();
+                  setIsOpen(false);
+                }}
+                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-slate-300 transition hover:bg-[#1f2937] hover:text-white"
+              >
+                <BarChart3 size={16} className="text-blue-400" />
+                <span>View Analytics</span>
+              </button>
+            )}
 
             <button
               onClick={() => {
