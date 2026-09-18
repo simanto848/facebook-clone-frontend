@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
-import { Flag, Plus, ThumbsUp, ExternalLink, Share2, Check, Globe } from "lucide-react";
+import { Flag, Plus, ThumbsUp, ExternalLink, Share2, Check, Globe, Search, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { pageService } from "@/services/pageService";
@@ -60,6 +60,7 @@ export default function PagesHubPage() {
   const [likedMap, setLikedMap] = useState<Record<string, boolean>>({});
   const [copiedPageId, setCopiedPageId] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [name, setName] = useState("");
   const [category, setCategory] = useState("Software & Technology");
@@ -231,6 +232,13 @@ export default function PagesHubPage() {
   ];
 
   const filteredPages = pages.filter((p) => {
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const matchName = p.name.toLowerCase().includes(q);
+      const matchDesc = p.description.toLowerCase().includes(q);
+      const matchCat = p.category.toLowerCase().includes(q);
+      if (!matchName && !matchDesc && !matchCat) return false;
+    }
     if (activeFilter === "liked") return likedMap[p.id] ?? p.isLiked;
     if (activeFilter === "owned") return p.isOwner;
     if (activeFilter === "tech") return p.category.toLowerCase().includes("tech") || p.category.toLowerCase().includes("software");
@@ -265,6 +273,18 @@ export default function PagesHubPage() {
               }
             />
 
+            {/* Search filter input */}
+            <div className="relative">
+              <Input
+                placeholder="Search pages by name, category, or description..."
+                leftIcon={<Search size={16} />}
+                clearable
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="bg-[#111827] border-[#1f2937] text-sm py-2.5"
+              />
+            </div>
+
             <Tabs
               tabs={pageTabs}
               activeTab={activeFilter}
@@ -277,7 +297,9 @@ export default function PagesHubPage() {
                 <Flag size={36} className="mx-auto text-slate-500" />
                 <h3 className="text-sm font-bold text-white">No pages found</h3>
                 <p className="text-xs text-slate-400">
-                  {activeFilter === "liked"
+                  {searchQuery.trim()
+                    ? `No pages matched your search for "${searchQuery}".`
+                    : activeFilter === "liked"
                     ? "You haven't liked any pages yet. Discover and like pages to see them here!"
                     : activeFilter === "owned"
                     ? "You don't manage any brand pages yet. Click 'Create Page' to launch your first brand!"
