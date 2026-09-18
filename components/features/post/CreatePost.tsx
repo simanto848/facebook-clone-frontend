@@ -20,6 +20,8 @@ export default function CreatePost() {
 
   // Post type specific inputs
   const [images, setImages] = useState<string[]>([]);
+  const [imageUrlInput, setImageUrlInput] = useState("");
+  const [imageError, setImageError] = useState<string | null>(null);
   const [videoUrl, setVideoUrl] = useState("");
   const [pollQuestion, setPollQuestion] = useState("");
   const [pollOptions, setPollOptions] = useState<string[]>(["", ""]);
@@ -104,6 +106,26 @@ export default function CreatePost() {
     setSubmitting(false);
   };
 
+  const handleAddImage = () => {
+    setImageError(null);
+    const url = imageUrlInput.trim();
+    if (!url) return;
+    if (images.length >= 10) {
+      setImageError("Maximum 10 images allowed per post.");
+      return;
+    }
+    if (!/^https?:\/\/.+/i.test(url)) {
+      setImageError("Please enter a valid HTTP/HTTPS image URL.");
+      return;
+    }
+    setImages((prev) => [...prev, url]);
+    setImageUrlInput("");
+  };
+
+  const removeImage = (index: number) => {
+    setImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const addPollOption = () => {
     setPollOptions([...pollOptions, ""]);
   };
@@ -149,11 +171,62 @@ export default function CreatePost() {
                   <button
                     type="button"
                     onClick={() => setIsModalOpen(true)}
-                    className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-700"
+                    className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-700 cursor-pointer"
                   >
                     <Plus size={12} /> Upload Media
                   </button>
                 </div>
+
+                {/* Paste Image URL field */}
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    placeholder="Paste image link (https://...)"
+                    value={imageUrlInput}
+                    onChange={(e) => {
+                      setImageUrlInput(e.target.value);
+                      if (imageError) setImageError(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleAddImage();
+                      }
+                    }}
+                    className="flex-1 rounded-lg border border-[#1f2937] bg-[#111827] px-3 py-1.5 text-xs text-white placeholder:text-slate-500 outline-none focus:border-blue-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddImage}
+                    disabled={!imageUrlInput.trim()}
+                    className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-xs font-semibold text-white transition cursor-pointer"
+                  >
+                    Add
+                  </button>
+                </div>
+
+                {imageError && (
+                  <p className="text-[11px] text-rose-400 font-medium">{imageError}</p>
+                )}
+
+                {/* Attached Images Grid */}
+                {images.length > 0 && (
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 pt-1">
+                    {images.map((img, idx) => (
+                      <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border border-slate-700 group bg-slate-900">
+                        <img src={img} alt="" className="h-full w-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(idx)}
+                          className="absolute top-1 right-1 p-1 rounded-full bg-black/75 hover:bg-rose-600 text-white transition cursor-pointer shadow-md"
+                          title="Remove image"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
