@@ -13,7 +13,7 @@ import {
   CheckCircle2, 
   RefreshCw 
 } from "lucide-react";
-import { Avatar, Badge, Button, EmptyState } from "@/components/ui";
+import { Avatar, Badge, Button, EmptyState, Tabs } from "@/components/ui";
 import { notificationService } from "@/services/notificationService";
 
 export interface NotificationItem {
@@ -68,6 +68,7 @@ const fallbackNotifications: NotificationItem[] = [
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<NotificationItem[]>(fallbackNotifications);
   const [activeTab, setActiveTab] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [markingAll, setMarkingAll] = useState(false);
@@ -141,11 +142,21 @@ export default function NotificationsPage() {
 
   const unreadCount = notifications.filter((n) => n.unread).length;
 
+  const primaryTabs = [
+    { id: "all", label: `All (${notifications.length})` },
+    { id: "unread", label: `Unread (${unreadCount})` },
+  ];
+
+  const typeFilterPills = [
+    { id: "all", label: "All Types" },
+    { id: "like", label: `Likes (${notifications.filter((n) => n.type === "like").length})` },
+    { id: "comment", label: `Comments (${notifications.filter((n) => n.type === "comment").length})` },
+    { id: "mention", label: `Mentions (${notifications.filter((n) => n.type === "mention").length})` },
+  ];
+
   const filteredNotifications = notifications.filter((item) => {
     if (activeTab === "unread" && !item.unread) return false;
-    if (activeTab === "likes" && item.type !== "like") return false;
-    if (activeTab === "comments" && item.type !== "comment") return false;
-    if (activeTab === "mentions" && item.type !== "mention") return false;
+    if (typeFilter !== "all" && item.type !== typeFilter) return false;
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -225,39 +236,46 @@ export default function NotificationsPage() {
       )}
 
       {/* Controls & Filters */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 scrollbar-none">
-          {[
-            { id: "all", label: "All" },
-            { id: "unread", label: `Unread (${unreadCount})` },
-            { id: "likes", label: "Likes" },
-            { id: "comments", label: "Comments" },
-            { id: "mentions", label: "Mentions" },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-3.5 py-1.5 text-xs font-medium rounded-full transition-colors whitespace-nowrap ${
-                activeTab === tab.id
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+      <div className="space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <Tabs
+            tabs={primaryTabs}
+            activeTab={activeTab}
+            onChange={setActiveTab}
+            variant="line"
+          />
+
+          {/* Search */}
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Search notifications..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl bg-card border border-border/50 focus:outline-none focus:ring-1 focus:ring-primary text-foreground placeholder:text-muted-foreground"
+            />
+          </div>
         </div>
 
-        {/* Search */}
-        <div className="relative w-full sm:w-64">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Search notifications..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl bg-card border border-border/50 focus:outline-none focus:ring-1 focus:ring-primary text-foreground placeholder:text-muted-foreground"
-          />
+        {/* Sub-category Filter Pills */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+          {typeFilterPills.map((pill) => {
+            const isSelected = typeFilter === pill.id;
+            return (
+              <button
+                key={pill.id}
+                onClick={() => setTypeFilter(pill.id)}
+                className={`px-3 py-1 text-xs font-medium rounded-full transition-colors whitespace-nowrap cursor-pointer ${
+                  isSelected
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                {pill.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
