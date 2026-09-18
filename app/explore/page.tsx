@@ -7,7 +7,7 @@ import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
 import { usePostStore, mapBackendPostToPostType, PostType } from "@/store/postStore";
 import { useChatStore } from "@/store/chatStore";
-import { Search, Hash, Compass, User, Users, UserPlus, MessageSquare, Loader2, ArrowRight, History, Check } from "lucide-react";
+import { Search, Hash, Compass, User, Users, UserPlus, MessageSquare, Loader2, ArrowRight, History, Check, X } from "lucide-react";
 import { searchService } from "@/services/searchService";
 import { hashtagService } from "@/services/hashtagService";
 import { followService } from "@/services/followService";
@@ -88,6 +88,17 @@ export default function ExplorePage() {
     try {
       const updated = [trimmed, ...recentSearches.filter((s) => s.toLowerCase() !== trimmed.toLowerCase())].slice(0, 6);
       setRecentSearches(updated);
+      localStorage.setItem("recent_explore_searches", JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
+  };
+
+  const removeRecentSearch = (termToRemove: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    const updated = recentSearches.filter((s) => s !== termToRemove);
+    setRecentSearches(updated);
+    try {
       localStorage.setItem("recent_explore_searches", JSON.stringify(updated));
     } catch {
       // ignore
@@ -348,17 +359,25 @@ export default function ExplorePage() {
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {recentSearches.map((term) => (
-                      <button
+                      <div
                         key={term}
                         onClick={() => {
                           setSearchQuery(term);
                           setSelectedTag(null);
                         }}
-                        className="px-3 py-1 bg-[#1e293b] hover:bg-[#334155] text-slate-300 hover:text-white rounded-full text-xs font-medium transition-colors flex items-center gap-1.5"
+                        className="group px-3 py-1 bg-[#1e293b] hover:bg-[#334155] text-slate-300 hover:text-white rounded-full text-xs font-medium transition-colors flex items-center gap-1.5 cursor-pointer"
                       >
                         <Search size={11} className="text-slate-400" />
-                        {term}
-                      </button>
+                        <span>{term}</span>
+                        <button
+                          type="button"
+                          onClick={(e) => removeRecentSearch(term, e)}
+                          className="p-0.5 ml-0.5 text-slate-400 hover:text-red-400 hover:bg-slate-700/50 rounded-full transition-colors"
+                          aria-label={`Remove ${term}`}
+                        >
+                          <X size={10} />
+                        </button>
+                      </div>
                     ))}
                   </div>
                 </div>
