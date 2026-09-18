@@ -50,6 +50,7 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
   const [copied, setCopied] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
+  const [rsvpToast, setRsvpToast] = useState<{ message: string; type: "success" | "info" } | null>(null);
   const [editForm, setEditForm] = useState({
     title: "",
     description: "",
@@ -106,9 +107,19 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
 
     if (newStatus === "going" && prevStatus !== "going") {
       setAttendeesCount((c) => c + 1);
+      setRsvpToast({ message: "🎉 You're going to this event! Saved to your schedule.", type: "success" });
     } else if (prevStatus === "going" && newStatus !== "going") {
       setAttendeesCount((c) => Math.max(0, c - 1));
+      setRsvpToast({ message: "RSVP removed from this event.", type: "info" });
+    } else if (newStatus === "interested") {
+      setRsvpToast({ message: "⭐ Marked as interested! We'll keep you notified.", type: "info" });
+    } else if (!newStatus) {
+      setRsvpToast({ message: "RSVP status cleared.", type: "info" });
     }
+
+    setTimeout(() => {
+      setRsvpToast((curr) => (curr?.message ? null : curr));
+    }, 3500);
 
     try {
       if (newStatus) {
@@ -293,6 +304,24 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
               />
             ) : (
               <div className="space-y-6">
+                {rsvpToast && (
+                  <div
+                    className={`flex items-center justify-between p-3.5 rounded-xl border animate-in fade-in slide-in-from-top-2 duration-200 ${
+                      rsvpToast.type === "success"
+                        ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
+                        : "bg-blue-500/10 border-blue-500/30 text-blue-300"
+                    }`}
+                  >
+                    <span className="text-xs font-semibold">{rsvpToast.message}</span>
+                    <button
+                      onClick={() => setRsvpToast(null)}
+                      className="text-xs text-slate-400 hover:text-white p-1"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                )}
+
                 {/* Cover Banner Card */}
                 <div className="relative h-64 md:h-80 w-full rounded-2xl overflow-hidden border border-[#1f2937] shadow-2xl">
                   <Image
