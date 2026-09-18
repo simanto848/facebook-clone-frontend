@@ -71,6 +71,7 @@ export default function NotificationsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [markingAll, setMarkingAll] = useState(false);
+  const [readBanner, setReadBanner] = useState<string | null>(null);
 
   const fetchNotifications = async () => {
     setLoading(true);
@@ -105,8 +106,12 @@ export default function NotificationsPage() {
     try {
       await notificationService.markAsRead();
       setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
+      setReadBanner("All notifications have been marked as read.");
+      setTimeout(() => setReadBanner(null), 3000);
     } catch {
       setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
+      setReadBanner("All notifications have been marked as read.");
+      setTimeout(() => setReadBanner(null), 3000);
     } finally {
       setMarkingAll(false);
     }
@@ -199,20 +204,25 @@ export default function NotificationsPage() {
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
             Refresh
           </Button>
-          {unreadCount > 0 && (
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={handleMarkAllAsRead}
-              disabled={markingAll}
-              className="flex items-center gap-2 rounded-xl text-xs font-medium"
-            >
-              <CheckCheck className="w-4 h-4 text-primary" />
-              Mark all as read
-            </Button>
-          )}
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleMarkAllAsRead}
+            disabled={markingAll || unreadCount === 0}
+            className="flex items-center gap-2 rounded-xl text-xs font-medium"
+          >
+            <CheckCheck className="w-4 h-4 text-primary" />
+            {markingAll ? "Marking..." : "Mark all as read"}
+          </Button>
         </div>
       </div>
+
+      {readBanner && (
+        <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-xl text-xs flex items-center gap-2 animate-in fade-in duration-200">
+          <CheckCircle2 size={15} className="text-emerald-400 shrink-0" />
+          <span>{readBanner}</span>
+        </div>
+      )}
 
       {/* Controls & Filters */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
