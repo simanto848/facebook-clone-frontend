@@ -17,6 +17,7 @@ import {
   Badge,
   EmptyState,
   Loader,
+  Dialog,
 } from "@/components/ui";
 
 export interface DisplayUser {
@@ -36,6 +37,7 @@ export default function ConnectionsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"name" | "mutual">("name");
   const [mutualFilter, setMutualFilter] = useState<"all" | "has_mutual">("all");
+  const [confirmUnfriendUser, setConfirmUnfriendUser] = useState<DisplayUser | null>(null);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -495,7 +497,7 @@ export default function ConnectionsPage() {
                                 variant="ghost"
                                 size="sm"
                                 disabled={processingId === user.id}
-                                onClick={() => handleUnfriend(user.id)}
+                                onClick={() => setConfirmUnfriendUser(user)}
                                 title="Remove connection"
                               >
                                 <UserX size={14} className="text-slate-400 hover:text-red-400" />
@@ -508,6 +510,56 @@ export default function ConnectionsPage() {
                   )}
                 </div>
               )}
+
+              {/* Remove Friend Confirmation Dialog */}
+              <Dialog
+                isOpen={!!confirmUnfriendUser}
+                onClose={() => setConfirmUnfriendUser(null)}
+                title="Remove Connection"
+              >
+                <div className="space-y-4 pt-2">
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-[#0f172a] border border-[#1f2937]">
+                    {confirmUnfriendUser && (
+                      <Avatar
+                        src={confirmUnfriendUser.avatar}
+                        name={confirmUnfriendUser.name}
+                        size="md"
+                      />
+                    )}
+                    <div>
+                      <h4 className="text-xs font-bold text-white">{confirmUnfriendUser?.name}</h4>
+                      <p className="text-[10px] text-slate-400">{confirmUnfriendUser?.role}</p>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    Are you sure you want to remove <strong>{confirmUnfriendUser?.name}</strong> from your connections? They won't be notified, but you will no longer see each other's friends-only posts.
+                  </p>
+
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#1f2937]">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setConfirmUnfriendUser(null)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={async () => {
+                        if (confirmUnfriendUser) {
+                          const uid = confirmUnfriendUser.id;
+                          setConfirmUnfriendUser(null);
+                          await handleUnfriend(uid);
+                        }
+                      }}
+                    >
+                      Remove Connection
+                    </Button>
+                  </div>
+                </div>
+              </Dialog>
             </div>
           </div>
         </main>
