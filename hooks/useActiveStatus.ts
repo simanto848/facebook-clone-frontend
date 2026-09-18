@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { activeStatusService } from "@/services/activeStatusService";
 import { callService } from "@/services/callService";
 
 export function useActiveStatus(enabled = true) {
@@ -9,15 +10,32 @@ export function useActiveStatus(enabled = true) {
 
     const sendHeartbeat = async () => {
       try {
-        await callService.pingActiveStatus();
-      } catch (err) {
-        // Silent fallback for status ping
+        await activeStatusService.sendHeartbeat();
+      } catch {
+        try {
+          await callService.pingActiveStatus();
+        } catch {
+          // Silent fallback for status ping
+        }
       }
     };
 
     sendHeartbeat();
     const interval = setInterval(sendHeartbeat, 30000); // 30s heartbeat
 
-    return () => clearInterval(interval);
+    const handleVisibilityOrFocus = () => {
+      if (document.visibilityState === "visible") {
+        sendHeartbeat();
+      }
+    };
+
+    window.addEventListener("focus", handleVisibilityOrFocus);
+    document.addEventListener("visibilitychange", handleVisibilityOrFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", handleVisibilityOrFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityOrFocus);
+    };
   }, [enabled]);
 }
