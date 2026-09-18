@@ -57,6 +57,12 @@ export const friendshipService = {
     return response.data;
   },
 
+  getMutualFriends: async (userId: string) => {
+    const axios = await useAxios();
+    const response = await axios.get(`/friendships/mutual/${userId}`);
+    return response.data;
+  },
+
   followUser: async (userId: string) => {
     const axios = await useAxios();
     const response = await axios.post(`/follows/${userId}`);
