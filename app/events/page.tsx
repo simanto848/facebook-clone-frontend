@@ -303,15 +303,51 @@ export default function EventsPage() {
               }
             />
 
-            <div className="relative">
-              <Input
-                placeholder="Search events by name, topic, or location..."
-                leftIcon={<Search size={16} className="text-slate-400" />}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                clearable
-                className="bg-[#111827] border-[#1f2937]"
-              />
+            <div className="space-y-2">
+              <div className="relative">
+                <Input
+                  placeholder="Search events by name, topic, venue, or location..."
+                  leftIcon={<Search size={16} className="text-slate-400" />}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  clearable
+                  className="bg-[#111827] border-[#1f2937]"
+                />
+              </div>
+
+              {/* Quick Location / Keyword Filters & Match Status */}
+              <div className="flex items-center justify-between text-[11px] text-slate-400">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-slate-500 font-medium">Quick locations:</span>
+                  {["Online", "San Francisco", "Tokyo", "Seattle"].map((loc) => (
+                    <button
+                      key={loc}
+                      onClick={() => setSearchQuery(searchQuery === loc ? "" : loc)}
+                      className={`px-2 py-0.5 rounded-md transition ${
+                        searchQuery.toLowerCase() === loc.toLowerCase()
+                          ? "bg-blue-600/30 text-blue-300 font-semibold border border-blue-500/40"
+                          : "bg-[#111827] text-slate-400 hover:text-white border border-[#1f2937]"
+                      }`}
+                    >
+                      {loc}
+                    </button>
+                  ))}
+                </div>
+
+                {searchQuery.trim() && (
+                  <div className="flex items-center gap-1.5 font-medium text-slate-300 shrink-0">
+                    <span>
+                      Found <strong className="text-blue-400">{filteredEvents.length}</strong> matching events
+                    </span>
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="text-xs text-rose-400 hover:underline ml-1"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Category Filter Pills */}
