@@ -16,6 +16,7 @@ import {
   CheckCheck,
   Palette,
   Trash2,
+  X,
 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
@@ -34,6 +35,7 @@ export default function Navbar() {
   const [activeDropdown, setActiveDropdown] = useState<"profile" | "notifications" | "messages" | "theme" | null>(null);
   const [currentTheme, setCurrentTheme] = useState<"dark" | "light" | "cyberpunk">("dark");
   const [searchQuery, setSearchQuery] = useState("");
+  const [messageSearchQuery, setMessageSearchQuery] = useState("");
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
@@ -532,11 +534,51 @@ export default function Navbar() {
                   </Link>
                 </div>
 
+                {/* Search input for messages */}
+                <div className="p-2.5 border-b border-[#1f2937] bg-[#0f172a]/60">
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" size={13} />
+                    <input
+                      type="text"
+                      placeholder="Search messages or contacts..."
+                      value={messageSearchQuery}
+                      onChange={(e) => setMessageSearchQuery(e.target.value)}
+                      className="w-full pl-8 pr-7 py-1.5 rounded-xl border border-[#1f2937] bg-[#111827] text-xs text-white placeholder:text-slate-500 outline-none focus:border-blue-500 transition"
+                    />
+                    {messageSearchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setMessageSearchQuery("")}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white p-0.5 cursor-pointer"
+                      >
+                        <X size={12} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
                 <div className="max-h-80 overflow-y-auto divide-y divide-[#1f2937] custom-scrollbar">
-                  {conversations.length === 0 ? (
-                    <div className="p-4 text-center text-xs text-slate-400">No active conversations yet</div>
-                  ) : (
-                    conversations.map((conv) => {
+                  {(() => {
+                    const filteredDropdownConversations = conversations.filter((conv) => {
+                      if (!messageSearchQuery.trim()) return true;
+                      const q = messageSearchQuery.toLowerCase();
+                      const matchName = conv.name.toLowerCase().includes(q);
+                      const lastMsg = conv.messages[conv.messages.length - 1];
+                      const matchMsg = lastMsg?.text?.toLowerCase().includes(q);
+                      return matchName || Boolean(matchMsg);
+                    });
+
+                    if (filteredDropdownConversations.length === 0) {
+                      return (
+                        <div className="p-6 text-center text-xs text-slate-400">
+                          {messageSearchQuery.trim()
+                            ? `No conversations match "${messageSearchQuery}"`
+                            : "No active conversations yet"}
+                        </div>
+                      );
+                    }
+
+                    return filteredDropdownConversations.map((conv) => {
                       const lastMsg = conv.messages[conv.messages.length - 1];
                       return (
                         <div
@@ -570,8 +612,8 @@ export default function Navbar() {
                           )}
                         </div>
                       );
-                    })
-                  )}
+                    });
+                  })()}
                 </div>
 
                 <div className="border-t border-[#1f2937] bg-[#1f2937]/20 p-2.5 text-center">
