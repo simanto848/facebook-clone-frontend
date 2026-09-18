@@ -15,6 +15,7 @@ import ReportModal from "./ReportModal";
 import ReactionsModal from "./ReactionsModal";
 import { DirectMessageModal } from "./DirectMessageModal";
 import { PostAnalyticsModal } from "./PostAnalyticsModal";
+import { PostMediaModal } from "./PostMediaModal";
 import { Dialog, Button } from "@/components/ui";
 import { reactionService } from "@/services/reactionService";
 import { bookmarkService } from "@/services/bookmarkService";
@@ -44,6 +45,7 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
   const [directMessageModalOpen, setDirectMessageModalOpen] = useState(false);
   const [showReactionsModal, setShowReactionsModal] = useState(false);
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
+  const [mediaModalState, setMediaModalState] = useState<{ isOpen: boolean; initialIndex: number }>({ isOpen: false, initialIndex: 0 });
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
@@ -268,7 +270,10 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
 
         {/* 1. Image Post Gallery */}
         {post.type === "image" && post.images && (
-          <PostGallery images={post.images} />
+          <PostGallery
+            images={post.images}
+            onImageClick={(index) => setMediaModalState({ isOpen: true, initialIndex: index })}
+          />
         )}
 
         {/* 2. Video Post Player */}
@@ -539,6 +544,21 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
           sharesCount: sharesCount || 0,
         }}
       />
+
+      {/* Post Media Lightbox Modal */}
+      {post.images && post.images.length > 0 && (
+        <PostMediaModal
+          isOpen={mediaModalState.isOpen}
+          onClose={() => setMediaModalState({ isOpen: false, initialIndex: 0 })}
+          images={post.images}
+          initialIndex={mediaModalState.initialIndex}
+          author={{
+            name: post.author.name,
+            avatar: post.author.avatar,
+          }}
+          caption={post.content}
+        />
+      )}
 
       {/* Render Nested Comments section */}
       {showComments && (

@@ -4,9 +4,10 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Props {
   images: string[];
+  onImageClick?: (index: number) => void;
 }
 
-export default function PostGallery({ images }: Props) {
+export default function PostGallery({ images, onImageClick }: Props) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   if (!images || images.length === 0) return null;
@@ -24,7 +25,10 @@ export default function PostGallery({ images }: Props) {
   return (
     <div className="relative group w-full mt-4 h-[450px] overflow-hidden rounded-2xl bg-[#030712] border border-[#1f2937]">
       {/* Active Image */}
-      <div className="relative w-full h-full">
+      <div
+        className="relative w-full h-full cursor-pointer"
+        onClick={() => onImageClick?.(currentIndex)}
+      >
         <Image
           src={images[currentIndex]}
           alt={`Gallery image ${currentIndex + 1}`}
