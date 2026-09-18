@@ -13,6 +13,7 @@ import PostVideo from "./PostVideo";
 import PostComments from "./PostComments";
 import ReportModal from "./ReportModal";
 import ReactionsModal from "./ReactionsModal";
+import { DirectMessageModal } from "./DirectMessageModal";
 import { Dialog, Button } from "@/components/ui";
 import { reactionService } from "@/services/reactionService";
 import { bookmarkService } from "@/services/bookmarkService";
@@ -38,6 +39,7 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
   const [showComments, setShowComments] = useState(defaultShowComments);
   const [showReactionPicker, setShowReactionPicker] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [directMessageModalOpen, setDirectMessageModalOpen] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [showReactionsModal, setShowReactionsModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -425,12 +427,19 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
             variant="ghost"
             fullWidth
             leftIcon={<Send size={18} />}
-            onClick={() => alert("Shared to Direct message!")}
+            onClick={() => setDirectMessageModalOpen(true)}
           >
             Send
           </Button>
         </div>
       </div>
+
+      {/* Direct Message Picker Modal */}
+      <DirectMessageModal
+        postId={post.id}
+        isOpen={directMessageModalOpen}
+        onClose={() => setDirectMessageModalOpen(false)}
+      />
 
       {/* Share Modal Dialog Overlay */}
       <ShareModal
