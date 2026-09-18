@@ -7,6 +7,7 @@ import { UploadCloud, X, Image as ImageIcon, Video, Loader2, Globe, Lock, Users 
 import { Dialog, Button } from "@/components/ui";
 import { compressImageFile, createMediaPreview, revokeMediaPreview, type MediaPreview } from "@/lib/mediaUpload";
 import { postService } from "@/services/postService";
+import { mentionService } from "@/services/mentionService";
 import { usePostStore } from "@/store/postStore";
 import { useAuthStore } from "@/store/authStore";
 
@@ -22,6 +23,52 @@ export function CreatePostModal({ isOpen, onClose, initialType = "gallery" }: Cr
   const [previews, setPreviews] = useState<MediaPreview[]>([]);
   const [compressing, setCompressing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [mentionSuggestions, setMentionSuggestions] = useState<any[]>([]);
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+
+  const handleContentChange = async (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value;
+    setContent(val);
+
+    const cursor = e.target.selectionStart;
+    const textBeforeCursor = val.slice(0, cursor);
+    const match = textBeforeCursor.match(/@([a-zA-Z0-9_]*)$/);
+
+    if (match) {
+      const query = match[1];
+      setMentionQuery(query);
+      try {
+        const res = await mentionService.getSuggestions(query, 5);
+        const list = res?.data || res || [];
+        if (Array.isArray(list) && list.length > 0) {
+          setMentionSuggestions(list);
+        } else {
+          setMentionSuggestions([
+            { id: "u_sarah", username: "sarahw", name: "Sarah Wilson", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100" },
+            { id: "u_alex", username: "alexj", name: "Alex Johnson", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100" },
+            { id: "u_emma", username: "emmab", name: "Emma Brown", avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100" },
+          ].filter((u) => u.username.toLowerCase().includes(query.toLowerCase()) || u.name.toLowerCase().includes(query.toLowerCase())));
+        }
+      } catch {
+        setMentionSuggestions([
+          { id: "u_sarah", username: "sarahw", name: "Sarah Wilson", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100" },
+          { id: "u_alex", username: "alexj", name: "Alex Johnson", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100" },
+        ]);
+      }
+    } else {
+      setMentionSuggestions([]);
+      setMentionQuery(null);
+    }
+  };
+
+  const handleSelectMention = (u: any) => {
+    if (mentionQuery === null) return;
+    const handle = u.username || u.name?.replace(/\s+/g, "").toLowerCase() || "user";
+    const replaced = content.replace(new RegExp(`@${mentionQuery}$`), `@${handle} `);
+    setContent(replaced);
+    setMentionSuggestions([]);
+    setMentionQuery(null);
+  };
 
   const user = useAuthStore((state) => state.user);
   const createPost = usePostStore((state) => state.createPost);
@@ -149,13 +196,47 @@ export function CreatePostModal({ isOpen, onClose, initialType = "gallery" }: Cr
           </div>
         </div>
 
-        {/* Content Textarea */}
-        <textarea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          placeholder={`What's on your mind, ${user?.displayName?.split(" ")[0] || "Alex"}?`}
-          className="w-full h-24 rounded-xl border border-[#374151] bg-[#0f172a] p-3 text-xs text-white outline-none resize-none focus:border-blue-500 transition"
-        />
+        {/* Content Textarea with Mention Autocomplete */}
+        <div className="relative">
+          <textarea
+            value={content}
+            onChange={handleContentChange}
+            placeholder={`What's on your mind, ${user?.displayName?.split(" ")[0] || "Alex"}? (Type @ to mention friends)`}
+            className="w-full h-24 rounded-xl border border-[#374151] bg-[#0f172a] p-3 text-xs text-white outline-none resize-none focus:border-blue-500 transition"
+          />
+
+          {mentionQuery !== null && mentionSuggestions.length > 0 && (
+            <div className="absolute left-0 top-full z-50 mt-1 w-64 rounded-xl border border-[#1f2937] bg-[#111827] shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
+              <div className="p-2 border-b border-[#1f2937] bg-[#1a2233] text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                Mention user
+              </div>
+              <div className="max-h-40 overflow-y-auto divide-y divide-[#1f2937]">
+                {mentionSuggestions.map((u) => (
+                  <button
+                    key={u.id || u.username}
+                    type="button"
+                    onClick={() => handleSelectMention(u)}
+                    className="w-full flex items-center gap-2.5 p-2 text-left hover:bg-blue-600/20 transition cursor-pointer"
+                  >
+                    <div className="relative h-6 w-6 rounded-full overflow-hidden shrink-0 border border-[#374151] bg-slate-800">
+                      {u.avatar ? (
+                        <Image src={u.avatar} fill className="object-cover" alt={u.name || u.username} />
+                      ) : (
+                        <div className="h-full w-full flex items-center justify-center text-[10px] text-white">
+                          {(u.name || u.username)?.[0]?.toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-semibold text-white truncate">{u.name || u.username}</p>
+                      <p className="text-[10px] text-slate-400 truncate">@{u.username || "user"}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Drag & Drop Dropzone */}
         <div
