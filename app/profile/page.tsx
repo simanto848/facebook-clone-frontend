@@ -21,13 +21,14 @@ import {
   UserCheck,
   MapPin,
   Globe,
+  Camera,
 } from "lucide-react";
 import Image from "next/image";
 import { Dialog, Input, Button, Avatar, Loader } from "@/components/ui";
 
 export default function ProfilePage() {
   const { posts } = usePostStore();
-  const { user: authUser } = useAuthStore();
+  const { user: authUser, updateUser } = useAuthStore();
 
   const [profile, setProfile] = useState<any>(null);
   const [userPosts, setUserPosts] = useState<PostType[]>([]);
@@ -36,6 +37,11 @@ export default function ProfilePage() {
   const [friends, setFriends] = useState<FriendUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"posts" | "media" | "likes" | "saved" | "tagged">("posts");
+
+  // Avatar Modal State
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+  const [avatarInput, setAvatarInput] = useState("");
+  const [savingAvatar, setSavingAvatar] = useState(false);
 
   // Edit Profile Modal
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -179,6 +185,21 @@ export default function ProfilePage() {
     }
   };
 
+  const handleSaveAvatar = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!avatarInput.trim() || savingAvatar) return;
+    setSavingAvatar(true);
+    try {
+      await userService.updateAvatar(avatarInput.trim());
+    } catch (err) {
+      console.warn("Backend updateAvatar failed, updating local state:", err);
+    }
+    setProfile((prev: any) => ({ ...prev, avatar: avatarInput.trim() }));
+    updateUser({ avatar: avatarInput.trim() });
+    setIsAvatarModalOpen(false);
+    setSavingAvatar(false);
+  };
+
   // Media posts (images or videos)
   const mediaPosts = userPosts.filter((post) => post.type === "image" || post.type === "video" || (post.images && post.images.length > 0) || !!post.video);
 
@@ -248,7 +269,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Avatar */}
-        <div className="absolute left-12 -bottom-16">
+        <div className="absolute left-12 -bottom-16 group/avatar">
           <div className="relative h-32 w-32 overflow-hidden rounded-full border-4 border-[#0f172a] shadow-[0_0_30px_rgba(59,130,246,0.4)] bg-[#111827]">
             <Image
               src={avatarUrl}
@@ -258,6 +279,17 @@ export default function ProfilePage() {
               className="object-cover"
             />
           </div>
+          <button
+            type="button"
+            onClick={() => {
+              setAvatarInput(avatarUrl);
+              setIsAvatarModalOpen(true);
+            }}
+            title="Update avatar"
+            className="absolute bottom-1 right-1 p-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-black/50 transition cursor-pointer"
+          >
+            <Camera size={14} />
+          </button>
         </div>
       </div>
 
@@ -517,6 +549,83 @@ export default function ProfilePage() {
               className="bg-blue-600 hover:bg-blue-700"
             >
               {isSaving ? "Saving..." : "Save Changes"}
+            </Button>
+          </div>
+        </form>
+      </Dialog>
+
+      {/* UPDATE AVATAR MODAL */}
+      <Dialog
+        isOpen={isAvatarModalOpen}
+        onClose={() => setIsAvatarModalOpen(false)}
+        title="Update Profile Picture"
+        size="md"
+      >
+        <form onSubmit={handleSaveAvatar} className="space-y-4 pt-2">
+          {/* Live Preview */}
+          <div className="flex flex-col items-center justify-center py-2">
+            <div className="relative h-28 w-28 rounded-full overflow-hidden border-4 border-blue-500 shadow-xl bg-slate-800">
+              <Image
+                src={avatarInput || avatarUrl}
+                alt="Avatar Preview"
+                fill
+                className="object-cover"
+              />
+            </div>
+            <span className="text-[11px] text-slate-400 mt-2">Live Preview</span>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-300">Avatar Image URL</label>
+            <Input
+              type="url"
+              required
+              value={avatarInput}
+              onChange={(e) => setAvatarInput(e.target.value)}
+              placeholder="https://images.unsplash.com/photo-..."
+              className="bg-[#0f172a] border-[#1f2937]"
+            />
+          </div>
+
+          {/* Quick Presets */}
+          <div className="space-y-1.5">
+            <span className="text-[11px] font-semibold text-slate-400">Or choose a preset avatar:</span>
+            <div className="flex items-center gap-2">
+              {[
+                "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200",
+                "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200",
+                "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=200",
+                "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200",
+              ].map((preset, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => setAvatarInput(preset)}
+                  className="relative h-10 w-10 rounded-full overflow-hidden border-2 border-[#1f2937] hover:border-blue-500 transition cursor-pointer"
+                >
+                  <Image src={preset} fill className="object-cover" alt={`Preset ${idx + 1}`} />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-[#1f2937]">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsAvatarModalOpen(false)}
+              disabled={savingAvatar}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              size="sm"
+              disabled={!avatarInput.trim() || savingAvatar}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {savingAvatar ? "Saving..." : "Save Avatar"}
             </Button>
           </div>
         </form>
