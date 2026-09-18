@@ -5,6 +5,7 @@ import { usePostStore, CommentType } from "@/store/postStore";
 import { useAuthStore } from "@/store/authStore";
 import { commentService } from "@/services/commentService";
 import { reactionService } from "@/services/reactionService";
+import { mentionService } from "@/services/mentionService";
 import CommentItem from "./CommentItem";
 
 interface Props {
@@ -20,6 +21,51 @@ export default function PostComments({ postId, comments }: Props) {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [commentList, setCommentList] = useState<CommentType[]>(comments);
+  const [mentionSuggestions, setMentionSuggestions] = useState<any[]>([]);
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+
+  const handleTextChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setCommentText(val);
+
+    const cursor = e.target.selectionStart || val.length;
+    const textBeforeCursor = val.slice(0, cursor);
+    const match = textBeforeCursor.match(/@([a-zA-Z0-9_]*)$/);
+
+    if (match) {
+      const query = match[1];
+      setMentionQuery(query);
+      try {
+        const res = await mentionService.getSuggestions(query, 5);
+        const list = res?.data || res || [];
+        if (Array.isArray(list) && list.length > 0) {
+          setMentionSuggestions(list);
+        } else {
+          setMentionSuggestions([
+            { id: "u_sarah", username: "sarahw", name: "Sarah Wilson", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100" },
+            { id: "u_alex", username: "alexj", name: "Alex Johnson", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100" },
+          ].filter((u) => u.username.toLowerCase().includes(query.toLowerCase()) || u.name.toLowerCase().includes(query.toLowerCase())));
+        }
+      } catch {
+        setMentionSuggestions([
+          { id: "u_sarah", username: "sarahw", name: "Sarah Wilson", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100" },
+          { id: "u_alex", username: "alexj", name: "Alex Johnson", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100" },
+        ]);
+      }
+    } else {
+      setMentionSuggestions([]);
+      setMentionQuery(null);
+    }
+  };
+
+  const handleSelectMention = (u: any) => {
+    if (mentionQuery === null) return;
+    const handle = u.username || u.name?.replace(/\s+/g, "").toLowerCase() || "user";
+    const replaced = commentText.replace(new RegExp(`@${mentionQuery}$`), `@${handle} `);
+    setCommentText(replaced);
+    setMentionSuggestions([]);
+    setMentionQuery(null);
+  };
 
   useEffect(() => {
     setCommentList(comments);
@@ -275,11 +321,43 @@ export default function PostComments({ postId, comments }: Props) {
         </div>
 
         <div className="relative flex-1">
+          {mentionQuery !== null && mentionSuggestions.length > 0 && (
+            <div className="absolute left-0 bottom-full z-50 mb-2 w-64 rounded-xl border border-[#1f2937] bg-[#111827] shadow-xl overflow-hidden animate-in fade-in slide-in-from-bottom-1 duration-150">
+              <div className="p-2 border-b border-[#1f2937] bg-[#1a2233] text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                Mention user
+              </div>
+              <div className="max-h-36 overflow-y-auto divide-y divide-[#1f2937]">
+                {mentionSuggestions.map((u) => (
+                  <button
+                    key={u.id || u.username}
+                    type="button"
+                    onClick={() => handleSelectMention(u)}
+                    className="w-full flex items-center gap-2.5 p-2 text-left hover:bg-blue-600/20 transition cursor-pointer"
+                  >
+                    <div className="relative h-6 w-6 rounded-full overflow-hidden shrink-0 border border-[#374151] bg-slate-800">
+                      {u.avatar ? (
+                        <Image src={u.avatar} fill className="object-cover" alt={u.name || u.username} />
+                      ) : (
+                        <div className="h-full w-full flex items-center justify-center text-[10px] text-white">
+                          {(u.name || u.username)?.[0]?.toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-semibold text-white truncate">{u.name || u.username}</p>
+                      <p className="text-[10px] text-slate-400 truncate">@{u.username || "user"}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <input
             type="text"
-            placeholder="Write a comment..."
+            placeholder="Write a comment... (Type @ to mention)"
             value={commentText}
-            onChange={(e) => setCommentText(e.target.value)}
+            onChange={handleTextChange}
             className="w-full rounded-full border border-[#1f2937] bg-[#0f172a] px-4 py-2 pr-10 text-xs text-white outline-none placeholder:text-slate-400 focus:border-blue-500 transition"
           />
           <button
