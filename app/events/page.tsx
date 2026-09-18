@@ -314,12 +314,39 @@ export default function EventsPage() {
               />
             </div>
 
-            <Tabs
-              tabs={filterTabs}
-              activeTab={activeFilter}
-              onChange={setActiveFilter}
-              variant="line"
-            />
+            {/* Category Filter Pills */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+              {[
+                { id: "all", label: "All Events", count: events.length },
+                { id: "conference", label: "Conferences", count: events.filter((e) => e.category.toLowerCase().includes("conference")).length },
+                { id: "hackathon", label: "Hackathons", count: events.filter((e) => e.category.toLowerCase().includes("hackathon")).length },
+                { id: "meetup", label: "Meetups", count: events.filter((e) => e.category.toLowerCase().includes("meetup")).length },
+                { id: "workshop", label: "Workshops", count: events.filter((e) => e.category.toLowerCase().includes("workshop")).length },
+                { id: "going", label: "RSVP Going", count: events.filter((e) => rsvps[e.id] === "going").length },
+                { id: "interested", label: "Interested", count: events.filter((e) => rsvps[e.id] === "interested").length },
+              ].map((pill) => (
+                <button
+                  key={pill.id}
+                  onClick={() => setActiveFilter(pill.id)}
+                  className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium transition cursor-pointer whitespace-nowrap ${
+                    activeFilter === pill.id
+                      ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
+                      : "bg-[#111827] text-slate-400 hover:text-white hover:bg-[#1f2937] border border-[#1f2937]"
+                  }`}
+                >
+                  <span>{pill.label}</span>
+                  <span
+                    className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+                      activeFilter === pill.id
+                        ? "bg-white/20 text-white font-bold"
+                        : "bg-slate-800 text-slate-400"
+                    }`}
+                  >
+                    {pill.count}
+                  </span>
+                </button>
+              ))}
+            </div>
 
             {/* Events List Grid */}
             <div className="space-y-6 pt-2">
