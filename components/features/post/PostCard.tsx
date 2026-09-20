@@ -256,6 +256,7 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
           authorName={post.author.name}
           isFollowingAuthor={isFollowingAuthor}
           onFollowAuthor={handleToggleFollowAuthor}
+          postContent={post.content}
           onEdit={() => setIsEditing(true)}
           onDelete={() => setShowDeleteConfirm(true)}
           onPin={() => togglePinPost(post.id)}

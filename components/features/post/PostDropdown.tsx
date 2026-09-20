@@ -15,6 +15,7 @@ import {
   ExternalLink,
   UserPlus,
   UserCheck,
+  Copy,
 } from "lucide-react";
 
 interface Props {
@@ -31,6 +32,7 @@ interface Props {
   authorName?: string;
   isFollowingAuthor?: boolean;
   onFollowAuthor?: () => void;
+  postContent?: string;
   postId: string;
 }
 
@@ -48,10 +50,12 @@ export default function PostDropdown({
   authorName,
   isFollowingAuthor = false,
   onFollowAuthor,
+  postContent,
   postId,
 }: Props) {
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copiedText, setCopiedText] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
 
   const handleCopyLink = (e: React.MouseEvent) => {
@@ -61,6 +65,17 @@ export default function PostDropdown({
     setCopied(true);
     setTimeout(() => {
       setCopied(false);
+      setIsOpen(false);
+    }, 1500);
+  };
+
+  const handleCopyText = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!postContent) return;
+    navigator.clipboard.writeText(postContent);
+    setCopiedText(true);
+    setTimeout(() => {
+      setCopiedText(false);
       setIsOpen(false);
     }, 1500);
   };
@@ -176,6 +191,25 @@ export default function PostDropdown({
                 </>
               )}
             </button>
+
+            {postContent && (
+              <button
+                onClick={handleCopyText}
+                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-slate-300 transition hover:bg-[#1f2937] hover:text-white"
+              >
+                {copiedText ? (
+                  <>
+                    <Check size={16} className="text-green-500" />
+                    <span className="text-green-500">Copied Text!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy size={16} />
+                    <span>Copy Post Text</span>
+                  </>
+                )}
+              </button>
+            )}
 
             <button
               onClick={() => {
