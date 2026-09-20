@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import { useChatStore } from "@/store/chatStore";
-import { Users, UserPlus, MessageSquare, Check, X, UserX, RefreshCw, Search, ArrowUpDown } from "lucide-react";
+import { Users, UserPlus, MessageSquare, Check, X, UserX, RefreshCw, Search, ArrowUpDown, Download } from "lucide-react";
 import Link from "next/link";
 import { friendshipService } from "@/services/friendshipService";
 import {
@@ -35,7 +35,7 @@ export default function ConnectionsPage() {
   const [connections, setConnections] = useState<DisplayUser[]>([]);
   const [activeTab, setActiveTab] = useState<string>("requests");
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<"name" | "mutual">("name");
+  const [sortBy, setSortBy] = useState<"recent" | "name" | "mutual">("recent");
   const [mutualFilter, setMutualFilter] = useState<"all" | "has_mutual">("all");
   const [confirmUnfriendUser, setConfirmUnfriendUser] = useState<DisplayUser | null>(null);
   const [mutualUser, setMutualUser] = useState<DisplayUser | null>(null);
@@ -226,10 +226,27 @@ export default function ConnectionsPage() {
 
     if (sortBy === "mutual") {
       result.sort((a, b) => b.mutual - a.mutual);
-    } else {
+    } else if (sortBy === "name") {
       result.sort((a, b) => a.name.localeCompare(b.name));
     }
     return result;
+  };
+
+  const handleExportConnections = () => {
+    if (connections.length === 0) return;
+    const data = connections.map((c) => ({
+      id: c.id,
+      name: c.name,
+      role: c.role,
+      mutual: c.mutual,
+    }));
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `connections-export-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const filteredRequests = filterAndSortUsers(requests);
@@ -252,15 +269,28 @@ export default function ConnectionsPage() {
               description="Manage your developer network, pending invites, and community connections."
               icon={<Users size={22} />}
               actions={
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  leftIcon={<RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />}
-                  onClick={handleRefresh}
-                  disabled={loading || refreshing}
-                >
-                  Refresh
-                </Button>
+                <div className="flex items-center gap-2">
+                  {connections.length > 0 && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      leftIcon={<Download size={14} />}
+                      onClick={handleExportConnections}
+                      className="border border-[#1f2937] text-slate-300 hover:text-white"
+                    >
+                      Export
+                    </Button>
+                  )}
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    leftIcon={<RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />}
+                    onClick={handleRefresh}
+                    disabled={loading || refreshing}
+                  >
+                    Refresh
+                  </Button>
+                </div>
               }
             />
 
@@ -308,6 +338,16 @@ export default function ConnectionsPage() {
                 <span className="text-slate-400 text-[11px] mr-1 flex items-center gap-1">
                   <ArrowUpDown size={12} /> Sort:
                 </span>
+                <button
+                  onClick={() => setSortBy("recent")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                    sortBy === "recent"
+                      ? "bg-blue-600 text-white"
+                      : "bg-[#0f172a] text-slate-400 hover:text-white border border-[#1f2937]"
+                  }`}
+                >
+                  Recent
+                </button>
                 <button
                   onClick={() => setSortBy("name")}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
