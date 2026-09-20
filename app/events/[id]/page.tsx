@@ -18,6 +18,8 @@ import {
   Download,
   MessageSquare,
   Pencil,
+  Send,
+  Heart,
 } from "lucide-react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
@@ -58,6 +60,65 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
     startTime: "",
     coverUrl: "",
   });
+  const [newCommentText, setNewCommentText] = useState("");
+  const [discussions, setDiscussions] = useState<
+    Array<{
+      id: string;
+      author: string;
+      avatar: string;
+      content: string;
+      createdAt: string;
+      likes: number;
+      isLiked?: boolean;
+    }>
+  >([
+    {
+      id: "c1",
+      author: "Elena Rostova",
+      avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100",
+      content: "Will the recorded workshops and slide decks be made available for online attendees after the event?",
+      createdAt: "2 hours ago",
+      likes: 4,
+    },
+    {
+      id: "c2",
+      author: "David Kim",
+      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100",
+      content: "Looking forward to meeting fellow layout engineers in person! Anyone interested in a coffee sync before the keynote?",
+      createdAt: "5 hours ago",
+      likes: 7,
+    },
+  ]);
+
+  const handleAddComment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCommentText.trim()) return;
+    const newEntry = {
+      id: `comm-${Date.now()}`,
+      author: "You",
+      avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100",
+      content: newCommentText.trim(),
+      createdAt: "Just now",
+      likes: 0,
+      isLiked: false,
+    };
+    setDiscussions((prev) => [newEntry, ...prev]);
+    setNewCommentText("");
+  };
+
+  const handleToggleLikeComment = (commentId: string) => {
+    setDiscussions((prev) =>
+      prev.map((c) => {
+        if (c.id !== commentId) return c;
+        const isLiked = !c.isLiked;
+        return {
+          ...c,
+          isLiked,
+          likes: isLiked ? c.likes + 1 : Math.max(0, c.likes - 1),
+        };
+      })
+    );
+  };
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -579,6 +640,81 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
                           </div>
                         );
                       })}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Event Discussions & Q&A */}
+                <Card className="border-[#1f2937] bg-[#111827]/80">
+                  <CardContent className="p-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <MessageSquare size={18} className="text-blue-400" />
+                        <h2 className="text-base font-bold text-white">Event Discussion & Q&A</h2>
+                      </div>
+                      <Badge variant="primary" size="sm">
+                        {discussions.length} Posts
+                      </Badge>
+                    </div>
+
+                    {/* Post Comment Input */}
+                    <form onSubmit={handleAddComment} className="flex gap-2.5 pt-1">
+                      <Avatar
+                        src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100"
+                        name="You"
+                        size="sm"
+                      />
+                      <div className="flex-1 flex gap-2">
+                        <input
+                          type="text"
+                          value={newCommentText}
+                          onChange={(e) => setNewCommentText(e.target.value)}
+                          placeholder="Ask a question or share info with attendees..."
+                          className="flex-1 px-3.5 py-2 rounded-xl bg-[#0f172a] border border-[#1f2937] text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition"
+                        />
+                        <Button
+                          type="submit"
+                          size="sm"
+                          disabled={!newCommentText.trim()}
+                          className="bg-blue-600 hover:bg-blue-700 px-3"
+                        >
+                          <Send size={13} />
+                        </Button>
+                      </div>
+                    </form>
+
+                    {/* Comments List */}
+                    <div className="space-y-3 pt-2">
+                      {discussions.map((comm) => (
+                        <div
+                          key={comm.id}
+                          className="p-3.5 rounded-xl bg-[#0f172a] border border-[#1f2937] flex items-start gap-3"
+                        >
+                          <Avatar src={comm.avatar} name={comm.author} size="sm" />
+                          <div className="flex-1 space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-semibold text-white">{comm.author}</span>
+                              <span className="text-[10px] text-slate-500">{comm.createdAt}</span>
+                            </div>
+                            <p className="text-xs text-slate-300 leading-relaxed">{comm.content}</p>
+                            <div className="flex items-center gap-3 pt-1">
+                              <button
+                                type="button"
+                                onClick={() => handleToggleLikeComment(comm.id)}
+                                className={`flex items-center gap-1 text-[11px] font-medium transition cursor-pointer ${
+                                  comm.isLiked ? "text-rose-400" : "text-slate-400 hover:text-white"
+                                }`}
+                              >
+                                <Heart
+                                  size={12}
+                                  className={comm.isLiked ? "fill-rose-400 text-rose-400" : ""}
+                                />
+                                <span>{comm.likes}</span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </CardContent>
                 </Card>
