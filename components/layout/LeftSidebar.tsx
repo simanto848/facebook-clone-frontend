@@ -8,10 +8,11 @@ import { Sidebaritem } from "./SidebarItem";
 import { usePostStore } from "@/store/postStore";
 import { useAuthStore } from "@/store/authStore";
 import { callService } from "@/services/callService";
-import { User, LogIn } from "lucide-react";
-import { useEffect } from "react";
+import { User, LogIn, ChevronDown, ChevronUp } from "lucide-react";
+import { useEffect, useState } from "react";
 
 const LeftSidebar = () => {
+  const [isExpanded, setIsExpanded] = useState(false);
   const connectionRequests = usePostStore((state) => state.connectionRequests);
   const user = useAuthStore((state) => state.user);
 
@@ -68,8 +69,8 @@ const LeftSidebar = () => {
       )}
 
       {/* Navigation */}
-      <nav className="space-y-2">
-        {LeftSidebarItems.map((item) => {
+      <nav className="space-y-1">
+        {(isExpanded ? LeftSidebarItems : LeftSidebarItems.slice(0, 6)).map((item) => {
           const isConnections = item.label === "Connections";
           const badgeValue = isConnections ? connectionRequests.length : undefined;
           return (
@@ -82,6 +83,19 @@ const LeftSidebar = () => {
             />
           );
         })}
+
+        {LeftSidebarItems.length > 6 && (
+          <button
+            type="button"
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="flex items-center gap-3 w-full p-3 rounded-2xl text-slate-400 hover:text-white hover:bg-slate-800/60 transition cursor-pointer text-sm font-semibold"
+          >
+            <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-300">
+              {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </div>
+            <span>{isExpanded ? "See Less" : `See More (${LeftSidebarItems.length - 6})`}</span>
+          </button>
+        )}
       </nav>
     </aside>
   );
