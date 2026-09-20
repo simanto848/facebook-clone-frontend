@@ -1,4 +1,4 @@
-import { ChartLine, Circle, MessageSquare } from "lucide-react";
+import { ChartLine, Circle, MessageSquare, RefreshCw } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useState, useEffect } from "react";
@@ -63,25 +63,30 @@ const fallbackTrends = [
 const RightSidebar = () => {
   const [trends, setTrends] = useState(fallbackTrends);
   const [friendsList, setFriendsList] = useState<FriendItem[]>(fallbackFriends);
+  const [isRefreshingTrends, setIsRefreshingTrends] = useState(false);
   const { openChat } = useChatStore();
 
-  useEffect(() => {
-    const fetchTrends = async () => {
-      try {
-        const res = await hashtagService.getTrending(5);
-        const items = res?.data || res?.hashtags || res || [];
-        if (Array.isArray(items) && items.length > 0) {
-          const parsed = items.map((t: any) => ({
-            category: t.category || "Trending Topic",
-            title: t.name ? (t.name.startsWith("#") ? t.name : `#${t.name}`) : (t.tag ? `#${t.tag}` : "#tech"),
-            posts: t._count?.posts ? `${t._count.posts} posts` : (t.count ? `${t.count} posts` : "Hot"),
-          }));
-          setTrends(parsed);
-        }
-      } catch (err) {
-        console.warn("Using fallback trends due to network error:", err);
+  const fetchTrends = async () => {
+    setIsRefreshingTrends(true);
+    try {
+      const res = await hashtagService.getTrending(5);
+      const items = res?.data || res?.hashtags || res || [];
+      if (Array.isArray(items) && items.length > 0) {
+        const parsed = items.map((t: any) => ({
+          category: t.category || "Trending Topic",
+          title: t.name ? (t.name.startsWith("#") ? t.name : `#${t.name}`) : (t.tag ? `#${t.tag}` : "#tech"),
+          posts: t._count?.posts ? `${t._count.posts} posts` : (t.count ? `${t.count} posts` : "Hot"),
+        }));
+        setTrends(parsed);
       }
-    };
+    } catch (err) {
+      console.warn("Using fallback trends due to network error:", err);
+    } finally {
+      setTimeout(() => setIsRefreshingTrends(false), 500);
+    }
+  };
+
+  useEffect(() => {
 
     const fetchFriends = async () => {
       try {
@@ -143,11 +148,22 @@ const RightSidebar = () => {
 
       {/* Trending Card */}
       <div className="rounded-2xl border border-[#232d42] bg-linear-to-br from-[#141625] to-[#111827] p-5 shadow-lg shadow-black/20">
-        <div className="flex items-center gap-2 text-[#ffb088]">
-          <ChartLine size={16} />
-          <h2 className="text-xs font-bold uppercase tracking-wider">
-            Trending Now
-          </h2>
+        <div className="flex items-center justify-between text-[#ffb088]">
+          <div className="flex items-center gap-2">
+            <ChartLine size={16} />
+            <h2 className="text-xs font-bold uppercase tracking-wider">
+              Trending Now
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={fetchTrends}
+            disabled={isRefreshingTrends}
+            className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition cursor-pointer"
+            title="Refresh trending topics"
+          >
+            <RefreshCw size={13} className={isRefreshingTrends ? "animate-spin text-amber-400" : ""} />
+          </button>
         </div>
 
         <div className="my-4 h-px bg-[#232d42]" />
