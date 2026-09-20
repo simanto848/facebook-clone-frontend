@@ -7,9 +7,12 @@ import {
   Bookmark,
   EyeOff,
   AlertTriangle,
-  Link,
+  Link as LinkIcon,
   Check,
   BarChart3,
+  Bell,
+  BellOff,
+  ExternalLink,
 } from "lucide-react";
 
 interface Props {
@@ -39,6 +42,7 @@ export default function PostDropdown({
 }: Props) {
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
 
   const handleCopyLink = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -49,6 +53,12 @@ export default function PostDropdown({
       setCopied(false);
       setIsOpen(false);
     }, 1500);
+  };
+
+  const handleToggleMute = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsMuted(!isMuted);
+    setIsOpen(false);
   };
 
   return (
@@ -125,8 +135,36 @@ export default function PostDropdown({
                 </>
               ) : (
                 <>
-                  <Link size={16} />
+                  <LinkIcon size={16} />
                   <span>Copy Link</span>
+                </>
+              )}
+            </button>
+
+            <button
+              onClick={() => {
+                window.open(`/post/${postId}`, "_blank");
+                setIsOpen(false);
+              }}
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-slate-300 transition hover:bg-[#1f2937] hover:text-white"
+            >
+              <ExternalLink size={16} />
+              <span>Open in New Tab</span>
+            </button>
+
+            <button
+              onClick={handleToggleMute}
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-slate-300 transition hover:bg-[#1f2937] hover:text-white"
+            >
+              {isMuted ? (
+                <>
+                  <Bell size={16} className="text-blue-400" />
+                  <span className="text-blue-400">Unmute Notifications</span>
+                </>
+              ) : (
+                <>
+                  <BellOff size={16} />
+                  <span>Mute Notifications</span>
                 </>
               )}
             </button>
