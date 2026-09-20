@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
-import { Bookmark, BookmarkX, Search, X, Tag, Download, Check } from "lucide-react";
+import { Bookmark, BookmarkX, Search, X, Tag, Download, Check, Image as ImageIcon, Video, FileText, BarChart2, AlignLeft } from "lucide-react";
 import { bookmarkService } from "@/services/bookmarkService";
 import { mapBackendPostToPostType, PostType, usePostStore } from "@/store/postStore";
 import { PageHeader, Badge, EmptyState, Loader } from "@/components/ui";
@@ -13,6 +13,9 @@ export default function SavedPostsPage() {
   const [savedPosts, setSavedPosts] = useState<(PostType & { bookmarkId?: string; category?: string })[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedExport, setCopiedExport] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedType, setSelectedType] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const { toggleSavePost } = usePostStore();
 
   const handleExportBookmarks = () => {
@@ -82,9 +85,6 @@ export default function SavedPostsPage() {
     fetchBookmarks();
   }, []);
 
-  const [selectedCategory, setSelectedCategory] = useState("all");
-  const [searchQuery, setSearchQuery] = useState("");
-
   const handleAssignCategory = (postId: string, newCategory: string) => {
     setSavedPosts((prev) =>
       prev.map((p) => (p.id === postId ? { ...p, category: newCategory } : p))
@@ -118,6 +118,15 @@ export default function SavedPostsPage() {
     { id: "articles", label: "Articles" },
   ];
 
+  const postTypes = [
+    { id: "all", label: "All Formats" },
+    { id: "media", label: "Images", icon: ImageIcon },
+    { id: "video", label: "Videos", icon: Video },
+    { id: "article", label: "Articles", icon: FileText },
+    { id: "poll", label: "Polls", icon: BarChart2 },
+    { id: "text", label: "Text", icon: AlignLeft },
+  ];
+
   const handleUnbookmark = async (bookmarkId: string, postId: string) => {
     // Optimistic state removal
     setSavedPosts((prev) => prev.filter((p) => p.id !== postId && p.bookmarkId !== bookmarkId));
@@ -130,8 +139,15 @@ export default function SavedPostsPage() {
   };
 
   const filteredPosts = searchedPosts.filter((post) => {
-    if (selectedCategory === "all") return true;
-    return post.category === selectedCategory;
+    if (selectedCategory !== "all" && post.category !== selectedCategory) return false;
+    if (selectedType !== "all") {
+      if (selectedType === "media" && post.type !== "image" && (!post.images || post.images.length === 0)) return false;
+      if (selectedType === "video" && post.type !== "video" && !post.video) return false;
+      if (selectedType === "article" && post.type !== "article" && !post.article) return false;
+      if (selectedType === "poll" && post.type !== "poll" && !post.poll) return false;
+      if (selectedType === "text" && post.type !== "text") return false;
+    }
+    return true;
   });
 
   return (
@@ -210,6 +226,29 @@ export default function SavedPostsPage() {
                     >
                       {count}
                     </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* FORMAT / TYPE FILTER PILLS */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+              <span className="text-[11px] text-slate-500 font-medium mr-1 shrink-0">Format:</span>
+              {postTypes.map((type) => {
+                const isActive = selectedType === type.id;
+                const IconComponent = type.icon;
+                return (
+                  <button
+                    key={type.id}
+                    onClick={() => setSelectedType(type.id)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap flex items-center gap-1.5 transition-all cursor-pointer ${
+                      isActive
+                        ? "bg-slate-800 text-blue-400 border border-blue-500/40"
+                        : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
+                    }`}
+                  >
+                    {IconComponent && <IconComponent size={12} />}
+                    <span>{type.label}</span>
                   </button>
                 );
               })}
