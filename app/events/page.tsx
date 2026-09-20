@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
-import { Calendar, MapPin, Users, Ticket, Check, Plus, Image as ImageIcon, Search, Share2, ExternalLink } from "lucide-react";
+import { Calendar, MapPin, Users, Ticket, Check, Plus, Image as ImageIcon, Search, Share2, ExternalLink, Flame, ArrowUpDown } from "lucide-react";
 import Image from "next/image";
 import { eventService } from "@/services/eventService";
 import {
@@ -68,6 +68,7 @@ export default function EventsPage() {
   const [events, setEvents] = useState<TechEvent[]>(initialEvents);
   const [rsvps, setRsvps] = useState<Record<string, "going" | "interested" | null>>({ e1: "interested" });
   const [activeFilter, setActiveFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<"popular" | "date" | "name">("popular");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [copiedEventId, setCopiedEventId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -261,6 +262,18 @@ export default function EventsPage() {
       );
     }
 
+    if (sortBy === "popular") {
+      list = [...list].sort((a, b) => (b.attendees || 0) - (a.attendees || 0));
+    } else if (sortBy === "name") {
+      list = [...list].sort((a, b) => a.title.localeCompare(b.title));
+    } else if (sortBy === "date") {
+      list = [...list].sort((a, b) => {
+        const timeA = new Date(a.date).getTime() || 0;
+        const timeB = new Date(b.date).getTime() || 0;
+        return timeA - timeB;
+      });
+    }
+
     return list;
   };
 
@@ -382,6 +395,51 @@ export default function EventsPage() {
                   </span>
                 </button>
               ))}
+            </div>
+
+            {/* Sort & Count Bar */}
+            <div className="flex items-center justify-between text-xs pt-1">
+              <div className="flex items-center gap-1.5">
+                <span className="text-slate-500 text-[11px] font-medium flex items-center gap-1">
+                  <ArrowUpDown size={12} />
+                  <span>Sort by:</span>
+                </span>
+                <button
+                  onClick={() => setSortBy("popular")}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium flex items-center gap-1 transition ${
+                    sortBy === "popular"
+                      ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
+                      : "bg-[#111827] text-slate-400 hover:text-white border border-[#1f2937]"
+                  }`}
+                >
+                  <Flame size={12} className={sortBy === "popular" ? "text-amber-400 fill-amber-400" : ""} />
+                  <span>Most Popular</span>
+                </button>
+                <button
+                  onClick={() => setSortBy("date")}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium flex items-center gap-1 transition ${
+                    sortBy === "date"
+                      ? "bg-blue-500/20 text-blue-300 border border-blue-500/40"
+                      : "bg-[#111827] text-slate-400 hover:text-white border border-[#1f2937]"
+                  }`}
+                >
+                  <Calendar size={12} />
+                  <span>Date</span>
+                </button>
+                <button
+                  onClick={() => setSortBy("name")}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition ${
+                    sortBy === "name"
+                      ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                      : "bg-[#111827] text-slate-400 hover:text-white border border-[#1f2937]"
+                  }`}
+                >
+                  Alphabetical
+                </button>
+              </div>
+              <span className="text-[11px] text-slate-500 hidden sm:inline">
+                Showing {filteredEvents.length} {filteredEvents.length === 1 ? "event" : "events"}
+              </span>
             </div>
 
             {/* Events List Grid */}
