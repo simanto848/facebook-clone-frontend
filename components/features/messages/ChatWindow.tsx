@@ -34,6 +34,8 @@ export default function ChatWindow() {
   const [activeCall, setActiveCall] = useState<"audio" | "video" | null>(null);
   const [showRecorder, setShowRecorder] = useState(false);
   const [attachment, setAttachment] = useState<{ url: string; type: "image" | "video" | "file" } | null>(null);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [inChatSearchQuery, setInChatSearchQuery] = useState("");
 
   const [hoveredMsgIndex, setHoveredMsgIndex] = useState<number | null>(null);
   const [editingMsgIndex, setEditingMsgIndex] = useState<number | null>(null);
@@ -75,6 +77,11 @@ export default function ChatWindow() {
   const activeConversation = conversations.find(
     (c) => c.id === activeConversationId
   );
+
+  const displayedMessages = (activeConversation?.messages || []).filter((m) => {
+    if (!inChatSearchQuery.trim()) return true;
+    return m.text?.toLowerCase().includes(inChatSearchQuery.toLowerCase().trim());
+  });
 
   useEffect(() => {
     if (activeConversationId) {
@@ -181,7 +188,19 @@ export default function ChatWindow() {
 
             {/* Actions */}
             <div className="flex items-center gap-2">
-              <button className="hidden sm:flex h-10 w-10 items-center justify-center rounded-xl bg-[#1f2937] text-slate-400 transition hover:bg-[#263247] hover:text-white">
+              <button
+                onClick={() => {
+                  const nextState = !isSearchOpen;
+                  setIsSearchOpen(nextState);
+                  if (!nextState) setInChatSearchQuery("");
+                }}
+                className={`hidden sm:flex h-10 w-10 items-center justify-center rounded-xl transition cursor-pointer ${
+                  isSearchOpen
+                    ? "bg-blue-600/30 text-blue-400 border border-blue-500/40"
+                    : "bg-[#1f2937] text-slate-400 hover:bg-[#263247] hover:text-white"
+                }`}
+                title={isSearchOpen ? "Close search" : "Search in conversation"}
+              >
                 <Search size={18} />
               </button>
 
@@ -234,6 +253,43 @@ export default function ChatWindow() {
             </div>
           </div>
 
+          {/* IN-CONVERSATION SEARCH BAR */}
+          {isSearchOpen && (
+            <div className="px-4 py-2.5 bg-[#162032] border-b border-[#1f2937] flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-150">
+              <Search size={15} className="text-slate-400 shrink-0" />
+              <input
+                type="text"
+                autoFocus
+                placeholder="Search messages in this conversation..."
+                value={inChatSearchQuery}
+                onChange={(e) => setInChatSearchQuery(e.target.value)}
+                className="flex-1 bg-transparent text-xs text-white placeholder:text-slate-500 outline-none"
+              />
+              {inChatSearchQuery && (
+                <div className="flex items-center gap-2 text-[11px] text-slate-400 shrink-0">
+                  <span className="font-medium text-slate-300">
+                    {displayedMessages.length} match{displayedMessages.length === 1 ? "" : "es"}
+                  </span>
+                  <button
+                    onClick={() => setInChatSearchQuery("")}
+                    className="p-1 hover:text-white"
+                  >
+                    <X size={13} />
+                  </button>
+                </div>
+              )}
+              <button
+                onClick={() => {
+                  setIsSearchOpen(false);
+                  setInChatSearchQuery("");
+                }}
+                className="px-2.5 py-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 text-xs font-medium cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          )}
+
           {/* MESSAGES */}
           <div className="flex-1 overflow-y-auto px-4 md:px-6 py-6 space-y-4">
             {/* Date separator */}
@@ -243,8 +299,14 @@ export default function ChatWindow() {
               </span>
             </div>
 
+            {displayedMessages.length === 0 && inChatSearchQuery.trim() && (
+              <div className="py-12 text-center text-xs text-slate-400">
+                No messages found matching &quot;{inChatSearchQuery}&quot;
+              </div>
+            )}
+
             <div className="space-y-4">
-              {activeConversation.messages.map((msg, index) => {
+              {displayedMessages.map((msg, index) => {
                 const isMe = msg.sender === "me";
                 const isCallMsg =
                   msg.text.includes("📞") ||
