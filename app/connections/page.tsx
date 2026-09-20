@@ -139,6 +139,28 @@ export default function ConnectionsPage() {
 
   const [sentRequestIds, setSentRequestIds] = useState<string[]>([]);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [acceptingAll, setAcceptingAll] = useState(false);
+
+  const handleAcceptAllRequests = async () => {
+    if (requests.length === 0 || acceptingAll) return;
+    setAcceptingAll(true);
+    const toAccept = [...requests];
+    setRequests([]);
+    setConnections((prev) => [...toAccept, ...prev]);
+
+    try {
+      await Promise.allSettled(
+        toAccept.map((u) => friendshipService.acceptFriendRequest(u.id))
+      );
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("app:friendship_updated"));
+      }
+    } catch (err) {
+      console.error("Failed to accept all requests:", err);
+    } finally {
+      setAcceptingAll(false);
+    }
+  };
 
   const handleAcceptRequest = async (user: DisplayUser) => {
     setProcessingId(user.id);
@@ -392,7 +414,22 @@ export default function ConnectionsPage() {
                       }
                     />
                   ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between pb-1">
+                        <span className="text-xs font-semibold text-slate-300">
+                          Pending Requests ({filteredRequests.length})
+                        </span>
+                        <button
+                          type="button"
+                          onClick={handleAcceptAllRequests}
+                          disabled={acceptingAll}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition cursor-pointer shadow-md shadow-blue-600/20 disabled:opacity-50"
+                        >
+                          <Check size={14} />
+                          <span>{acceptingAll ? "Accepting All..." : `Accept All (${filteredRequests.length})`}</span>
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {filteredRequests.map((user) => (
                         <Card key={user.id} hover>
                           <CardContent className="space-y-4">
@@ -458,6 +495,7 @@ export default function ConnectionsPage() {
                           </CardContent>
                         </Card>
                       ))}
+                      </div>
                     </div>
                   )}
                 </div>
