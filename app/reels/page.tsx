@@ -83,6 +83,7 @@ export default function ReelsPage() {
   const [isMuted, setIsMuted] = useState(true);
   const [soundBadge, setSoundBadge] = useState<"muted" | "unmuted" | null>(null);
   const [isPlaying, setIsPlaying] = useState(true);
+  const [isAutoplay, setIsAutoplay] = useState(true);
 
   const toggleSound = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -95,6 +96,12 @@ export default function ReelsPage() {
     setTimeout(() => {
       setSoundBadge(null);
     }, 1200);
+  };
+
+  const handleVideoEnded = () => {
+    if (isAutoplay) {
+      handleNextReel();
+    }
   };
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -353,6 +360,22 @@ export default function ReelsPage() {
               </button>
 
               <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsAutoplay((prev) => !prev);
+                  }}
+                  className={`px-2.5 py-1 rounded-full text-[11px] font-semibold flex items-center gap-1.5 transition cursor-pointer backdrop-blur-md ${
+                    isAutoplay
+                      ? "bg-blue-600/70 text-white border border-blue-400/40"
+                      : "bg-black/50 text-slate-300 hover:text-white"
+                  }`}
+                  title={isAutoplay ? "Continuous Autoplay ON" : "Continuous Autoplay OFF"}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full ${isAutoplay ? "bg-emerald-400 animate-pulse" : "bg-slate-400"}`} />
+                  <span>{isAutoplay ? "Autoplay" : "Single"}</span>
+                </button>
                 <span className="text-[11px] font-mono font-bold bg-black/50 px-2.5 py-1 rounded-full text-slate-300">
                   {activeReelIndex + 1} / {reels.length}
                 </span>
@@ -373,7 +396,8 @@ export default function ReelsPage() {
                 ref={videoRef}
                 src={currentReel.videoUrl}
                 autoPlay
-                loop
+                loop={!isAutoplay}
+                onEnded={handleVideoEnded}
                 muted={isMuted}
                 playsInline
                 className="h-full w-full object-cover"
