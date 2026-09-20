@@ -1,6 +1,6 @@
 "use client";
 
-import { X } from "lucide-react";
+import { X, Bell, BellOff, Download, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 import { useChatStore } from "@/store/chatStore";
@@ -11,11 +11,35 @@ type Props = {
 
 export default function ChatInfoPanel({ onClose }: Props) {
   const [activeTab, setActiveTab] = useState("images");
-  const { conversations, activeConversationId } = useChatStore();
+  const [isMuted, setIsMuted] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const { conversations, activeConversationId, clearConversationMessages } = useChatStore();
 
   const activeConversation = conversations.find(
     (c) => c.id === activeConversationId
   );
+
+  const handleExportChat = () => {
+    if (!activeConversation) return;
+    const history = {
+      conversationWith: activeConversation.name,
+      exportedAt: new Date().toISOString(),
+      messages: activeConversation.messages,
+    };
+    const blob = new Blob([JSON.stringify(history, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `chat-history-${activeConversation.name.toLowerCase().replace(/\s+/g, "_")}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleClearChat = () => {
+    if (!activeConversationId) return;
+    clearConversationMessages(activeConversationId);
+    setShowClearConfirm(false);
+  };
 
   const tabs = ["images", "videos", "links", "pinned"];
 
@@ -132,6 +156,64 @@ export default function ChatInfoPanel({ onClose }: Props) {
               🔥 Remember to update the API docs with the new payload format.
             </div>
           </div>
+        )}
+      </div>
+
+      {/* Chat Options & Actions */}
+      <div className="p-4 border-t border-[#1f2937] space-y-2 shrink-0 bg-[#0f172a]/60">
+        <h4 className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider px-1">
+          Chat Options
+        </h4>
+
+        <button
+          onClick={() => setIsMuted(!isMuted)}
+          className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-[#1f2937] text-xs text-slate-300 hover:text-white transition cursor-pointer"
+        >
+          <div className="flex items-center gap-2.5">
+            {isMuted ? <BellOff size={15} className="text-amber-400" /> : <Bell size={15} className="text-slate-400" />}
+            <span>{isMuted ? "Unmute Notifications" : "Mute Notifications"}</span>
+          </div>
+          <span className={`text-[10px] px-2 py-0.5 rounded-full ${isMuted ? "bg-amber-500/20 text-amber-300" : "bg-slate-800 text-slate-400"}`}>
+            {isMuted ? "Muted" : "Active"}
+          </span>
+        </button>
+
+        <button
+          onClick={handleExportChat}
+          className="w-full flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-[#1f2937] text-xs text-slate-300 hover:text-white transition cursor-pointer"
+        >
+          <Download size={15} className="text-slate-400" />
+          <span>Export Chat History</span>
+        </button>
+
+        {showClearConfirm ? (
+          <div className="p-3 rounded-xl bg-rose-950/40 border border-rose-500/30 space-y-2">
+            <p className="text-[11px] text-rose-300 font-medium">
+              Clear all messages in this conversation?
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowClearConfirm(false)}
+                className="flex-1 py-1 rounded-lg text-xs bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleClearChat}
+                className="flex-1 py-1 rounded-lg text-xs bg-rose-600 hover:bg-rose-500 text-white font-semibold transition cursor-pointer"
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowClearConfirm(true)}
+            className="w-full flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-rose-500/10 text-xs text-rose-400 hover:text-rose-300 transition cursor-pointer"
+          >
+            <Trash2 size={15} />
+            <span>Clear Chat Messages</span>
+          </button>
         )}
       </div>
     </aside>

@@ -53,6 +53,7 @@ interface ChatState {
   addReaction: (convId: string, msgIndex: number, emoji: string) => void;
   editMessage: (convId: string, msgIndex: number, newText: string) => void;
   deleteMessage: (convId: string, msgIndex: number) => void;
+  clearConversationMessages: (convId: string) => void;
 }
 
 let activeFetchPromise: Promise<void> | null = null;
@@ -370,5 +371,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
         ),
       };
     });
+  },
+
+  clearConversationMessages: (convId: string) => {
+    set((state) => ({
+      conversations: state.conversations.map((c) =>
+        c.id === convId ? { ...c, messages: [] } : c
+      ),
+      openChatBoxes: state.openChatBoxes.map((b) =>
+        b.id === convId ? { ...b, messages: [] } : b
+      ),
+    }));
   },
 }));
