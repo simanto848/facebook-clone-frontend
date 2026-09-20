@@ -180,6 +180,21 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
     URL.revokeObjectURL(url);
   };
 
+  const handleAddToGoogleCalendar = () => {
+    if (!event) return;
+    const title = encodeURIComponent(event.title || "Event");
+    const details = encodeURIComponent(event.description || "");
+    const location = encodeURIComponent(event.location || "");
+    const start = event.startTime ? new Date(event.startTime) : new Date();
+    const end = event.endTime ? new Date(event.endTime) : new Date(start.getTime() + 2 * 60 * 60 * 1000);
+    const formatGCalDate = (date: Date) => date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+    const dates = `${formatGCalDate(start)}/${formatGCalDate(end)}`;
+    const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&location=${location}&dates=${dates}`;
+    if (typeof window !== "undefined") {
+      window.open(gcalUrl, "_blank", "noopener,noreferrer");
+    }
+  };
+
   const handleOpenEdit = () => {
     if (!event) return;
     setEditForm({
@@ -277,6 +292,16 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
                   className="border border-[#1f2937] text-slate-300 hover:text-white"
                 >
                   Export .ics
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  leftIcon={<ExternalLink size={14} />}
+                  onClick={handleAddToGoogleCalendar}
+                  disabled={!event}
+                  className="border border-[#1f2937] text-slate-300 hover:text-white"
+                >
+                  Google Calendar
                 </Button>
                 <Button
                   variant="secondary"
