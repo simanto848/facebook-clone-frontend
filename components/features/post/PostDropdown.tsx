@@ -13,6 +13,8 @@ import {
   Bell,
   BellOff,
   ExternalLink,
+  UserPlus,
+  UserCheck,
 } from "lucide-react";
 
 interface Props {
@@ -25,6 +27,10 @@ interface Props {
   onHide: () => void;
   onReport: () => void;
   onAnalytics?: () => void;
+  isAuthor?: boolean;
+  authorName?: string;
+  isFollowingAuthor?: boolean;
+  onFollowAuthor?: () => void;
   postId: string;
 }
 
@@ -38,6 +44,10 @@ export default function PostDropdown({
   onHide,
   onReport,
   onAnalytics,
+  isAuthor = true,
+  authorName,
+  isFollowingAuthor = false,
+  onFollowAuthor,
   postId,
 }: Props) {
   const [isOpen, setIsOpen] = useState(false);
@@ -74,42 +84,68 @@ export default function PostDropdown({
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
           <div className="absolute right-0 mt-2 w-56 z-50 rounded-xl border border-[#1f2937] bg-[#111827] p-1.5 shadow-xl animate-in fade-in slide-in-from-top-2 duration-150">
-            <button
-              onClick={() => {
-                onEdit();
-                setIsOpen(false);
-              }}
-              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-slate-300 transition hover:bg-[#1f2937] hover:text-white"
-            >
-              <Pencil size={16} />
-              <span>Edit Post</span>
-            </button>
+            {isAuthor && (
+              <>
+                <button
+                  onClick={() => {
+                    onEdit();
+                    setIsOpen(false);
+                  }}
+                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-slate-300 transition hover:bg-[#1f2937] hover:text-white"
+                >
+                  <Pencil size={16} />
+                  <span>Edit Post</span>
+                </button>
 
-            {onAnalytics && (
+                {onAnalytics && (
+                  <button
+                    onClick={() => {
+                      onAnalytics();
+                      setIsOpen(false);
+                    }}
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-slate-300 transition hover:bg-[#1f2937] hover:text-white"
+                  >
+                    <BarChart3 size={16} className="text-blue-400" />
+                    <span>View Analytics</span>
+                  </button>
+                )}
+
+                <button
+                  onClick={() => {
+                    onPin();
+                    setIsOpen(false);
+                  }}
+                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition hover:bg-[#1f2937] ${
+                    isPinned ? "text-blue-400 font-semibold" : "text-slate-300 hover:text-white"
+                  }`}
+                >
+                  <Pin size={16} className={isPinned ? "fill-blue-500" : ""} />
+                  <span>{isPinned ? "Unpin Post" : "Pin Post"}</span>
+                </button>
+              </>
+            )}
+
+            {!isAuthor && onFollowAuthor && (
               <button
                 onClick={() => {
-                  onAnalytics();
+                  onFollowAuthor();
                   setIsOpen(false);
                 }}
                 className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-slate-300 transition hover:bg-[#1f2937] hover:text-white"
               >
-                <BarChart3 size={16} className="text-blue-400" />
-                <span>View Analytics</span>
+                {isFollowingAuthor ? (
+                  <>
+                    <UserCheck size={16} className="text-blue-400" />
+                    <span>Unfollow {authorName ? authorName.split(" ")[0] : "Author"}</span>
+                  </>
+                ) : (
+                  <>
+                    <UserPlus size={16} />
+                    <span>Follow {authorName ? authorName.split(" ")[0] : "Author"}</span>
+                  </>
+                )}
               </button>
             )}
-
-            <button
-              onClick={() => {
-                onPin();
-                setIsOpen(false);
-              }}
-              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition hover:bg-[#1f2937] ${
-                isPinned ? "text-blue-400 font-semibold" : "text-slate-300 hover:text-white"
-              }`}
-            >
-              <Pin size={16} className={isPinned ? "fill-blue-500" : ""} />
-              <span>{isPinned ? "Unpin Post" : "Pin Post"}</span>
-            </button>
 
             <button
               onClick={() => {
@@ -191,18 +227,22 @@ export default function PostDropdown({
               <span>Report Post</span>
             </button>
 
-            <div className="my-1 border-t border-[#1f2937]" />
+            {isAuthor && (
+              <>
+                <div className="my-1 border-t border-[#1f2937]" />
 
-            <button
-              onClick={() => {
-                onDelete();
-                setIsOpen(false);
-              }}
-              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-red-400 transition hover:bg-red-500/10"
-            >
-              <Trash2 size={16} />
-              <span>Delete Post</span>
-            </button>
+                <button
+                  onClick={() => {
+                    onDelete();
+                    setIsOpen(false);
+                  }}
+                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-red-400 transition hover:bg-red-500/10"
+                >
+                  <Trash2 size={16} />
+                  <span>Delete Post</span>
+                </button>
+              </>
+            )}
           </div>
         </>
       )}

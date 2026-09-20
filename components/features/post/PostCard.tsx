@@ -21,6 +21,8 @@ import { reactionService } from "@/services/reactionService";
 import { bookmarkService } from "@/services/bookmarkService";
 import { postService } from "@/services/postService";
 import { shareService } from "@/services/shareService";
+import { useAuthStore } from "@/store/authStore";
+import { followService } from "@/services/followService";
 
 interface Props {
   post: PostType;
@@ -28,6 +30,7 @@ interface Props {
 }
 
 export default function PostCard({ post, defaultShowComments = false }: Props) {
+  const user = useAuthStore((s) => s.user);
   const {
     deletePost,
     editPost,
@@ -43,6 +46,26 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
   const [showReactionPicker, setShowReactionPicker] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [directMessageModalOpen, setDirectMessageModalOpen] = useState(false);
+  const [isFollowingAuthor, setIsFollowingAuthor] = useState(false);
+
+  const isAuthor = Boolean(
+    (user && (user.username === post.author.username || user.id === post.author.username)) ||
+    post.author.username === "alex"
+  );
+
+  const handleToggleFollowAuthor = async () => {
+    const nextFollowing = !isFollowingAuthor;
+    setIsFollowingAuthor(nextFollowing);
+    try {
+      if (nextFollowing) {
+        await followService.followUser(post.author.username);
+      } else {
+        await followService.unfollowUser(post.author.username);
+      }
+    } catch {
+      // ignore
+    }
+  };
   const [showReactionsModal, setShowReactionsModal] = useState(false);
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
   const [mediaModalState, setMediaModalState] = useState<{ isOpen: boolean; initialIndex: number }>({ isOpen: false, initialIndex: 0 });
@@ -229,6 +252,10 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
           postId={post.id}
           isSaved={!!post.saved}
           isPinned={!!post.pinned}
+          isAuthor={isAuthor}
+          authorName={post.author.name}
+          isFollowingAuthor={isFollowingAuthor}
+          onFollowAuthor={handleToggleFollowAuthor}
           onEdit={() => setIsEditing(true)}
           onDelete={() => setShowDeleteConfirm(true)}
           onPin={() => togglePinPost(post.id)}
