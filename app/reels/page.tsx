@@ -170,6 +170,26 @@ export default function ReelsPage() {
     loadVideoPosts();
   }, []);
 
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const targetId = params.get("id");
+      if (targetId) {
+        const found = reels.findIndex((r) => r.id === targetId);
+        if (found !== -1) {
+          setActiveReelIndex(found);
+        }
+      }
+    }
+  }, [reels]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && reels[activeReelIndex]) {
+      const newUrl = `${window.location.pathname}?id=${reels[activeReelIndex].id}`;
+      window.history.replaceState(null, "", newUrl);
+    }
+  }, [activeReelIndex, reels]);
+
   const handlePrevReel = () => {
     setActiveReelIndex((prev) => (prev > 0 ? prev - 1 : reels.length - 1));
   };
@@ -304,11 +324,28 @@ export default function ReelsPage() {
       // ignore
     }
 
-    if (typeof navigator !== "undefined" && navigator.clipboard) {
-      const shareUrl = `${window.location.origin}/reels`;
-      navigator.clipboard.writeText(shareUrl).catch(() => {});
-      setShareToast("Link copied to clipboard!");
-      setTimeout(() => setShareToast(null), 2500);
+    if (typeof window !== "undefined") {
+      const shareUrl = `${window.location.origin}/reels?id=${reelId}`;
+      if (navigator.share) {
+        navigator
+          .share({
+            title: currentReel.caption || "Watch this reel",
+            url: shareUrl,
+          })
+          .then(() => {
+            setShareToast("Reel shared successfully!");
+            setTimeout(() => setShareToast(null), 2500);
+          })
+          .catch(() => {
+            navigator.clipboard?.writeText(shareUrl);
+            setShareToast("Reel link copied to clipboard!");
+            setTimeout(() => setShareToast(null), 2500);
+          });
+      } else if (navigator.clipboard) {
+        navigator.clipboard.writeText(shareUrl);
+        setShareToast("Reel link copied to clipboard!");
+        setTimeout(() => setShareToast(null), 2500);
+      }
     }
   };
 
