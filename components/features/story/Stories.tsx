@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
-import { Plus, Type, Image as ImageIcon, Video } from "lucide-react";
+import { Plus, Type, Image as ImageIcon, Video, ChevronLeft, ChevronRight } from "lucide-react";
 import { usePostStore, StoryType } from "@/store/postStore";
 import { useAuthStore } from "@/store/authStore";
 import { storyService } from "@/services/storyService";
@@ -21,6 +21,29 @@ export default function Stories() {
   const [storyError, setStoryError] = useState<string | null>(null);
   const [storyToDelete, setStoryToDelete] = useState<string | null>(null);
   const [isDeletingStory, setIsDeletingStory] = useState(false);
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
+  const checkScroll = () => {
+    if (scrollContainerRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
+      setCanScrollLeft(scrollLeft > 10);
+      setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 10);
+    }
+  };
+
+  useEffect(() => {
+    checkScroll();
+  }, [stories]);
+
+  const handleScrollLeft = () => {
+    scrollContainerRef.current?.scrollBy({ left: -240, behavior: "smooth" });
+  };
+
+  const handleScrollRight = () => {
+    scrollContainerRef.current?.scrollBy({ left: 240, behavior: "smooth" });
+  };
 
   const handleDeleteStory = async (storyId: string) => {
     try {
@@ -122,8 +145,36 @@ export default function Stories() {
   }));
 
   return (
-    <div className="relative w-full">
-      <div className="flex gap-3 overflow-x-auto custom-scrollbar pb-2 pt-1 select-none">
+    <div className="relative w-full group/stories">
+      {/* Scroll Left Button */}
+      {canScrollLeft && (
+        <button
+          type="button"
+          onClick={handleScrollLeft}
+          className="absolute left-2 top-1/2 -translate-y-1/2 z-20 h-9 w-9 rounded-full bg-slate-900/90 border border-slate-700 text-white flex items-center justify-center hover:bg-blue-600 hover:border-blue-500 shadow-xl transition opacity-90 hover:opacity-100"
+          aria-label="Scroll left"
+        >
+          <ChevronLeft size={20} />
+        </button>
+      )}
+
+      {/* Scroll Right Button */}
+      {canScrollRight && stories.length > 2 && (
+        <button
+          type="button"
+          onClick={handleScrollRight}
+          className="absolute right-2 top-1/2 -translate-y-1/2 z-20 h-9 w-9 rounded-full bg-slate-900/90 border border-slate-700 text-white flex items-center justify-center hover:bg-blue-600 hover:border-blue-500 shadow-xl transition opacity-90 hover:opacity-100"
+          aria-label="Scroll right"
+        >
+          <ChevronRight size={20} />
+        </button>
+      )}
+
+      <div
+        ref={scrollContainerRef}
+        onScroll={checkScroll}
+        className="flex gap-3 overflow-x-auto custom-scrollbar pb-2 pt-1 select-none scroll-smooth"
+      >
         {/* Create Story Card */}
         <div
           onClick={() => setShowCreateModal(true)}
