@@ -4,7 +4,7 @@ import React, { useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
-import { X, Bookmark, Settings, User, LogOut, HelpCircle, Shield, Calendar, Bell } from "lucide-react";
+import { X, Bookmark, Settings, User, LogOut, HelpCircle, Shield, Calendar, Bell, Clapperboard } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 interface MobileDrawerProps {
@@ -15,7 +15,7 @@ interface MobileDrawerProps {
 export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
 
   // Close drawer on path change
   useEffect(() => {
@@ -58,19 +58,31 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
         </div>
 
         {/* User Card */}
-        <div className="flex items-center gap-3 mb-6 p-3 rounded-2xl bg-[#1f2937]/50 border border-[#1f2937]">
-          <Image
-            src="https://images.unsplash.com/photo-1779040622687-42bb00790c67?w=200"
-            alt="Alex"
-            width={40}
-            height={40}
-            className="rounded-full object-cover"
-          />
-          <div>
-            <h4 className="font-semibold text-white text-sm">Alex Morgan</h4>
-            <p className="text-xs text-slate-400">@alex</p>
+        <Link
+          href="/profile"
+          className="flex items-center gap-3 mb-6 p-3 rounded-2xl bg-[#1f2937]/50 border border-[#1f2937] hover:bg-[#1f2937] transition group cursor-pointer"
+        >
+          <div className="relative h-10 w-10 rounded-full overflow-hidden border border-[#374151] bg-slate-800 shrink-0">
+            {user?.avatar || (user as any)?.profilePicture ? (
+              <Image
+                src={user?.avatar || (user as any)?.profilePicture}
+                alt={user?.displayName || user?.username || "User"}
+                fill
+                className="object-cover"
+              />
+            ) : (
+              <div className="h-full w-full flex items-center justify-center text-xs font-bold text-white bg-blue-600">
+                {(user?.displayName || user?.username || "U")[0].toUpperCase()}
+              </div>
+            )}
           </div>
-        </div>
+          <div className="min-w-0 flex-1">
+            <h4 className="font-semibold text-white text-sm truncate group-hover:text-blue-400 transition">
+              {user?.displayName || user?.username || "My Account"}
+            </h4>
+            <p className="text-xs text-slate-400 truncate">@{user?.username || "user"}</p>
+          </div>
+        </Link>
 
         {/* Drawer Links */}
         <div className="flex-1 overflow-y-auto space-y-1.5 pr-2 custom-scrollbar">
@@ -82,6 +94,26 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
           >
             <User size={18} />
             My Profile
+          </Link>
+
+          <Link
+            href="/notifications"
+            className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition ${
+              pathname === "/notifications" ? "bg-[#7aa2ff]/10 text-[#7aa2ff]" : "text-slate-300 hover:bg-[#1f2937]"
+            }`}
+          >
+            <Bell size={18} />
+            Notifications
+          </Link>
+
+          <Link
+            href="/reels"
+            className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition ${
+              pathname === "/reels" ? "bg-[#7aa2ff]/10 text-[#7aa2ff]" : "text-slate-300 hover:bg-[#1f2937]"
+            }`}
+          >
+            <Clapperboard size={18} />
+            Reels & Clips
           </Link>
 
           <Link
