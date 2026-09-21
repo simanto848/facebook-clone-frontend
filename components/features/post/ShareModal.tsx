@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Share2, Send, Link as LinkIcon, Check } from "lucide-react";
+import { Share2, Send, Link as LinkIcon, Check, Globe, MessageCircle, ExternalLink } from "lucide-react";
 import { shareService } from "@/services/shareService";
 import { Dialog, Button } from "@/components/ui";
 import { useChatStore } from "@/store/chatStore";
@@ -26,6 +26,23 @@ export default function ShareModal({ isOpen, onClose, postId, post }: ShareModal
     navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleShareWhatsApp = () => {
+    const url = `${window.location.origin}/post/${targetPostId}`;
+    const text = encodeURIComponent(`Check out this post: ${url}`);
+    window.open(`https://api.whatsapp.com/send?text=${text}`, "_blank");
+  };
+
+  const handleShareTwitter = () => {
+    const url = `${window.location.origin}/post/${targetPostId}`;
+    const text = encodeURIComponent(post?.content?.slice(0, 100) || "Check out this post");
+    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${encodeURIComponent(url)}`, "_blank");
+  };
+
+  const handleShareLinkedIn = () => {
+    const url = `${window.location.origin}/post/${targetPostId}`;
+    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, "_blank");
   };
 
   const handleSendToChat = (convId: string) => {
@@ -101,16 +118,50 @@ export default function ShareModal({ isOpen, onClose, postId, post }: ShareModal
         </div>
       ) : (
         <div className="space-y-4 text-xs">
-          <div className="flex gap-2">
-            <Button
-              variant={copied ? "success" : "secondary"}
-              fullWidth
-              size="sm"
-              leftIcon={copied ? <Check size={14} /> : <LinkIcon size={14} />}
-              onClick={handleCopyLink}
-            >
-              {copied ? "Link Copied!" : "Copy Post Link"}
-            </Button>
+          {/* External Social Sharing */}
+          <div className="space-y-1.5">
+            <label className="text-slate-300 font-semibold block">Share to Socials</label>
+            <div className="grid grid-cols-4 gap-2">
+              <button
+                type="button"
+                onClick={handleCopyLink}
+                className="flex flex-col items-center justify-center p-2 rounded-xl bg-[#0f172a] border border-[#1f2937] hover:border-blue-500 text-slate-300 hover:text-white transition group cursor-pointer"
+              >
+                {copied ? (
+                  <Check size={16} className="text-emerald-400 mb-1" />
+                ) : (
+                  <LinkIcon size={16} className="text-blue-400 mb-1 group-hover:scale-110 transition" />
+                )}
+                <span className="text-[10px] font-medium">{copied ? "Copied!" : "Copy Link"}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleShareWhatsApp}
+                className="flex flex-col items-center justify-center p-2 rounded-xl bg-[#0f172a] border border-[#1f2937] hover:border-emerald-500 text-slate-300 hover:text-white transition group cursor-pointer"
+              >
+                <MessageCircle size={16} className="text-emerald-400 mb-1 group-hover:scale-110 transition" />
+                <span className="text-[10px] font-medium">WhatsApp</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleShareTwitter}
+                className="flex flex-col items-center justify-center p-2 rounded-xl bg-[#0f172a] border border-[#1f2937] hover:border-sky-500 text-slate-300 hover:text-white transition group cursor-pointer"
+              >
+                <Globe size={16} className="text-sky-400 mb-1 group-hover:scale-110 transition" />
+                <span className="text-[10px] font-medium">X / Twitter</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleShareLinkedIn}
+                className="flex flex-col items-center justify-center p-2 rounded-xl bg-[#0f172a] border border-[#1f2937] hover:border-blue-600 text-slate-300 hover:text-white transition group cursor-pointer"
+              >
+                <ExternalLink size={16} className="text-blue-400 mb-1 group-hover:scale-110 transition" />
+                <span className="text-[10px] font-medium">LinkedIn</span>
+              </button>
+            </div>
           </div>
 
           {conversations.length > 0 && (
