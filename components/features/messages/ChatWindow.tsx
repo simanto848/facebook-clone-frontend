@@ -16,6 +16,7 @@ import {
   Pencil,
   Trash2,
   MoreVertical,
+  ThumbsUp,
 } from "lucide-react";
 import Image from "next/image";
 import { useState, useEffect, useRef } from "react";
@@ -40,6 +41,23 @@ export default function ChatWindow() {
   const [hoveredMsgIndex, setHoveredMsgIndex] = useState<number | null>(null);
   const [editingMsgIndex, setEditingMsgIndex] = useState<number | null>(null);
   const [editText, setEditText] = useState("");
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+
+  const handleQuickLike = () => {
+    if (!activeConversation) return;
+    sendDirectMessage(activeConversation.id, "👍");
+    if (socket && activeConversationId) {
+      socket.emit("typing_stop", {
+        conversationId: activeConversationId,
+        recipientId: activeConversationId,
+      });
+    }
+  };
+
+  const handleSelectEmoji = (emoji: string) => {
+    setMessageText((prev) => prev + emoji);
+    setShowEmojiPicker(false);
+  };
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -581,6 +599,34 @@ export default function ChatWindow() {
                   <Mic size={20} />
                 </button>
 
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowEmojiPicker((prev) => !prev)}
+                    className={`transition p-1 cursor-pointer ${
+                      showEmojiPicker ? "text-yellow-400" : "text-slate-400 hover:text-white"
+                    }`}
+                    title="Insert emoji"
+                  >
+                    <Smile size={20} />
+                  </button>
+
+                  {showEmojiPicker && (
+                    <div className="absolute bottom-full left-0 mb-2 p-2 bg-[#111827] border border-[#374151] rounded-2xl shadow-2xl flex items-center gap-1.5 z-50 animate-in fade-in slide-in-from-bottom-1">
+                      {["😀", "😂", "😍", "🔥", "🎉", "👍", "❤️", "👏", "🙏", "💯"].map((emoji) => (
+                        <button
+                          key={emoji}
+                          type="button"
+                          onClick={() => handleSelectEmoji(emoji)}
+                          className="hover:scale-125 transition-transform text-lg p-1 cursor-pointer"
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 <input
                   type="text"
                   value={messageText}
@@ -589,17 +635,24 @@ export default function ChatWindow() {
                   className="flex-1 bg-transparent text-white outline-none placeholder:text-slate-500 text-sm px-2"
                 />
 
-                <button
-                  type="submit"
-                  disabled={!messageText.trim() && !attachment}
-                  className={`rounded-xl p-2 text-white transition ${
-                    messageText.trim() || attachment
-                      ? "bg-blue-500 hover:bg-blue-600 cursor-pointer"
-                      : "bg-blue-500/35 text-white/50 cursor-not-allowed"
-                  }`}
-                >
-                  <SendHorizontal size={18} />
-                </button>
+                {messageText.trim() || attachment ? (
+                  <button
+                    type="submit"
+                    className="rounded-xl p-2 text-white bg-blue-500 hover:bg-blue-600 transition cursor-pointer"
+                    title="Send message"
+                  >
+                    <SendHorizontal size={18} />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleQuickLike}
+                    className="rounded-xl p-2 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 transition cursor-pointer"
+                    title="Send Like"
+                  >
+                    <ThumbsUp size={18} className="fill-blue-400" />
+                  </button>
+                )}
               </form>
             )}
           </div>
