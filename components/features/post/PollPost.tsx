@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
-import { CheckCircle2, BarChart2 } from "lucide-react";
+import React, { useState } from "react";
+import { CheckCircle2, BarChart2, Eye, EyeOff } from "lucide-react";
 import { Badge, Button } from "@/components/ui";
 
 interface PollOption {
@@ -18,8 +18,10 @@ interface Props {
 }
 
 export default function PollPost({ question, options = [], userVotedOptionId, onVote }: Props) {
+  const [showResultsAnyway, setShowResultsAnyway] = useState(false);
   const totalVotes = options.reduce((sum, option) => sum + option.votes, 0);
   const hasVoted = !!userVotedOptionId;
+  const isDisplayingResults = hasVoted || showResultsAnyway;
 
   return (
     <div className="rounded-2xl border border-[#1f2937] bg-[#111827]/60 p-5 mt-4 space-y-4 shadow-lg select-none">
@@ -29,7 +31,7 @@ export default function PollPost({ question, options = [], userVotedOptionId, on
           <h4 className="text-sm font-bold text-white leading-tight">{question}</h4>
         </div>
         <Badge variant="secondary" size="sm">
-          {totalVotes} Votes
+          {totalVotes} {totalVotes === 1 ? "Vote" : "Votes"}
         </Badge>
       </div>
 
@@ -49,7 +51,7 @@ export default function PollPost({ question, options = [], userVotedOptionId, on
               }`}
             >
               {/* Progress bar overlay */}
-              {hasVoted && (
+              {isDisplayingResults && (
                 <div
                   className={`absolute top-0 left-0 bottom-0 transition-all duration-500 ease-out ${
                     isUserVote ? "bg-blue-600/30" : "bg-slate-700/30"
@@ -69,15 +71,32 @@ export default function PollPost({ question, options = [], userVotedOptionId, on
                   </span>
                 </div>
 
-                {hasVoted && (
+                {isDisplayingResults && (
                   <span className="text-[11px] font-bold text-slate-300">
-                    {percentage}%
+                    {percentage}% <span className="font-normal text-slate-400">({option.votes})</span>
                   </span>
                 )}
               </div>
             </button>
           );
         })}
+      </div>
+
+      <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-[#1f2937]/50">
+        <span>{hasVoted ? "You voted in this poll" : "Click an option to cast your vote"}</span>
+        {!hasVoted && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowResultsAnyway((prev) => !prev);
+            }}
+            className="flex items-center gap-1 text-blue-400 hover:text-blue-300 transition font-medium cursor-pointer"
+          >
+            {showResultsAnyway ? <EyeOff size={13} /> : <Eye size={13} />}
+            <span>{showResultsAnyway ? "Hide Results" : "View Results"}</span>
+          </button>
+        )}
       </div>
     </div>
   );
