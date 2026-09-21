@@ -42,6 +42,7 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
 
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(post.content);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [showComments, setShowComments] = useState(defaultShowComments);
   const [showReactionPicker, setShowReactionPicker] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
@@ -293,7 +294,22 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
             </div>
           </form>
         ) : (
-          <p className="text-sm text-slate-200 leading-relaxed whitespace-pre-wrap">{post.content}</p>
+          <div>
+            <p className="text-sm text-slate-200 leading-relaxed whitespace-pre-wrap">
+              {post.content && post.content.length > 280 && !isExpanded
+                ? post.content.slice(0, 280) + "..."
+                : post.content}
+              {post.content && post.content.length > 280 && (
+                <button
+                  type="button"
+                  onClick={() => setIsExpanded((prev) => !prev)}
+                  className="ml-1.5 text-xs font-semibold text-blue-400 hover:text-blue-300 hover:underline cursor-pointer inline-block"
+                >
+                  {isExpanded ? "See Less" : "See More"}
+                </button>
+              )}
+            </p>
+          </div>
         )}
 
         {/* 1. Image Post Gallery */}
