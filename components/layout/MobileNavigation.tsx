@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { House, Compass, UserPlus, Users, Menu, MessageSquare } from "lucide-react";
+import { useChatStore } from "@/store/chatStore";
 
 interface MobileNavigationProps {
   onMenuClick: () => void;
@@ -11,6 +12,9 @@ interface MobileNavigationProps {
 
 export default function MobileNavigation({ onMenuClick }: MobileNavigationProps) {
   const pathname = usePathname();
+  const unreadMessagesCount = useChatStore(
+    (state) => state.conversations.filter((c) => c.hasUnread).length
+  );
 
   const navItems = [
     {
@@ -37,6 +41,7 @@ export default function MobileNavigation({ onMenuClick }: MobileNavigationProps)
       label: "Messages",
       href: "/messages",
       icon: MessageSquare,
+      badge: unreadMessagesCount,
     },
   ];
 
@@ -50,11 +55,21 @@ export default function MobileNavigation({ onMenuClick }: MobileNavigationProps)
           <Link
             key={item.label}
             href={item.href}
-            className={`flex flex-col items-center justify-center flex-1 py-1 transition ${
+            className={`relative flex flex-col items-center justify-center flex-1 py-1 transition ${
               isActive ? "text-[#7aa2ff]" : "text-slate-400 hover:text-white"
             }`}
           >
-            <Icon size={20} className={isActive ? "scale-110 transition-transform duration-200" : ""} />
+            {isActive && (
+              <span className="absolute top-0 w-8 h-0.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50" />
+            )}
+            <div className="relative">
+              <Icon size={20} className={isActive ? "scale-110 transition-transform duration-200" : ""} />
+              {typeof item.badge === "number" && item.badge > 0 && (
+                <span className="absolute -top-1.5 -right-2 min-w-4 h-4 px-1 rounded-full bg-rose-500 text-[9px] font-bold text-white flex items-center justify-center shadow-md animate-pulse">
+                  {item.badge > 9 ? "9+" : item.badge}
+                </span>
+              )}
+            </div>
             <span className="text-[10px] mt-1 font-medium">{item.label}</span>
           </Link>
         );
