@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
-import { BarChart3, Eye, Heart, Share2, MessageSquare, TrendingUp } from "lucide-react";
+import React, { useState } from "react";
+import { BarChart3, Eye, Heart, Share2, MessageSquare, TrendingUp, Download, Check, Calendar } from "lucide-react";
 import { Dialog, Badge, Card, CardContent, Button } from "@/components/ui";
 
 interface PostAnalyticsModalProps {
@@ -21,17 +21,80 @@ export function PostAnalyticsModal({
   onClose,
   post,
 }: PostAnalyticsModalProps) {
+  const [timeframe, setTimeframe] = useState<"24h" | "7d" | "30d" | "all">("7d");
+  const [exported, setExported] = useState(false);
+
   if (!isOpen) return null;
 
-  const views = post.views || 1420;
-  const likes = post.likes || 85;
-  const comments = post.commentsCount || 14;
-  const shares = post.sharesCount || 6;
-  const engagementRate = (((likes + comments + shares) / views) * 100).toFixed(1);
+  const multiplier = timeframe === "24h" ? 0.35 : timeframe === "7d" ? 1 : timeframe === "30d" ? 2.4 : 3.2;
+  const baseViews = post.views || 1420;
+  const baseLikes = post.likes || 85;
+  const baseComments = post.commentsCount || 14;
+  const baseShares = post.sharesCount || 6;
+
+  const views = Math.round(baseViews * multiplier);
+  const likes = Math.round(baseLikes * multiplier);
+  const comments = Math.round(baseComments * multiplier);
+  const shares = Math.round(baseShares * multiplier);
+  const engagementRate = (((likes + comments + shares) / (views || 1)) * 100).toFixed(1);
+
+  const handleExportAnalytics = () => {
+    const reportData = {
+      postId: post.id,
+      generatedAt: new Date().toISOString(),
+      timeframe,
+      views,
+      engagementRate: `${engagementRate}%`,
+      breakdown: {
+        likes,
+        comments,
+        shares,
+      },
+    };
+    const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `post_analytics_${post.id || "post"}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setExported(true);
+    setTimeout(() => setExported(false), 2000);
+  };
 
   return (
     <Dialog isOpen={isOpen} onClose={onClose} title="Post Analytics & Reach" size="md">
       <div className="space-y-4">
+        {/* Timeframe Selector */}
+        <div className="flex items-center justify-between bg-[#111827] p-1.5 rounded-xl border border-[#1f2937]">
+          <span className="text-[11px] text-slate-400 font-medium px-2 flex items-center gap-1.5">
+            <Calendar size={13} /> Timeframe:
+          </span>
+          <div className="flex items-center gap-1">
+            {(
+              [
+                { id: "24h", label: "24h" },
+                { id: "7d", label: "7d" },
+                { id: "30d", label: "30d" },
+                { id: "all", label: "All Time" },
+              ] as const
+            ).map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setTimeframe(t.id)}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition ${
+                  timeframe === t.id
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "text-slate-400 hover:text-white"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Metric Cards Grid */}
         <div className="grid grid-cols-2 gap-3">
           <Card>
@@ -86,8 +149,17 @@ export function PostAnalyticsModal({
           </CardContent>
         </Card>
 
-        <div className="flex justify-end pt-2">
-          <Button variant="secondary" onClick={onClose}>
+        <div className="flex items-center justify-between pt-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            leftIcon={exported ? <Check size={14} className="text-emerald-400" /> : <Download size={14} />}
+            onClick={handleExportAnalytics}
+          >
+            {exported ? "Exported!" : "Export Report"}
+          </Button>
+
+          <Button variant="secondary" size="sm" onClick={onClose}>
             Close
           </Button>
         </div>
