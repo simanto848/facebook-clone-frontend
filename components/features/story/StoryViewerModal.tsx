@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, Heart, Eye, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Heart, Eye, Trash2, Play, Pause, Volume2, VolumeX } from "lucide-react";
 import { Dialog, Avatar, Button, Badge } from "@/components/ui";
 
 export interface StoryItem {
@@ -38,11 +38,18 @@ export function StoryViewerModal({
   onDelete,
 }: StoryViewerModalProps) {
   const [progress, setProgress] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
   const currentStory = stories[currentIndex];
 
   useEffect(() => {
     if (!isOpen || !currentStory) return;
     setProgress(0);
+    setIsPaused(false);
+  }, [currentIndex, isOpen, currentStory]);
+
+  useEffect(() => {
+    if (!isOpen || !currentStory || isPaused) return;
     const interval = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
@@ -58,7 +65,24 @@ export function StoryViewerModal({
     }, 100);
 
     return () => clearInterval(interval);
-  }, [isOpen, currentIndex, currentStory, stories.length, onNavigate, onClose]);
+  }, [isOpen, currentIndex, currentStory, isPaused, stories.length, onNavigate, onClose]);
+
+  // Keyboard controls
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === "Space") {
+        e.preventDefault();
+        setIsPaused((prev) => !prev);
+      } else if (e.code === "ArrowLeft" && currentIndex > 0) {
+        onNavigate(currentIndex - 1);
+      } else if (e.code === "ArrowRight" && currentIndex < stories.length - 1) {
+        onNavigate(currentIndex + 1);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, currentIndex, stories.length, onNavigate]);
 
   if (!currentStory) return null;
 
@@ -90,6 +114,32 @@ export function StoryViewerModal({
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsPaused((prev) => !prev);
+              }}
+              className="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition"
+              title={isPaused ? "Play Story (Space)" : "Pause Story (Space)"}
+            >
+              {isPaused ? <Play size={15} /> : <Pause size={15} />}
+            </button>
+
+            {currentStory.type === "video" && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsMuted((prev) => !prev);
+                }}
+                className="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition"
+                title={isMuted ? "Unmute" : "Mute"}
+              >
+                {isMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
+              </button>
+            )}
+
             <Badge variant="glass">{currentStory.type.toUpperCase()}</Badge>
             {onDelete && (
               <button
@@ -138,7 +188,7 @@ export function StoryViewerModal({
             <video
               src={currentStory.content}
               autoPlay
-              muted
+              muted={isMuted}
               loop
               playsInline
               className="h-full w-full object-cover"
