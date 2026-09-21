@@ -7,7 +7,7 @@ import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
 import { usePostStore, mapBackendPostToPostType, PostType } from "@/store/postStore";
 import { useChatStore } from "@/store/chatStore";
-import { Search, Hash, Compass, User, Users, UserPlus, MessageSquare, Loader2, ArrowRight, History, Check, X } from "lucide-react";
+import { Search, Hash, Compass, User, Users, UserPlus, MessageSquare, Loader2, ArrowRight, History, Check, X, Filter, ArrowUpDown } from "lucide-react";
 import { searchService } from "@/services/searchService";
 import { hashtagService } from "@/services/hashtagService";
 import { followService } from "@/services/followService";
@@ -32,6 +32,8 @@ export default function ExplorePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>("all");
+  const [postSort, setPostSort] = useState<"newest" | "popular">("newest");
+  const [formatFilter, setFormatFilter] = useState<"all" | "media" | "text">("all");
   const [popularTags, setPopularTags] = useState<string[]>(defaultPopularTags);
   const [searching, setSearching] = useState(false);
   const [matchedUsers, setMatchedUsers] = useState<any[]>([]);
@@ -237,6 +239,22 @@ export default function ExplorePage() {
 
     if (activeCategory === "pages") {
       list = list.filter((p) => p.type === "article");
+    }
+
+    if (formatFilter === "media") {
+      list = list.filter((p) => p.type === "image" || p.type === "video" || (p.images && p.images.length > 0) || p.video);
+    } else if (formatFilter === "text") {
+      list = list.filter((p) => p.type === "text" || (!p.images?.length && !p.video));
+    }
+
+    if (postSort === "popular") {
+      list.sort((a, b) => {
+        const scoreA = Object.values(a.reactions || {}).reduce((acc: number, v: any) => acc + (typeof v === "number" ? v : 0), 0) + (a.comments?.length || 0);
+        const scoreB = Object.values(b.reactions || {}).reduce((acc: number, v: any) => acc + (typeof v === "number" ? v : 0), 0) + (b.comments?.length || 0);
+        return scoreB - scoreA;
+      });
+    } else if (postSort === "newest") {
+      list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
     }
 
     return list;
@@ -633,19 +651,54 @@ export default function ExplorePage() {
                   );
                 })()
               ) : activeCategory === "posts" ? (
-                filteredPosts.length === 0 ? (
-                  <EmptyState
-                    icon={<MessageSquare size={36} className="text-slate-400" />}
-                    title="No posts found"
-                    description={searchQuery ? `No posts matched your search for "${searchQuery}".` : "No posts found in this topic."}
-                  />
-                ) : (
-                  <div className="space-y-6">
-                    {filteredPosts.map((post) => (
-                      <PostCard key={post.id} post={post} />
-                    ))}
+                <div className="space-y-4">
+                  {/* Filter and Sort Bar */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2 rounded-xl bg-[#111827] border border-[#1f2937] text-xs">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11px] text-slate-500 font-medium">Filter:</span>
+                      {(["all", "media", "text"] as const).map((fmt) => (
+                        <button
+                          key={fmt}
+                          type="button"
+                          onClick={() => setFormatFilter(fmt)}
+                          className={`px-2.5 py-1 rounded-lg capitalize font-medium transition cursor-pointer ${
+                            formatFilter === fmt
+                              ? "bg-blue-600 text-white shadow-sm"
+                              : "text-slate-400 hover:text-white hover:bg-slate-800"
+                          }`}
+                        >
+                          {fmt === "all" ? "All Posts" : fmt === "media" ? "Photos & Videos" : "Text Only"}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
+                      <ArrowUpDown size={12} className="text-slate-400" />
+                      <span className="text-[11px] text-slate-500 font-medium">Sort:</span>
+                      <select
+                        value={postSort}
+                        onChange={(e) => setPostSort(e.target.value as any)}
+                        className="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg px-2 py-1 outline-none cursor-pointer"
+                      >
+                        <option value="newest">Newest First</option>
+                        <option value="popular">Most Popular</option>
+                      </select>
+                    </div>
                   </div>
-                )
+
+                  {filteredPosts.length === 0 ? (
+                    <EmptyState
+                      icon={<MessageSquare size={36} className="text-slate-400" />}
+                      title="No posts found"
+                      description={searchQuery ? `No posts matched your search for "${searchQuery}".` : "No posts found in this topic."}
+                    />
+                  ) : (
+                    <div className="space-y-6">
+                      {filteredPosts.map((post) => (
+                        <PostCard key={post.id} post={post} />
+                      ))}
+                    </div>
+                  )}
+                </div>
               ) : (
                 <div className="space-y-6">
                   {searchQuery.trim() && matchedUsers.length > 0 && (
