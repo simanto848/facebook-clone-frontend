@@ -10,6 +10,8 @@ export default function AppearanceSection() {
   const [theme, setTheme] = useState("dark");
   const [fontSize, setFontSize] = useState("medium");
   const [compactMode, setCompactMode] = useState(false);
+  const [reduceMotion, setReduceMotion] = useState(false);
+  const [highContrast, setHighContrast] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
@@ -17,9 +19,13 @@ export default function AppearanceSection() {
     const savedTheme = localStorage.getItem("app-theme") || "dark";
     const savedSize = localStorage.getItem("app-fontsize") || "medium";
     const savedCompact = localStorage.getItem("app-compact") === "true";
+    const savedMotion = localStorage.getItem("app-reduce-motion") === "true";
+    const savedContrast = localStorage.getItem("app-high-contrast") === "true";
     setTheme(savedTheme);
     setFontSize(savedSize);
     setCompactMode(savedCompact);
+    setReduceMotion(savedMotion);
+    setHighContrast(savedContrast);
   }, []);
 
   const handleThemeChange = (newTheme: string) => {
@@ -35,6 +41,26 @@ export default function AppearanceSection() {
     }
   };
 
+  const handleReduceMotionChange = (checked: boolean) => {
+    setReduceMotion(checked);
+    localStorage.setItem("app-reduce-motion", String(checked));
+    if (checked) {
+      document.documentElement.classList.add("reduce-motion");
+    } else {
+      document.documentElement.classList.remove("reduce-motion");
+    }
+  };
+
+  const handleHighContrastChange = (checked: boolean) => {
+    setHighContrast(checked);
+    localStorage.setItem("app-high-contrast", String(checked));
+    if (checked) {
+      document.documentElement.classList.add("high-contrast");
+    } else {
+      document.documentElement.classList.remove("high-contrast");
+    }
+  };
+
   const handleSavePreferences = async () => {
     setSaving(true);
     setSavedSuccess(false);
@@ -42,6 +68,8 @@ export default function AppearanceSection() {
       localStorage.setItem("app-theme", theme);
       localStorage.setItem("app-fontsize", fontSize);
       localStorage.setItem("app-compact", String(compactMode));
+      localStorage.setItem("app-reduce-motion", String(reduceMotion));
+      localStorage.setItem("app-high-contrast", String(highContrast));
 
       await userService.updateProfile({
         theme,
@@ -99,6 +127,20 @@ export default function AppearanceSection() {
           description="Reduce paddings and margins for higher information density."
           checked={compactMode}
           onChange={(e) => setCompactMode(e.target.checked)}
+        />
+
+        <Switch
+          label="Reduce Motion"
+          description="Minimize transition and scale animations for improved performance and comfort."
+          checked={reduceMotion}
+          onChange={(e) => handleReduceMotionChange(e.target.checked)}
+        />
+
+        <Switch
+          label="High Contrast Mode"
+          description="Heighten contrast and element outlines for enhanced accessibility."
+          checked={highContrast}
+          onChange={(e) => handleHighContrastChange(e.target.checked)}
         />
 
         <div className="pt-2">
