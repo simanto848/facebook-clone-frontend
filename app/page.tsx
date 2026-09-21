@@ -10,7 +10,7 @@ import RightSidebar from "@/components/layout/RightSidebar";
 import { usePostStore, mapBackendPostToPostType } from "@/store/postStore";
 import { postService } from "@/services/postService";
 import { feedService } from "@/services/feedService";
-import { ShieldAlert, RefreshCw } from "lucide-react";
+import { ShieldAlert, RefreshCw, ArrowUp, Search, X } from "lucide-react";
 import { Button } from "@/components/ui";
 
 // Stories Skeleton Loader
@@ -68,6 +68,20 @@ export default function Home() {
   const { posts, filter, setFilter, setPosts } = usePostStore();
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 400);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const fetchFeed = async (activeFilter = filter, showLoading = true) => {
     if (showLoading) setIsLoading(true);
@@ -122,6 +136,16 @@ export default function Home() {
       list = list.filter((p) => p.author.username !== "alex");
     }
 
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(
+        (p) =>
+          p.content?.toLowerCase().includes(q) ||
+          p.author?.name?.toLowerCase().includes(q) ||
+          p.author?.username?.toLowerCase().includes(q)
+      );
+    }
+
     return list;
   };
 
@@ -140,20 +164,41 @@ export default function Home() {
           <div className="w-full max-w-3xl px-6 py-6 space-y-6">
             {isLoading ? <StoriesSkeleton /> : <Stories />}
             <CreatePost />
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex-1">
                 <FeedFilter value={filter} onChange={setFilter} />
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                leftIcon={<RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""} />}
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-                className="text-slate-400 hover:text-white"
-              >
-                Refresh
-              </Button>
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Search posts..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-36 sm:w-44 pl-8 pr-7 py-1.5 rounded-xl bg-[#111827] border border-[#1f2937] text-xs text-white placeholder:text-slate-500 outline-none focus:border-blue-500 transition"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white cursor-pointer"
+                    >
+                      <X size={12} />
+                    </button>
+                  )}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  leftIcon={<RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""} />}
+                  onClick={handleRefresh}
+                  disabled={isRefreshing}
+                  className="text-slate-400 hover:text-white shrink-0"
+                >
+                  Refresh
+                </Button>
+              </div>
             </div>
 
             <div className="space-y-6">
@@ -178,6 +223,19 @@ export default function Home() {
           <RightSidebar />
         </aside>
       </div>
+
+      {/* Floating Scroll to Top Button */}
+      {showScrollTop && (
+        <button
+          type="button"
+          onClick={scrollToTop}
+          className="fixed bottom-6 right-6 z-50 p-3 rounded-full bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/40 border border-blue-400/30 transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer animate-in fade-in slide-in-from-bottom-2"
+          title="Scroll to top"
+          aria-label="Scroll to top"
+        >
+          <ArrowUp size={18} />
+        </button>
+      )}
     </div>
   );
 }
