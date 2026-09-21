@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Heart, MessageSquare, Check, CornerDownRight, Trash2, Edit2 } from "lucide-react";
+import Link from "next/link";
+import { Heart, MessageSquare, Check, CornerDownRight, Trash2, Edit2, Copy } from "lucide-react";
 import { CommentType } from "@/store/postStore";
 import { useAuthStore } from "@/store/authStore";
 import { Avatar, Button, Input } from "@/components/ui";
@@ -18,6 +19,17 @@ export default function CommentItem({ comment, onLike, onReply, onEdit, onDelete
   const [isEditing, setIsEditing] = useState(false);
   const [replyText, setReplyText] = useState("");
   const [editText, setEditText] = useState(comment.content);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyComment = async () => {
+    try {
+      await navigator.clipboard.writeText(comment.content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // fallback
+    }
+  };
 
   const handleReplySubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,6 +46,9 @@ export default function CommentItem({ comment, onLike, onReply, onEdit, onDelete
     setIsEditing(false);
   };
 
+  const profileHref =
+    comment.author.username === "alex" ? "/profile" : `/profile/${comment.author.username}`;
+
   return (
     <div className="group/item relative mt-4 select-none">
       {/* Connector Line for nested comments */}
@@ -42,13 +57,20 @@ export default function CommentItem({ comment, onLike, onReply, onEdit, onDelete
       )}
 
       <div className="flex gap-3">
-        <Avatar src={comment.author.avatar} name={comment.author.name} size="md" />
+        <Link href={profileHref} className="hover:opacity-85 transition shrink-0">
+          <Avatar src={comment.author.avatar} name={comment.author.name} size="md" />
+        </Link>
 
         {/* Comment Bubble Content */}
         <div className="flex-1">
           <div className="rounded-2xl bg-[#0f172a]/60 px-4 py-3 border border-[#1f2937]">
             <div className="flex justify-between items-center">
-              <h5 className="text-xs font-bold text-white">{comment.author.name}</h5>
+              <Link
+                href={profileHref}
+                className="text-xs font-bold text-white hover:text-blue-400 hover:underline transition"
+              >
+                {comment.author.name}
+              </Link>
               <span className="text-[10px] text-slate-500">{comment.createdAt}</span>
             </div>
 
@@ -87,6 +109,18 @@ export default function CommentItem({ comment, onLike, onReply, onEdit, onDelete
             >
               <MessageSquare size={12} />
               <span>Reply</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleCopyComment}
+              className="flex items-center gap-1 hover:text-slate-200 transition"
+              title="Copy comment text"
+            >
+              {copied ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
+              <span className={copied ? "text-emerald-400 font-medium" : ""}>
+                {copied ? "Copied" : "Copy"}
+              </span>
             </button>
 
             {(currentUser?.username === comment.author.username ||
