@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { X, Minimize2, Maximize2, Send, Phone, Video, MoreVertical, BellOff, Trash2, User } from "lucide-react";
+import { X, Minimize2, Maximize2, Send, Phone, Video, MoreVertical, BellOff, Trash2, User, ThumbsUp } from "lucide-react";
 import { useChatStore, ChatBox } from "@/store/chatStore";
 import { Avatar, Button, Input } from "@/components/ui";
 import { CallModal } from "./CallModal";
@@ -12,7 +12,7 @@ import { useSocketContext } from "@/components/providers/SocketProvider";
 
 function ChatTab({ box }: { box: ChatBox }) {
   const router = useRouter();
-  const { closeChat, toggleCollapse, sendMessage } = useChatStore();
+  const { closeChat, toggleCollapse, sendMessage, clearConversationMessages } = useChatStore();
   const { socket, typingUsers } = useSocketContext();
   const [inputText, setInputText] = useState("");
   const [showMenu, setShowMenu] = useState(false);
@@ -41,6 +41,13 @@ function ChatTab({ box }: { box: ChatBox }) {
     sendMessage(box.id, text);
     setInputText("");
 
+    if (socket && box.id) {
+      socket.emit("typing_stop", { conversationId: box.id, recipientId: box.id });
+    }
+  };
+
+  const handleQuickLike = () => {
+    sendMessage(box.id, "👍");
     if (socket && box.id) {
       socket.emit("typing_stop", { conversationId: box.id, recipientId: box.id });
     }
@@ -92,12 +99,24 @@ function ChatTab({ box }: { box: ChatBox }) {
               </button>
               <button
                 onClick={() => {
+                  if (confirm("Clear all messages in this chat?")) {
+                    clearConversationMessages(box.id);
+                  }
+                  setShowMenu(false);
+                }}
+                className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-rose-400 hover:bg-rose-500/10 transition text-left"
+              >
+                <Trash2 size={13} />
+                <span>Clear Chat History</span>
+              </button>
+              <button
+                onClick={() => {
                   closeChat(box.id);
                   setShowMenu(false);
                 }}
-                className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-red-400 hover:bg-red-500/10 transition text-left"
+                className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-slate-300 hover:bg-[#1f2937] hover:text-white transition text-left"
               >
-                <Trash2 size={13} />
+                <X size={13} />
                 <span>Close Chat</span>
               </button>
             </div>
@@ -231,9 +250,22 @@ function ChatTab({ box }: { box: ChatBox }) {
                   onChange={handleInputChange}
                   className="h-9 text-xs bg-[#1f2937]"
                 />
-                <Button variant="primary" size="sm" type="submit" className="h-9 px-3 shrink-0">
-                  <Send size={13} />
-                </Button>
+                {inputText.trim() ? (
+                  <Button variant="primary" size="sm" type="submit" className="h-9 px-3 shrink-0">
+                    <Send size={13} />
+                  </Button>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    type="button"
+                    onClick={handleQuickLike}
+                    className="h-9 px-3 shrink-0 text-blue-400 hover:text-blue-300 hover:bg-blue-600/10 cursor-pointer"
+                    title="Send Like"
+                  >
+                    <ThumbsUp size={15} className="fill-blue-400" />
+                  </Button>
+                )}
               </div>
             </form>
           </>
