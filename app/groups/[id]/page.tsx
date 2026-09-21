@@ -4,7 +4,7 @@ import React, { useState, useEffect, use } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Users, Shield, Plus, Check, UserPlus, Crown, MessageSquare, Info, ShieldCheck, Share2, Flag, Search, X } from "lucide-react";
+import { ArrowLeft, Users, Shield, Plus, Check, UserPlus, Crown, MessageSquare, Info, ShieldCheck, Share2, Flag, Search, X, Clock, Flame, Filter } from "lucide-react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
@@ -41,11 +41,14 @@ export default function GroupDetailPage({ params }: PageProps) {
   const [isJoinLoading, setIsJoinLoading] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Tabs and members
+  // Tabs, members, and feed filters
   const [activeTab, setActiveTab] = useState<"feed" | "members" | "about">("feed");
   const [members, setMembers] = useState<any[]>([]);
   const [isMembersLoading, setIsMembersLoading] = useState(false);
   const [memberSearchQuery, setMemberSearchQuery] = useState("");
+  const [memberRoleFilter, setMemberRoleFilter] = useState<"all" | "admins" | "members">("all");
+  const [feedSearchQuery, setFeedSearchQuery] = useState("");
+  const [feedSort, setFeedSort] = useState<"latest" | "popular">("latest");
 
   // Post creation modal
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -314,7 +317,7 @@ export default function GroupDetailPage({ params }: PageProps) {
                 {/* Tab: Feed */}
                 {activeTab === "feed" && (
                   <div className="space-y-6">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <h3 className="font-bold text-sm text-white">Group Feed</h3>
                       <Button
                         variant="primary"
@@ -326,22 +329,111 @@ export default function GroupDetailPage({ params }: PageProps) {
                       </Button>
                     </div>
 
-                    {groupPosts.length === 0 ? (
-                      <EmptyState
-                        icon={<Users size={36} className="text-slate-500" />}
-                        title="No posts in this group yet"
-                        description="Be the first to share an update, question, or design in this community."
-                        action={
-                          <Button size="sm" onClick={() => setIsCreateOpen(true)}>
-                            Create First Post
-                          </Button>
-                        }
-                      />
-                    ) : (
-                      groupPosts.map((post) => (
-                        <PostCard key={post.id} post={post} />
-                      ))
-                    )}
+                    {/* Feed Search & Sort Bar */}
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-[#111827] p-3 rounded-2xl border border-[#1f2937]">
+                      <div className="relative flex-1">
+                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input
+                          type="text"
+                          placeholder="Search posts in this guild..."
+                          value={feedSearchQuery}
+                          onChange={(e) => setFeedSearchQuery(e.target.value)}
+                          className="w-full bg-[#1e293b]/60 border border-[#334155] rounded-xl pl-8 pr-8 py-1.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 transition"
+                        />
+                        {feedSearchQuery && (
+                          <button
+                            type="button"
+                            onClick={() => setFeedSearchQuery("")}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                          >
+                            <X size={13} />
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-1.5 self-end sm:self-auto">
+                        <span className="text-[11px] text-slate-400 font-medium mr-1">Sort:</span>
+                        <button
+                          type="button"
+                          onClick={() => setFeedSort("latest")}
+                          className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition ${
+                            feedSort === "latest"
+                              ? "bg-blue-600 text-white shadow-sm"
+                              : "bg-[#1e293b] text-slate-300 hover:text-white"
+                          }`}
+                        >
+                          <Clock size={12} />
+                          Latest
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setFeedSort("popular")}
+                          className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition ${
+                            feedSort === "popular"
+                              ? "bg-blue-600 text-white shadow-sm"
+                              : "bg-[#1e293b] text-slate-300 hover:text-white"
+                          }`}
+                        >
+                          <Flame size={12} />
+                          Popular
+                        </button>
+                      </div>
+                    </div>
+
+                    {(() => {
+                      let displayed = [...groupPosts];
+                      if (feedSearchQuery.trim()) {
+                        const q = feedSearchQuery.toLowerCase();
+                        displayed = displayed.filter(
+                          (p) =>
+                            p.content.toLowerCase().includes(q) ||
+                            p.author.name.toLowerCase().includes(q) ||
+                            p.author.username.toLowerCase().includes(q)
+                        );
+                      }
+                      if (feedSort === "latest") {
+                        displayed.sort(
+                          (a, b) =>
+                            new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+                        );
+                      } else if (feedSort === "popular") {
+                        const getScore = (p: PostType) => {
+                          const rxSum = Object.values(p.reactions || {}).reduce(
+                            (acc, v) => acc + (typeof v === "number" ? v : 0),
+                            0
+                          );
+                          return rxSum + (p.comments?.length || 0);
+                        };
+                        displayed.sort((a, b) => getScore(b) - getScore(a));
+                      }
+
+                      if (displayed.length === 0) {
+                        return (
+                          <EmptyState
+                            icon={<Users size={36} className="text-slate-500" />}
+                            title={feedSearchQuery ? "No matching posts found" : "No posts in this group yet"}
+                            description={
+                              feedSearchQuery
+                                ? `No group posts match "${feedSearchQuery}". Try clearing search filter.`
+                                : "Be the first to share an update, question, or design in this community."
+                            }
+                            action={
+                              feedSearchQuery ? (
+                                <Button size="sm" variant="secondary" onClick={() => setFeedSearchQuery("")}>
+                                  Clear Search
+                                </Button>
+                              ) : (
+                                <Button size="sm" onClick={() => setIsCreateOpen(true)}>
+                                  Create First Post
+                                </Button>
+                              )
+                            }
+                          />
+                        );
+                      }
+
+                      return displayed.map((post) => <PostCard key={post.id} post={post} />);
+                    })()}
                   </div>
                 )}
 
@@ -377,6 +469,44 @@ export default function GroupDetailPage({ params }: PageProps) {
                       )}
                     </div>
 
+                    {/* Role Filter Chips */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setMemberRoleFilter("all")}
+                        className={`px-3 py-1 rounded-full text-xs font-semibold transition ${
+                          memberRoleFilter === "all"
+                            ? "bg-blue-600 text-white"
+                            : "bg-[#111827] text-slate-300 border border-[#1f2937] hover:text-white"
+                        }`}
+                      >
+                        All Members
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMemberRoleFilter("admins")}
+                        className={`px-3 py-1 rounded-full text-xs font-semibold transition flex items-center gap-1 ${
+                          memberRoleFilter === "admins"
+                            ? "bg-amber-600 text-white"
+                            : "bg-[#111827] text-slate-300 border border-[#1f2937] hover:text-white"
+                        }`}
+                      >
+                        <Crown size={12} />
+                        Admins & Mods
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMemberRoleFilter("members")}
+                        className={`px-3 py-1 rounded-full text-xs font-semibold transition ${
+                          memberRoleFilter === "members"
+                            ? "bg-blue-600 text-white"
+                            : "bg-[#111827] text-slate-300 border border-[#1f2937] hover:text-white"
+                        }`}
+                      >
+                        Members Only
+                      </button>
+                    </div>
+
                     {isMembersLoading ? (
                       <div className="py-12 text-center">
                         <Loader label="Loading members..." />
@@ -400,6 +530,11 @@ export default function GroupDetailPage({ params }: PageProps) {
                       </div>
                     ) : (() => {
                       const filteredMembers = members.filter((m: any, idx: number) => {
+                        const isAdmin = m.role === "ADMIN" || m.role === "OWNER" || idx === 0;
+                        const isMod = m.role === "MODERATOR";
+                        if (memberRoleFilter === "admins" && !isAdmin && !isMod) return false;
+                        if (memberRoleFilter === "members" && (isAdmin || isMod)) return false;
+
                         if (!memberSearchQuery.trim()) return true;
                         const q = memberSearchQuery.toLowerCase();
                         const u = m.user || m;
