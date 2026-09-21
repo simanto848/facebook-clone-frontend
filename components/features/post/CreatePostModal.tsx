@@ -3,7 +3,7 @@
 import React, { useState, useCallback } from "react";
 import Image from "next/image";
 import { useDropzone } from "react-dropzone";
-import { UploadCloud, X, Image as ImageIcon, Video, Loader2, Globe, Lock, Users } from "lucide-react";
+import { UploadCloud, X, Image as ImageIcon, Video, Loader2, Globe, Lock, Users, Hash, Sparkles } from "lucide-react";
 import { Dialog, Button } from "@/components/ui";
 import { compressImageFile, createMediaPreview, revokeMediaPreview, type MediaPreview } from "@/lib/mediaUpload";
 import { postService } from "@/services/postService";
@@ -26,9 +26,29 @@ export function CreatePostModal({ isOpen, onClose, initialType = "gallery" }: Cr
   const [mentionSuggestions, setMentionSuggestions] = useState<any[]>([]);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
 
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("post_composer_draft");
+      if (saved) {
+        setContent(saved);
+      }
+    }
+  }, []);
+
+  const handleAddHashtag = (tag: string) => {
+    const next = content ? `${content} ${tag} ` : `${tag} `;
+    setContent(next);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("post_composer_draft", next);
+    }
+  };
+
   const handleContentChange = async (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;
     setContent(val);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("post_composer_draft", val);
+    }
 
     const cursor = e.target.selectionStart;
     const textBeforeCursor = val.slice(0, cursor);
@@ -149,6 +169,9 @@ export function CreatePostModal({ isOpen, onClose, initialType = "gallery" }: Cr
       previews.forEach(revokeMediaPreview);
       setPreviews([]);
       setContent("");
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("post_composer_draft");
+      }
       onClose();
     } catch (err) {
       console.error("Failed to submit post:", err);
@@ -236,6 +259,28 @@ export function CreatePostModal({ isOpen, onClose, initialType = "gallery" }: Cr
               </div>
             </div>
           )}
+        </div>
+
+        {/* Quick Hashtag Chips & Draft Indicator */}
+        <div className="flex flex-wrap items-center justify-between gap-1.5 pt-0.5">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[10px] text-slate-500 font-medium flex items-center gap-0.5">
+              <Hash size={11} className="text-blue-400" /> Tags:
+            </span>
+            {["#tech", "#community", "#updates", "#lifestyle", "#ideas"].map((tag) => (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => handleAddHashtag(tag)}
+                className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 hover:bg-blue-600 hover:text-white border border-slate-700 transition"
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+          <span className="text-[10px] text-slate-500 font-mono">
+            {content.length} chars
+          </span>
         </div>
 
         {/* Drag & Drop Dropzone */}
