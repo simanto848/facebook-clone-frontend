@@ -1,15 +1,15 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Search, Users, X } from "lucide-react";
+import { Search, Users, X, CheckCheck, MessageSquare, Pin } from "lucide-react";
 import Image from "next/image";
 import { useChatStore } from "@/store/chatStore";
 import { CreateGroupModal } from "../chat/CreateGroupModal";
 
 export default function ConversationList() {
-  const { conversations, activeConversationId, setActiveConversationId, fetchConversations } = useChatStore();
+  const { conversations, activeConversationId, setActiveConversationId, fetchConversations, markConversationAsRead } = useChatStore();
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterTab, setFilterTab] = useState<"all" | "unread" | "online">("all");
+  const [filterTab, setFilterTab] = useState<"all" | "unread" | "online" | "groups">("all");
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
 
   useEffect(() => {
@@ -18,10 +18,20 @@ export default function ConversationList() {
 
   const unreadCount = conversations.filter((c) => c.hasUnread).length;
   const onlineCount = conversations.filter((c) => c.online).length;
+  const groupsCount = conversations.filter((c) => c.id.startsWith("group_") || (c as any).isGroup).length;
+
+  const handleMarkAllAsRead = () => {
+    conversations
+      .filter((c) => c.hasUnread)
+      .forEach((c) => {
+        markConversationAsRead(c.id);
+      });
+  };
 
   const filteredConversations = conversations.filter((c) => {
     if (filterTab === "unread" && !c.hasUnread) return false;
     if (filterTab === "online" && !c.online) return false;
+    if (filterTab === "groups" && !(c.id.startsWith("group_") || (c as any).isGroup)) return false;
 
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
@@ -69,37 +79,52 @@ export default function ConversationList() {
         </div>
 
         {/* Filter Pills */}
-        <div className="flex items-center gap-2">
-          {[
-            { id: "all" as const, label: "All", count: conversations.length },
-            { id: "unread" as const, label: "Unread", count: unreadCount },
-            { id: "online" as const, label: "Online", count: onlineCount },
-          ].map((tab) => {
-            const isActive = filterTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setFilterTab(tab.id)}
-                className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
-                  isActive
-                    ? "bg-blue-600 text-white shadow-sm"
-                    : "bg-[#1f2937]/70 text-slate-400 hover:text-white hover:bg-[#1f2937]"
-                }`}
-              >
-                <span>{tab.label}</span>
-                {tab.count > 0 && (
-                  <span
-                    className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                      isActive ? "bg-white/20 text-white" : "bg-slate-700 text-slate-400"
-                    }`}
-                  >
-                    {tab.count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+        <div className="flex items-center justify-between gap-1 overflow-x-auto no-scrollbar">
+          <div className="flex items-center gap-1.5">
+            {[
+              { id: "all" as const, label: "All", count: conversations.length },
+              { id: "unread" as const, label: "Unread", count: unreadCount },
+              { id: "online" as const, label: "Online", count: onlineCount },
+              { id: "groups" as const, label: "Groups", count: groupsCount },
+            ].map((tab) => {
+              const isActive = filterTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setFilterTab(tab.id)}
+                  className={`px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer whitespace-nowrap ${
+                    isActive
+                      ? "bg-blue-600 text-white shadow-sm"
+                      : "bg-[#1f2937]/70 text-slate-400 hover:text-white hover:bg-[#1f2937]"
+                  }`}
+                >
+                  <span>{tab.label}</span>
+                  {tab.count > 0 && (
+                    <span
+                      className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                        isActive ? "bg-white/20 text-white" : "bg-slate-700 text-slate-400"
+                      }`}
+                    >
+                      {tab.count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {unreadCount > 0 && (
+            <button
+              type="button"
+              onClick={handleMarkAllAsRead}
+              className="flex items-center gap-1 text-[11px] text-blue-400 hover:text-blue-300 transition font-medium whitespace-nowrap px-1"
+              title="Mark all conversations as read"
+            >
+              <CheckCheck size={13} />
+              <span>Read all</span>
+            </button>
+          )}
         </div>
       </div>
 
