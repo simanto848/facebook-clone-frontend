@@ -9,6 +9,8 @@ import {
   Smartphone,
   Check,
   AlertCircle,
+  LogOut,
+  Trash2,
 } from "lucide-react";
 import {
   PageHeader,
@@ -30,6 +32,25 @@ export default function PrivacySecurityPage() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+
+  const [sessions, setSessions] = useState([
+    { id: "s1", device: "MacBook Pro (Chrome)", location: "Dhaka, Bangladesh · Active now", isCurrent: true },
+    { id: "s2", device: "iPhone 15 Pro (Safari)", location: "Dhaka, Bangladesh · 2 hours ago", isCurrent: false },
+    { id: "s3", device: "iPad Air (Chrome)", location: "Singapore · 3 days ago", isCurrent: false },
+  ]);
+  const [sessionNotice, setSessionNotice] = useState<string | null>(null);
+
+  const handleRevokeSession = (sessionId: string) => {
+    setSessions((prev) => prev.filter((s) => s.id !== sessionId));
+    setSessionNotice("Session logged out successfully.");
+    setTimeout(() => setSessionNotice(null), 3000);
+  };
+
+  const handleRevokeAllOtherSessions = () => {
+    setSessions((prev) => prev.filter((s) => s.isCurrent));
+    setSessionNotice("All other sessions logged out successfully.");
+    setTimeout(() => setSessionNotice(null), 3000);
+  };
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -182,36 +203,59 @@ export default function PrivacySecurityPage() {
                 </Card>
 
                 <Card>
-                  <CardHeader>
+                  <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle className="flex items-center gap-2 text-base">
                       <Smartphone size={18} className="text-purple-400" />
-                      Active Login Sessions
+                      Active Login Sessions ({sessions.length})
                     </CardTitle>
+                    {sessions.some((s) => !s.isCurrent) && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs text-rose-400 hover:text-rose-300"
+                        leftIcon={<LogOut size={13} />}
+                        onClick={handleRevokeAllOtherSessions}
+                      >
+                        Log Out Other Sessions
+                      </Button>
+                    )}
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    <div className="flex justify-between items-center bg-[#0b0f19]/60 p-3.5 rounded-xl border border-[#1f2937]">
-                      <div className="flex items-center gap-3">
-                        <Smartphone size={18} className="text-green-400" />
-                        <div>
-                          <p className="text-xs font-bold text-white">MacBook Pro (Chrome)</p>
-                          <p className="text-[10px] text-slate-400">Dhaka, Bangladesh · Active now</p>
-                        </div>
+                    {sessionNotice && (
+                      <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-xs flex items-center gap-2">
+                        <Check size={14} />
+                        <span>{sessionNotice}</span>
                       </div>
-                      <Badge variant="success">Current</Badge>
-                    </div>
-
-                    <div className="flex justify-between items-center bg-[#0b0f19]/60 p-3.5 rounded-xl border border-[#1f2937]">
-                      <div className="flex items-center gap-3">
-                        <Smartphone size={18} className="text-slate-400" />
-                        <div>
-                          <p className="text-xs font-bold text-white">iPhone 15 Pro</p>
-                          <p className="text-[10px] text-slate-400">Dhaka, Bangladesh · 2 hours ago</p>
+                    )}
+                    {sessions.map((session) => (
+                      <div
+                        key={session.id}
+                        className="flex justify-between items-center bg-[#0b0f19]/60 p-3.5 rounded-xl border border-[#1f2937]"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Smartphone
+                            size={18}
+                            className={session.isCurrent ? "text-green-400" : "text-slate-400"}
+                          />
+                          <div>
+                            <p className="text-xs font-bold text-white">{session.device}</p>
+                            <p className="text-[10px] text-slate-400">{session.location}</p>
+                          </div>
                         </div>
+                        {session.isCurrent ? (
+                          <Badge variant="success">Current</Badge>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-400 hover:text-red-300 text-xs"
+                            onClick={() => handleRevokeSession(session.id)}
+                          >
+                            Log Out
+                          </Button>
+                        )}
                       </div>
-                      <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300">
-                        Log Out
-                      </Button>
-                    </div>
+                    ))}
                   </CardContent>
                 </Card>
               </div>
