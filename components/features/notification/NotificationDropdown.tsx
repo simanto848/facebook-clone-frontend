@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Bell, CheckCheck, Trash2, Heart, MessageSquare, UserPlus } from "lucide-react";
+import Link from "next/link";
+import { Bell, CheckCheck, Trash2, Heart, MessageSquare, UserPlus, ExternalLink } from "lucide-react";
 import { Avatar, Badge, Button, Tabs, EmptyState } from "@/components/ui";
 import { notificationService } from "@/services/notificationService";
 
@@ -195,6 +196,27 @@ export function NotificationDropdown({ isOpen, onClose }: NotificationDropdownPr
               </div>
             ))
           )}
+        </div>
+
+        {/* Footer */}
+        <div className="pt-2 border-t border-[#1f2937] flex items-center justify-between">
+          {notifications.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setNotifications([])}
+              className="text-[11px] text-slate-400 hover:text-rose-400 transition"
+            >
+              Clear all
+            </button>
+          )}
+          <Link
+            href="/notifications"
+            onClick={onClose}
+            className="text-xs text-blue-400 hover:text-blue-300 font-semibold transition ml-auto flex items-center gap-1"
+          >
+            <span>See all notifications</span>
+            <ExternalLink size={12} />
+          </Link>
         </div>
       </div>
     </>
