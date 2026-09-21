@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
-import { Bookmark, BookmarkX, Search, X, Tag, Download, Check, Image as ImageIcon, Video, FileText, BarChart2, AlignLeft, Trash2, AlertTriangle } from "lucide-react";
+import { Bookmark, BookmarkX, Search, X, Tag, Download, Check, Image as ImageIcon, Video, FileText, BarChart2, AlignLeft, Trash2, AlertTriangle, ArrowUpDown } from "lucide-react";
 import { bookmarkService } from "@/services/bookmarkService";
 import { mapBackendPostToPostType, PostType, usePostStore } from "@/store/postStore";
 import { PageHeader, Badge, EmptyState, Loader } from "@/components/ui";
@@ -17,6 +17,7 @@ export default function SavedPostsPage() {
   const [isClearing, setIsClearing] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedType, setSelectedType] = useState("all");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "popular">("newest");
   const [searchQuery, setSearchQuery] = useState("");
   const { toggleSavePost } = usePostStore();
 
@@ -171,6 +172,21 @@ export default function SavedPostsPage() {
     return true;
   });
 
+  const sortedPosts = [...filteredPosts].sort((a, b) => {
+    if (sortBy === "newest") {
+      return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+    }
+    if (sortBy === "oldest") {
+      return new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
+    }
+    if (sortBy === "popular") {
+      const scoreA = Object.values(a.reactions || {}).reduce((acc: number, v: any) => acc + (typeof v === "number" ? v : 0), 0) + (a.comments?.length || 0);
+      const scoreB = Object.values(b.reactions || {}).reduce((acc: number, v: any) => acc + (typeof v === "number" ? v : 0), 0) + (b.comments?.length || 0);
+      return scoreB - scoreA;
+    }
+    return 0;
+  });
+
   return (
     <div className="min-h-screen bg-[#0f172a] text-white">
       <div className="flex">
@@ -298,33 +314,51 @@ export default function SavedPostsPage() {
             </div>
 
             {/* FORMAT / TYPE FILTER PILLS */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
-              <span className="text-[11px] text-slate-500 font-medium mr-1 shrink-0">Format:</span>
-              {postTypes.map((type) => {
-                const isActive = selectedType === type.id;
-                const IconComponent = type.icon;
-                return (
-                  <button
-                    key={type.id}
-                    onClick={() => setSelectedType(type.id)}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap flex items-center gap-1.5 transition-all cursor-pointer ${
-                      isActive
-                        ? "bg-slate-800 text-blue-400 border border-blue-500/40"
-                        : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
-                    }`}
-                  >
-                    {IconComponent && <IconComponent size={12} />}
-                    <span>{type.label}</span>
-                  </button>
-                );
-              })}
+            {/* FORMAT / TYPE FILTER PILLS & SORT SELECTOR */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1 text-xs">
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+                <span className="text-[11px] text-slate-500 font-medium mr-1 shrink-0">Format:</span>
+                {postTypes.map((type) => {
+                  const isActive = selectedType === type.id;
+                  const IconComponent = type.icon;
+                  return (
+                    <button
+                      key={type.id}
+                      onClick={() => setSelectedType(type.id)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap flex items-center gap-1.5 transition-all cursor-pointer ${
+                        isActive
+                          ? "bg-slate-800 text-blue-400 border border-blue-500/40"
+                          : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
+                      }`}
+                    >
+                      {IconComponent && <IconComponent size={12} />}
+                      <span>{type.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Sort selector */}
+              <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
+                <ArrowUpDown size={12} className="text-slate-400" />
+                <span className="text-[11px] text-slate-500 font-medium">Sort:</span>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                  className="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-1 outline-none cursor-pointer focus:border-blue-500"
+                >
+                  <option value="newest">Newest First</option>
+                  <option value="oldest">Oldest First</option>
+                  <option value="popular">Most Popular</option>
+                </select>
+              </div>
             </div>
 
             {loading ? (
               <div className="py-16 text-center">
                 <Loader label="Loading bookmarked posts..." />
               </div>
-            ) : filteredPosts.length === 0 ? (
+            ) : sortedPosts.length === 0 ? (
               <EmptyState
                 icon={<Bookmark size={36} className="text-yellow-400 fill-yellow-400/20" />}
                 title={searchQuery ? "No matching saved posts found" : "No bookmarked posts found"}
@@ -338,7 +372,7 @@ export default function SavedPostsPage() {
               />
             ) : (
               <div className="space-y-6">
-                {filteredPosts.map((post) => (
+                {sortedPosts.map((post) => (
                   <div key={post.id} className="relative group">
                     <div className="absolute top-4 right-14 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
                       <div className="relative flex items-center">
