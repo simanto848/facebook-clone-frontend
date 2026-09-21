@@ -1,4 +1,4 @@
-import { ChartLine, Circle, MessageSquare, RefreshCw } from "lucide-react";
+import { ChartLine, Circle, MessageSquare, RefreshCw, Search, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useState, useEffect } from "react";
@@ -64,6 +64,8 @@ const RightSidebar = () => {
   const [trends, setTrends] = useState(fallbackTrends);
   const [friendsList, setFriendsList] = useState<FriendItem[]>(fallbackFriends);
   const [isRefreshingTrends, setIsRefreshingTrends] = useState(false);
+  const [searchFriendQuery, setSearchFriendQuery] = useState("");
+  const [showOnlineOnly, setShowOnlineOnly] = useState(false);
   const { openChat } = useChatStore();
 
   const fetchTrends = async () => {
@@ -194,17 +196,63 @@ const RightSidebar = () => {
 
       {/* Active Friends Card */}
       <div className="mt-6 rounded-2xl border border-[#232d42] bg-linear-to-br from-[#141625] to-[#111827] p-5 shadow-lg shadow-black/20">
-        <div className="flex items-center gap-2 text-[#8ea2d5]">
-          <Circle size={10} />
-          <h2 className="text-xs font-bold uppercase tracking-wider">
-            Active Friends
-          </h2>
+        <div className="flex items-center justify-between text-[#8ea2d5]">
+          <div className="flex items-center gap-2">
+            <Circle size={10} className="fill-emerald-400 text-emerald-400" />
+            <h2 className="text-xs font-bold uppercase tracking-wider">
+              Friends ({friendsList.filter((f) => f.isOnline).length} Online)
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowOnlineOnly((prev) => !prev)}
+            className={`text-[10px] px-2 py-0.5 rounded-full font-semibold transition ${
+              showOnlineOnly
+                ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                : "bg-slate-800 text-slate-400 hover:text-white"
+            }`}
+          >
+            {showOnlineOnly ? "Online only" : "All"}
+          </button>
         </div>
 
-        <div className="my-4 h-px bg-[#232d42]" />
+        {/* Search Friends Input */}
+        <div className="mt-3 relative">
+          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search friends..."
+            value={searchFriendQuery}
+            onChange={(e) => setSearchFriendQuery(e.target.value)}
+            className="w-full bg-[#111827] border border-[#232d42] rounded-xl pl-8 pr-7 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
+          />
+          {searchFriendQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchFriendQuery("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+            >
+              <X size={12} />
+            </button>
+          )}
+        </div>
+
+        <div className="my-3 h-px bg-[#232d42]" />
 
         <div className="space-y-2">
-          {friendsList.map((friend) => (
+          {friendsList
+            .filter((f) => {
+              if (showOnlineOnly && !f.isOnline) return false;
+              if (searchFriendQuery.trim()) {
+                const q = searchFriendQuery.toLowerCase();
+                return (
+                  f.name.toLowerCase().includes(q) ||
+                  (f.username && f.username.toLowerCase().includes(q))
+                );
+              }
+              return true;
+            })
+            .map((friend) => (
             <div
               key={friend.name}
               className="flex items-center justify-between gap-3 rounded-xl p-2 transition-all duration-200 hover:bg-[#1a2233] group"
