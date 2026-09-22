@@ -6,7 +6,7 @@ import Link from "next/link";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
-import { Hash, Flame, Bell, Loader2, Sparkles, TrendingUp, Check, Send, Plus, Clock, Image as ImageIcon } from "lucide-react";
+import { Hash, Flame, Bell, Loader2, Sparkles, TrendingUp, Check, Send, Plus, Clock, Image as ImageIcon, FileText, Filter } from "lucide-react";
 import { usePostStore, mapBackendPostToPostType, PostType } from "@/store/postStore";
 import { useAuthStore } from "@/store/authStore";
 import { hashtagService } from "@/services/hashtagService";
@@ -24,6 +24,7 @@ export default function HashtagPage() {
   const [followFeedback, setFollowFeedback] = useState<string | null>(null);
   const [hashtagPosts, setHashtagPosts] = useState<PostType[]>([]);
   const [sortBy, setSortBy] = useState<"top" | "latest">("latest");
+  const [mediaFilter, setMediaFilter] = useState<"all" | "media" | "text">("all");
   const [trendingTopics, setTrendingTopics] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [newPostText, setNewPostText] = useState("");
@@ -198,6 +199,16 @@ export default function HashtagPage() {
     return timeB - timeA;
   });
 
+  const displayedPosts = sortedHashtagPosts.filter((post) => {
+    if (mediaFilter === "media") {
+      return (post.images && post.images.length > 0) || Boolean(post.video) || post.type === "image" || post.type === "video";
+    }
+    if (mediaFilter === "text") {
+      return (!post.images || post.images.length === 0) && !post.video;
+    }
+    return true;
+  });
+
   return (
     <div className="min-h-screen bg-[#0f172a] text-white">
       <div className="flex">
@@ -319,38 +330,81 @@ export default function HashtagPage() {
               </form>
             </div>
 
-            <div className="flex items-center justify-between border-b border-[#1f2937] pb-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#1f2937] pb-3">
               <div className="flex items-center gap-2">
                 <Flame size={16} className="text-blue-400" />
                 <span className="text-xs font-bold tracking-wider uppercase text-slate-400">
-                  #{tag} Posts ({hashtagPosts.length})
+                  #{tag} Posts ({displayedPosts.length})
                 </span>
               </div>
-              <div className="flex items-center gap-1 bg-[#111827] border border-[#1f2937] rounded-xl p-1 text-xs">
-                <button
-                  type="button"
-                  onClick={() => setSortBy("latest")}
-                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-semibold transition cursor-pointer ${
-                    sortBy === "latest"
-                      ? "bg-blue-600 text-white shadow-xs"
-                      : "text-slate-400 hover:text-white"
-                  }`}
-                >
-                  <Clock size={12} />
-                  <span>Latest</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSortBy("top")}
-                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-semibold transition cursor-pointer ${
-                    sortBy === "top"
-                      ? "bg-blue-600 text-white shadow-xs"
-                      : "text-slate-400 hover:text-white"
-                  }`}
-                >
-                  <TrendingUp size={12} />
-                  <span>Top</span>
-                </button>
+
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Media format pills */}
+                <div className="flex items-center gap-1 bg-[#111827] border border-[#1f2937] rounded-xl p-1 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setMediaFilter("all")}
+                    className={`px-2.5 py-1 rounded-lg font-semibold transition cursor-pointer ${
+                      mediaFilter === "all"
+                        ? "bg-blue-600 text-white shadow-xs"
+                        : "text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    All
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMediaFilter("media")}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-lg font-semibold transition cursor-pointer ${
+                      mediaFilter === "media"
+                        ? "bg-blue-600 text-white shadow-xs"
+                        : "text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    <ImageIcon size={12} />
+                    <span>Media</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMediaFilter("text")}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-lg font-semibold transition cursor-pointer ${
+                      mediaFilter === "text"
+                        ? "bg-blue-600 text-white shadow-xs"
+                        : "text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    <FileText size={12} />
+                    <span>Text</span>
+                  </button>
+                </div>
+
+                {/* Sort pills */}
+                <div className="flex items-center gap-1 bg-[#111827] border border-[#1f2937] rounded-xl p-1 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setSortBy("latest")}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-semibold transition cursor-pointer ${
+                      sortBy === "latest"
+                        ? "bg-blue-600 text-white shadow-xs"
+                        : "text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    <Clock size={12} />
+                    <span>Latest</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSortBy("top")}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-semibold transition cursor-pointer ${
+                      sortBy === "top"
+                        ? "bg-blue-600 text-white shadow-xs"
+                        : "text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    <TrendingUp size={12} />
+                    <span>Top</span>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -359,15 +413,19 @@ export default function HashtagPage() {
                 <Loader2 size={32} className="animate-spin text-blue-500" />
                 <span className="text-xs">Loading posts tagged with #{tag}...</span>
               </div>
-            ) : sortedHashtagPosts.length === 0 ? (
+            ) : displayedPosts.length === 0 ? (
               <EmptyState
                 icon={<Hash size={36} className="text-slate-400" />}
-                title={`No posts found for #${tag}`}
+                title={
+                  mediaFilter !== "all"
+                    ? `No ${mediaFilter} posts found for #${tag}`
+                    : `No posts found for #${tag}`
+                }
                 description="Be the first developer to publish a post with this hashtag!"
               />
             ) : (
               <div className="space-y-6">
-                {sortedHashtagPosts.map((post) => (
+                {displayedPosts.map((post) => (
                   <PostCard key={post.id} post={post} />
                 ))}
               </div>
