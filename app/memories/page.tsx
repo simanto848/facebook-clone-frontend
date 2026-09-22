@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
-import { Sparkles, Calendar, Share2, Check, Users, Heart, Search, X } from "lucide-react";
+import { Sparkles, Calendar, Share2, Check, Users, Heart, Search, X, Download, Copy } from "lucide-react";
 import Image from "next/image";
 import { memoryService } from "@/services/memoryService";
 import { postService } from "@/services/postService";
@@ -78,7 +78,41 @@ export default function MemoriesPage() {
   const [activeShareMemory, setActiveShareMemory] = useState<MemoryItem | null>(null);
   const [customCaption, setCustomCaption] = useState("");
   const [isSharing, setIsSharing] = useState(false);
+  const [copiedSummary, setCopiedSummary] = useState(false);
   const { createPost } = usePostStore();
+
+  const handleExportMemories = () => {
+    if (memories.length === 0) return;
+    const dataStr = JSON.stringify(memories, null, 2);
+    const blob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `my-memories-export-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setToastMessage("Memories exported successfully!");
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const handleCopySummary = async () => {
+    if (memories.length === 0) return;
+    const summary = memories
+      .map((m) => `• ${m.dateStr} (${m.yearsAgo} yr${m.yearsAgo > 1 ? "s" : ""} ago): ${m.content}`)
+      .join("\n");
+    const textToCopy = `📅 On This Day Memories:\n${summary}`;
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+      setCopiedSummary(true);
+      setTimeout(() => setCopiedSummary(false), 2000);
+      setToastMessage("Memories summary copied to clipboard!");
+      setTimeout(() => setToastMessage(null), 3000);
+    } catch {
+      // fallback
+    }
+  };
 
   const handleConfirmShare = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -234,7 +268,33 @@ export default function MemoriesPage() {
               title="On This Day - Memories"
               description="Look back on special moments, technical achievements, and posts from previous years."
               icon={<Sparkles size={22} className="text-purple-400" />}
-              badge={<Badge variant="primary">{filteredMemories.length} Memories</Badge>}
+              badge={
+                <div className="flex items-center gap-2">
+                  <Badge variant="primary">{filteredMemories.length} Memories</Badge>
+                  {memories.length > 0 && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleCopySummary}
+                        className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer"
+                        title="Copy summary to clipboard"
+                      >
+                        {copiedSummary ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+                        <span>{copiedSummary ? "Copied" : "Copy"}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleExportMemories}
+                        className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/30 transition cursor-pointer"
+                        title="Export memories as JSON"
+                      >
+                        <Download size={13} />
+                        <span>Export</span>
+                      </button>
+                    </>
+                  )}
+                </div>
+              }
             />
 
             {toastMessage && (
