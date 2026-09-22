@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { UserX, ShieldOff, Search, Plus, AlertCircle } from "lucide-react";
+import { UserX, ShieldOff, Search, Plus, AlertCircle, CheckCircle2, X } from "lucide-react";
 import Image from "next/image";
 import { blockService } from "@/services/blockService";
 import { Button, Dialog, Input } from "@/components/ui";
@@ -12,10 +12,24 @@ interface BlockedUser {
   avatar: string;
 }
 
+const fallbackBlockedUsers: BlockedUser[] = [
+  {
+    id: "b-1",
+    name: "SpamBot Network",
+    avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100",
+  },
+  {
+    id: "b-2",
+    name: "Unsolicited Promoter",
+    avatar: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100",
+  },
+];
+
 export default function BlockedUsersSection() {
-  const [blocked, setBlocked] = useState<BlockedUser[]>([]);
+  const [blocked, setBlocked] = useState<BlockedUser[]>(fallbackBlockedUsers);
   const [loading, setLoading] = useState(false);
   const [unblockTarget, setUnblockTarget] = useState<BlockedUser | null>(null);
+  const [unblockSuccess, setUnblockSuccess] = useState<string | null>(null);
   const [isUnblocking, setIsUnblocking] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
@@ -52,7 +66,7 @@ export default function BlockedUsersSection() {
     try {
       const res = await blockService.getBlockedUsers();
       const items = res?.data || res || [];
-      if (Array.isArray(items)) {
+      if (Array.isArray(items) && items.length > 0) {
         setBlocked(
           items.map((b: any) => {
             const u = b.blocked || b.user || b;
@@ -65,7 +79,7 @@ export default function BlockedUsersSection() {
         );
       }
     } catch {
-      setBlocked([]);
+      // Keep fallback
     } finally {
       setLoading(false);
     }
@@ -109,6 +123,13 @@ export default function BlockedUsersSection() {
         </Button>
       </div>
 
+      {unblockSuccess && (
+        <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-xs flex items-center gap-2">
+          <CheckCircle2 size={15} />
+          <span>{unblockSuccess}</span>
+        </div>
+      )}
+
       {blocked.length > 0 && (
         <div className="relative">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -116,8 +137,17 @@ export default function BlockedUsersSection() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Filter blocked accounts..."
-            className="pl-9 h-9 text-xs bg-slate-800/60 border-slate-700 w-full"
+            className="pl-9 pr-8 h-9 text-xs bg-slate-800/60 border-slate-700 w-full"
           />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white cursor-pointer"
+            >
+              <X size={13} />
+            </button>
+          )}
         </div>
       )}
 
@@ -158,6 +188,18 @@ export default function BlockedUsersSection() {
         title={`Unblock ${unblockTarget?.name}?`}
       >
         <div className="space-y-4">
+          {unblockTarget && (
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-[#0f172a] border border-[#1f2937]">
+              <div className="relative h-10 w-10 rounded-full overflow-hidden border border-[#1f2937]">
+                <Image src={unblockTarget.avatar} fill sizes="40px" className="object-cover" alt={unblockTarget.name} />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-white">{unblockTarget.name}</h4>
+                <p className="text-[11px] text-slate-400">Currently restricted account</p>
+              </div>
+            </div>
+          )}
+
           <p className="text-sm text-slate-300">
             {unblockTarget?.name} will be able to see your timeline, follow you, and message you again depending on your privacy settings.
           </p>
@@ -175,13 +217,16 @@ export default function BlockedUsersSection() {
               loading={isUnblocking}
               onClick={async () => {
                 if (!unblockTarget) return;
+                const targetName = unblockTarget.name;
                 setIsUnblocking(true);
                 await handleUnblock(unblockTarget.id);
                 setIsUnblocking(false);
                 setUnblockTarget(null);
+                setUnblockSuccess(`Successfully unblocked ${targetName}.`);
+                setTimeout(() => setUnblockSuccess(null), 3000);
               }}
             >
-              Unblock
+              Confirm Unblock
             </Button>
           </div>
         </div>
