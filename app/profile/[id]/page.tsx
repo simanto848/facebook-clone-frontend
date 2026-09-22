@@ -18,6 +18,7 @@ import {
   Sparkles,
   UserX,
   Flag,
+  FileText,
 } from "lucide-react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
@@ -46,6 +47,7 @@ export default function UserProfileDetailPage({ params }: ProfilePageProps) {
   const [userPosts, setUserPosts] = useState<PostType[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"posts" | "media" | "connections">("posts");
+  const [postFormatFilter, setPostFormatFilter] = useState<"all" | "text" | "media">("all");
   const [friendStatus, setFriendStatus] = useState<"none" | "sent" | "friends">("none");
   const [mutualFriends, setMutualFriends] = useState<any[]>([]);
   const [isFollowing, setIsFollowing] = useState(false);
@@ -215,6 +217,16 @@ export default function UserProfileDetailPage({ params }: ProfilePageProps) {
   const mediaPosts = userPosts.filter(
     (p) => p.type === "image" || p.type === "video" || (p.images && p.images.length > 0) || !!p.video
   );
+
+  const filteredUserPosts = userPosts.filter((post) => {
+    if (postFormatFilter === "media") {
+      return post.type === "image" || post.type === "video" || (post.images && post.images.length > 0) || !!post.video;
+    }
+    if (postFormatFilter === "text") {
+      return (!post.images || post.images.length === 0) && !post.video;
+    }
+    return true;
+  });
 
   return (
     <div className="min-h-screen bg-[#0f172a] text-white">
@@ -458,15 +470,63 @@ export default function UserProfileDetailPage({ params }: ProfilePageProps) {
 
             {/* Tab Contents */}
             {activeTab === "posts" && (
-              <div className="space-y-6">
-                {userPosts.length === 0 ? (
+              <div className="space-y-4">
+                {userPosts.length > 0 && (
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-[#111827]/60 border border-[#1f2937] p-2 rounded-xl">
+                    <span className="text-[11px] font-semibold text-slate-400 pl-2">Filter Timeline:</span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setPostFormatFilter("all")}
+                        className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                          postFormatFilter === "all"
+                            ? "bg-blue-600 text-white shadow-xs"
+                            : "text-slate-400 hover:text-white"
+                        }`}
+                      >
+                        All ({userPosts.length})
+                      </button>
+                      <button
+                        onClick={() => setPostFormatFilter("text")}
+                        className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                          postFormatFilter === "text"
+                            ? "bg-blue-600 text-white shadow-xs"
+                            : "text-slate-400 hover:text-white"
+                        }`}
+                      >
+                        <FileText size={12} />
+                        <span>Discussions</span>
+                      </button>
+                      <button
+                        onClick={() => setPostFormatFilter("media")}
+                        className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                          postFormatFilter === "media"
+                            ? "bg-blue-600 text-white shadow-xs"
+                            : "text-slate-400 hover:text-white"
+                        }`}
+                      >
+                        <ImageIcon size={12} />
+                        <span>Media ({mediaPosts.length})</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {filteredUserPosts.length === 0 ? (
                   <EmptyState
                     icon={<Grid size={36} className="text-slate-500" />}
-                    title="No posts yet"
-                    description={`${displayName} has not published any posts to their timeline.`}
+                    title={
+                      postFormatFilter !== "all"
+                        ? `No ${postFormatFilter} posts found`
+                        : "No posts yet"
+                    }
+                    description={
+                      postFormatFilter !== "all"
+                        ? `There are no ${postFormatFilter} format posts on this timeline.`
+                        : `${displayName} has not published any posts to their timeline.`
+                    }
                   />
                 ) : (
-                  userPosts.map((post) => <PostCard key={post.id} post={post} />)
+                  filteredUserPosts.map((post) => <PostCard key={post.id} post={post} />)
                 )}
               </div>
             )}
