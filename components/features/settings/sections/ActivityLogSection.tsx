@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Trash2, History, AlertTriangle, Download, Check } from "lucide-react";
+import { Trash2, History, AlertTriangle, Download, Check, Search, FileSpreadsheet } from "lucide-react";
 import { activityLogService } from "@/services/activityLogService";
 import { DataTable, Button, Dialog, type Column } from "@/components/ui";
 
@@ -60,6 +60,8 @@ export default function ActivityLogSection() {
   const [isClearing, setIsClearing] = useState(false);
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
   const [exported, setExported] = useState(false);
+  const [exportedCSV, setExportedCSV] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const handleExport = () => {
     if (logs.length === 0) return;
@@ -74,6 +76,28 @@ export default function ActivityLogSection() {
     URL.revokeObjectURL(url);
     setExported(true);
     setTimeout(() => setExported(false), 2500);
+  };
+
+  const handleExportCSV = () => {
+    if (logs.length === 0) return;
+    const header = "ID,Action,Details,Timestamp\n";
+    const rows = logs
+      .map(
+        (l) =>
+          `"${l.id}","${l.action}","${l.details.replace(/"/g, '""')}","${l.createdAt}"`
+      )
+      .join("\n");
+    const blob = new Blob([header + rows], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `activity-log-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setExportedCSV(true);
+    setTimeout(() => setExportedCSV(false), 2500);
   };
 
   const handleDelete = async (id: string) => {
@@ -159,6 +183,13 @@ export default function ActivityLogSection() {
       if (filterCategory === "SECURITY" && !action.includes("SECURITY") && !action.includes("PASSWORD") && !action.includes("2FA")) return false;
     }
 
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      if (!log.action.toLowerCase().includes(q) && !log.details.toLowerCase().includes(q)) {
+        return false;
+      }
+    }
+
     if (timeFilter !== "ALL") {
       const logDate = new Date(log.createdAt).getTime();
       if (!isNaN(logDate)) {
@@ -172,7 +203,7 @@ export default function ActivityLogSection() {
 
   return (
     <div className="rounded-2xl border border-[#1f2937] bg-[#111827] p-6 text-white space-y-6">
-      <div className="flex items-center justify-between border-b border-[#1f2937] pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#1f2937] pb-4">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-full bg-blue-600/10 flex items-center justify-center text-blue-400">
             <History size={20} />
@@ -184,14 +215,22 @@ export default function ActivityLogSection() {
         </div>
 
         {logs.length > 0 && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               size="sm"
               variant="secondary"
               leftIcon={exported ? <Check size={13} className="text-emerald-400" /> : <Download size={13} />}
               onClick={handleExport}
             >
-              {exported ? "Exported" : "Export JSON"}
+              {exported ? "Exported" : "JSON"}
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              leftIcon={exportedCSV ? <Check size={13} className="text-emerald-400" /> : <FileSpreadsheet size={13} />}
+              onClick={handleExportCSV}
+            >
+              {exportedCSV ? "Exported" : "CSV"}
             </Button>
             <Button
               size="sm"
@@ -206,7 +245,7 @@ export default function ActivityLogSection() {
       </div>
 
       {/* Category and time filter pills */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
           {categories.map((cat) => {
             const count = logs.filter((log) => {
@@ -240,19 +279,32 @@ export default function ActivityLogSection() {
           })}
         </div>
 
-        {/* Time Filter Toggle */}
-        <div className="flex items-center rounded-xl bg-slate-800/80 p-1 border border-slate-700 text-xs shrink-0 self-start md:self-auto">
-          {(["ALL", "24H", "7D"] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTimeFilter(t)}
-              className={`px-2.5 py-1 rounded-lg font-medium transition cursor-pointer ${
-                timeFilter === t ? "bg-blue-600 text-white" : "text-slate-400 hover:text-white"
-              }`}
-            >
-              {t === "ALL" ? "All Time" : t === "24H" ? "Last 24h" : "Last 7d"}
-            </button>
-          ))}
+        {/* Search input and Time Filter Toggle */}
+        <div className="flex items-center gap-2 shrink-0 self-start lg:self-auto">
+          <div className="relative w-40 sm:w-48">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={13} />
+            <input
+              type="text"
+              placeholder="Search logs..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+            />
+          </div>
+
+          <div className="flex items-center rounded-xl bg-slate-800/80 p-1 border border-slate-700 text-xs shrink-0">
+            {(["ALL", "24H", "7D"] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTimeFilter(t)}
+                className={`px-2.5 py-1 rounded-lg font-medium transition cursor-pointer ${
+                  timeFilter === t ? "bg-blue-600 text-white" : "text-slate-400 hover:text-white"
+                }`}
+              >
+                {t === "ALL" ? "All Time" : t === "24H" ? "Last 24h" : "Last 7d"}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
