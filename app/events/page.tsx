@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
-import { Calendar, MapPin, Users, Ticket, Check, Plus, Image as ImageIcon, Search, Share2, ExternalLink, Flame, ArrowUpDown } from "lucide-react";
+import { Calendar, MapPin, Users, Ticket, Check, Plus, Image as ImageIcon, Search, Share2, ExternalLink, Flame, ArrowUpDown, Download } from "lucide-react";
 import Image from "next/image";
 import { eventService } from "@/services/eventService";
 import {
@@ -80,6 +80,51 @@ export default function EventsPage() {
       setCopiedEventId(e.id);
       setTimeout(() => setCopiedEventId(null), 2000);
     }
+  };
+
+  const handleExportIcs = () => {
+    const targetEvents = events.filter((e) => rsvps[e.id] === "going" || rsvps[e.id] === "interested");
+    const listToExport = targetEvents.length > 0 ? targetEvents : filteredEvents;
+    if (listToExport.length === 0) return;
+
+    const icsLines = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//TechSphere//Events//EN",
+      "CALSCALE:GREGORIAN",
+    ];
+
+    listToExport.forEach((ev) => {
+      const nowStr = new Date().toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+      const eventDate = new Date(ev.date);
+      const startStr = !isNaN(eventDate.getTime())
+        ? eventDate.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z"
+        : nowStr;
+
+      icsLines.push(
+        "BEGIN:VEVENT",
+        `UID:${ev.id}@techsphere.app`,
+        `DTSTAMP:${nowStr}`,
+        `DTSTART:${startStr}`,
+        `SUMMARY:${ev.title.replace(/[,;]/g, " ")}`,
+        `DESCRIPTION:${ev.description.replace(/[\n\r]/g, " ").replace(/[,;]/g, " ")}`,
+        `LOCATION:${ev.location.replace(/[,;]/g, " ")}`,
+        "STATUS:CONFIRMED",
+        "END:VEVENT"
+      );
+    });
+
+    icsLines.push("END:VCALENDAR");
+
+    const blob = new Blob([icsLines.join("\r\n")], { type: "text/calendar;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `tech-events-${new Date().toISOString().slice(0, 10)}.ics`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   // Create Event Modal State
@@ -306,13 +351,24 @@ export default function EventsPage() {
               icon={<Calendar size={22} />}
               badge={<Badge variant="primary">{filteredEvents.length} Events</Badge>}
               actions={
-                <Button
-                  leftIcon={<Plus size={16} />}
-                  onClick={() => setIsCreateOpen(true)}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  Create Event
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    leftIcon={<Download size={14} />}
+                    onClick={handleExportIcs}
+                    title="Export events calendar (.ics)"
+                  >
+                    Export .ics
+                  </Button>
+                  <Button
+                    leftIcon={<Plus size={16} />}
+                    onClick={() => setIsCreateOpen(true)}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    Create Event
+                  </Button>
+                </div>
               }
             />
 
