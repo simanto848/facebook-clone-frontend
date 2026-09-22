@@ -37,6 +37,7 @@ export default function ConnectionsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"recent" | "name" | "mutual">("recent");
   const [mutualFilter, setMutualFilter] = useState<"all" | "has_mutual">("all");
+  const [roleCategory, setRoleCategory] = useState<"all" | "engineering" | "design" | "product">("all");
   const [confirmUnfriendUser, setConfirmUnfriendUser] = useState<DisplayUser | null>(null);
   const [mutualUser, setMutualUser] = useState<DisplayUser | null>(null);
   const [mutualList, setMutualList] = useState<any[]>([]);
@@ -246,6 +247,14 @@ export default function ConnectionsPage() {
       result = result.filter((u) => u.mutual > 0);
     }
 
+    if (roleCategory === "engineering") {
+      result = result.filter((u) => /engineer|developer|architect|frontend|backend|fullstack|dev|software/i.test(u.role));
+    } else if (roleCategory === "design") {
+      result = result.filter((u) => /design|ux|ui|creative|graphic/i.test(u.role));
+    } else if (roleCategory === "product") {
+      result = result.filter((u) => /product|manager|lead|founder|owner|agile/i.test(u.role));
+    }
+
     if (sortBy === "mutual") {
       result.sort((a, b) => b.mutual - a.mutual);
     } else if (sortBy === "name") {
@@ -391,6 +400,29 @@ export default function ConnectionsPage() {
                   Mutual
                 </button>
               </div>
+            </div>
+
+            {/* Role Filter Pills */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+              <span className="text-slate-400 text-[11px] shrink-0 font-medium">Role:</span>
+              {[
+                { id: "all", label: "All Roles" },
+                { id: "engineering", label: "💻 Engineering" },
+                { id: "design", label: "🎨 Design & UX" },
+                { id: "product", label: "🚀 Product & Mgmt" },
+              ].map((pill) => (
+                <button
+                  key={pill.id}
+                  onClick={() => setRoleCategory(pill.id as any)}
+                  className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
+                    roleCategory === pill.id
+                      ? "bg-blue-600 text-white shadow-sm shadow-blue-500/20"
+                      : "bg-[#111827] text-slate-400 hover:text-white border border-[#1f2937]"
+                  }`}
+                >
+                  {pill.label}
+                </button>
+              ))}
             </div>
 
             {/* Content Lists */}
