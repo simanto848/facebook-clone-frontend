@@ -6,7 +6,7 @@ import SettingsSection from "@/components/features/settings/SettingsSection";
 import { PasswordStrength, Input, Button, Switch, Dialog } from "@/components/ui";
 import { userService } from "@/services/userService";
 import { useAuth } from "@/hooks/useAuth";
-import { CheckCircle2, AlertCircle, AlertTriangle } from "lucide-react";
+import { CheckCircle2, AlertCircle, AlertTriangle, ShieldCheck, QrCode, Copy, Check, RefreshCw, KeyRound } from "lucide-react";
 
 export default function SecuritySection() {
   const router = useRouter();
@@ -16,6 +16,55 @@ export default function SecuritySection() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [twoFactor, setTwoFactor] = useState(false);
+  const [isTwoFactorModalOpen, setIsTwoFactorModalOpen] = useState(false);
+  const [twoFactorCode, setTwoFactorCode] = useState("");
+  const [twoFactorError, setTwoFactorError] = useState<string | null>(null);
+  const [twoFactorSuccess, setTwoFactorSuccess] = useState(false);
+  const [backupCodes, setBackupCodes] = useState<string[]>([
+    "8F3A-992B",
+    "C41D-770E",
+    "55A2-119F",
+    "EE40-92B1",
+    "771C-338A",
+    "990D-22FA",
+  ]);
+  const [copiedCodes, setCopiedCodes] = useState(false);
+  const [showBackupCodes, setShowBackupCodes] = useState(false);
+
+  const generateNewBackupCodes = () => {
+    const chars = "0123456789ABCDEF";
+    const newCodes = Array.from({ length: 6 }, () => {
+      const p1 = Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+      const p2 = Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+      return `${p1}-${p2}`;
+    });
+    setBackupCodes(newCodes);
+    setCopiedCodes(false);
+  };
+
+  const handleCopyBackupCodes = () => {
+    if (typeof window !== "undefined") {
+      navigator.clipboard.writeText(backupCodes.join("\n"));
+      setCopiedCodes(true);
+      setTimeout(() => setCopiedCodes(false), 2500);
+    }
+  };
+
+  const handleVerify2FA = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (twoFactorCode.trim().length < 6) {
+      setTwoFactorError("Please enter a valid 6-digit authentication code.");
+      return;
+    }
+    setTwoFactor(true);
+    setTwoFactorSuccess(true);
+    setTwoFactorError(null);
+    setTimeout(() => {
+      setIsTwoFactorModalOpen(false);
+      setTwoFactorSuccess(false);
+      setTwoFactorCode("");
+    }, 1200);
+  };
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -129,12 +178,102 @@ export default function SecuritySection() {
 
         {/* 2FA Card */}
         <div className="p-4 rounded-2xl bg-[#111827] border border-[#1f2937] space-y-4">
-          <Switch
-            label="Two-Factor Authentication (2FA)"
-            description="Require an authentication code when signing in from unrecognized browsers or mobile apps."
-            checked={twoFactor}
-            onChange={(e) => setTwoFactor(e.target.checked)}
-          />
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold text-white">Two-Factor Authentication (2FA)</h3>
+                {twoFactor && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                    <ShieldCheck size={11} /> Enabled
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-400">
+                Require an authentication code from your authenticator app when signing in from new devices.
+              </p>
+            </div>
+
+            <Button
+              variant={twoFactor ? "secondary" : "primary"}
+              size="sm"
+              type="button"
+              onClick={() => {
+                if (twoFactor) {
+                  setTwoFactor(false);
+                  setShowBackupCodes(false);
+                } else {
+                  setIsTwoFactorModalOpen(true);
+                }
+              }}
+              className="shrink-0"
+            >
+              {twoFactor ? "Disable 2FA" : "Enable 2FA"}
+            </Button>
+          </div>
+
+          {/* Backup Codes Section when 2FA is active */}
+          {twoFactor && (
+            <div className="pt-3 border-t border-[#1f2937] space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-200">
+                  <KeyRound size={14} className="text-blue-400" />
+                  <span>Backup Recovery Codes</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowBackupCodes(!showBackupCodes)}
+                    className="text-xs text-blue-400 hover:underline cursor-pointer"
+                  >
+                    {showBackupCodes ? "Hide Codes" : "Reveal Codes"}
+                  </button>
+                </div>
+              </div>
+
+              {showBackupCodes ? (
+                <div className="p-3.5 rounded-xl bg-[#0f172a] border border-[#1f2937] space-y-3">
+                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                    Store these single-use recovery codes in a safe place. If you lose access to your authenticator device, each code can be used once to access your account.
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 font-mono text-xs text-white">
+                    {backupCodes.map((code, idx) => (
+                      <div
+                        key={idx}
+                        className="px-2.5 py-1.5 rounded-lg bg-[#111827] border border-[#1f2937] text-center select-all"
+                      >
+                        {code}
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      leftIcon={<RefreshCw size={12} />}
+                      onClick={generateNewBackupCodes}
+                      className="text-xs text-slate-400 hover:text-white"
+                    >
+                      Regenerate
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      leftIcon={copiedCodes ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                      onClick={handleCopyBackupCodes}
+                      className="text-xs"
+                    >
+                      {copiedCodes ? "Codes Copied!" : "Copy All Codes"}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-[11px] text-slate-500">
+                  Backup recovery codes are generated and ready. Reveal them to copy or download.
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Delete Account Trigger */}
@@ -268,6 +407,85 @@ export default function SecuritySection() {
               Confirm Permanent Deletion
             </Button>
           </div>
+        </div>
+      </Dialog>
+
+      {/* 2FA SETUP MODAL */}
+      <Dialog
+        isOpen={isTwoFactorModalOpen}
+        onClose={() => {
+          setIsTwoFactorModalOpen(false);
+          setTwoFactorError(null);
+          setTwoFactorCode("");
+        }}
+        title="Set Up Two-Factor Authentication"
+        description="Scan the QR code with an authenticator app (Google Authenticator, Authy, or 1Password) and enter the 6-digit code."
+        size="md"
+      >
+        <div className="space-y-4 pt-2">
+          {twoFactorSuccess ? (
+            <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center gap-2">
+              <CheckCircle2 size={18} className="shrink-0" />
+              <span>Two-Factor Authentication has been successfully enabled!</span>
+            </div>
+          ) : (
+            <>
+              {/* Simulated QR Code & Key */}
+              <div className="flex flex-col items-center justify-center p-4 rounded-xl bg-[#0f172a] border border-[#1f2937] text-center space-y-2">
+                <div className="p-3 bg-white rounded-xl shadow-md">
+                  <QrCode size={120} className="text-slate-900" />
+                </div>
+                <div className="space-y-1">
+                  <span className="text-[11px] text-slate-400">Can't scan? Use manual setup key:</span>
+                  <div className="font-mono text-xs text-blue-400 bg-[#111827] px-2.5 py-1 rounded-md border border-[#1f2937] select-all">
+                    FBCL-SEC-9842-AUTHENTICATOR
+                  </div>
+                </div>
+              </div>
+
+              {twoFactorError && (
+                <div className="p-2.5 rounded-lg bg-rose-500/20 text-rose-300 text-xs">
+                  {twoFactorError}
+                </div>
+              )}
+
+              <form onSubmit={handleVerify2FA} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-300">Enter 6-Digit Authentication Code</label>
+                  <Input
+                    type="text"
+                    maxLength={6}
+                    placeholder="e.g. 492019"
+                    value={twoFactorCode}
+                    onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, ""))}
+                    className="bg-[#0f172a] border-[#1f2937] text-center font-mono tracking-widest text-base"
+                    required
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#1f2937]">
+                  <Button
+                    variant="ghost"
+                    type="button"
+                    onClick={() => {
+                      setIsTwoFactorModalOpen(false);
+                      setTwoFactorError(null);
+                      setTwoFactorCode("");
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="primary"
+                    type="submit"
+                    disabled={twoFactorCode.length < 6}
+                  >
+                    Verify & Enable
+                  </Button>
+                </div>
+              </form>
+            </>
+          )}
         </div>
       </Dialog>
     </SettingsSection>
