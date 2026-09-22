@@ -7,7 +7,7 @@ import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
 import { usePostStore, mapBackendPostToPostType, PostType } from "@/store/postStore";
 import { postService } from "@/services/postService";
-import { ArrowLeft, MessageSquare, Loader2, Copy, Check, Share2, Compass } from "lucide-react";
+import { ArrowLeft, MessageSquare, Loader2, Copy, Check, Share2, Compass, Bookmark, BookmarkCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui";
 
@@ -18,7 +18,7 @@ interface PageProps {
 export default function PostDetailPage({ params }: PageProps) {
   const router = useRouter();
   const { id } = use(params);
-  const { posts } = usePostStore();
+  const { posts, toggleSavePost } = usePostStore();
   const existingPost = posts.find((p) => p.id === id);
 
   const [post, setPost] = useState<PostType | null>(existingPost || null);
@@ -61,6 +61,13 @@ export default function PostDetailPage({ params }: PageProps) {
     };
   }, [id, existingPost]);
 
+  const isSaved = Boolean(post?.saved || existingPost?.saved);
+
+  const handleToggleBookmark = () => {
+    toggleSavePost(id);
+    setPost((p) => (p ? { ...p, saved: !isSaved } : p));
+  };
+
   const handleCopyLink = () => {
     if (typeof window !== "undefined") {
       navigator.clipboard.writeText(window.location.href);
@@ -80,11 +87,11 @@ export default function PostDetailPage({ params }: PageProps) {
         {/* MAIN FEED */}
         <main className="flex-1 flex justify-center">
           <div className="w-full max-w-3xl px-6 py-6 space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => router.back()}
-                  className="h-10 w-10 rounded-full border border-[#1f2937] bg-[#111827]/50 flex items-center justify-center text-slate-300 hover:text-white transition"
+                  className="h-10 w-10 rounded-full border border-[#1f2937] bg-[#111827]/50 flex items-center justify-center text-slate-300 hover:text-white transition cursor-pointer"
                   title="Go back"
                 >
                   <ArrowLeft size={18} />
@@ -95,14 +102,33 @@ export default function PostDetailPage({ params }: PageProps) {
                 </div>
               </div>
 
-              <Button
-                variant="secondary"
-                size="sm"
-                leftIcon={copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
-                onClick={handleCopyLink}
-              >
-                {copied ? "Link Copied!" : "Copy Link"}
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  leftIcon={
+                    isSaved ? (
+                      <BookmarkCheck size={14} className="text-amber-400 fill-amber-400" />
+                    ) : (
+                      <Bookmark size={14} />
+                    )
+                  }
+                  onClick={handleToggleBookmark}
+                  className="border border-[#1f2937]"
+                >
+                  {isSaved ? "Saved" : "Save Post"}
+                </Button>
+
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  leftIcon={copied ? <Check size={14} className="text-emerald-400" /> : <Share2 size={14} />}
+                  onClick={handleCopyLink}
+                  className="border border-[#1f2937]"
+                >
+                  {copied ? "Permalink Copied!" : "Share Permalink"}
+                </Button>
+              </div>
             </div>
 
             {loading ? (
