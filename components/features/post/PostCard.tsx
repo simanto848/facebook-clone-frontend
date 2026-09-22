@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { MessageSquare, Share2, Send, Heart, ShieldAlert, Globe, Users, Lock, EyeOff } from "lucide-react";
+import { MessageSquare, Share2, Send, Heart, ShieldAlert, Globe, Users, Lock, EyeOff, Clock } from "lucide-react";
 import { PostType, usePostStore } from "@/store/postStore";
 import PostDropdown from "./PostDropdown";
 import ReactionPicker, { reactionsList } from "./ReactionPicker";
@@ -196,6 +196,9 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
     );
   }
 
+  const wordCount = post.content ? post.content.trim().split(/\s+/).filter(Boolean).length : 0;
+  const readingTimeMin = Math.max(1, Math.ceil(wordCount / 200));
+
   return (
     <article
       className={`
@@ -239,12 +242,20 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
               )}
             </div>
 
-            <div className="flex items-center gap-1.5 text-xs text-slate-400 mt-0.5">
+            <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-400 mt-0.5">
               <span>{post.createdAt}</span>
               <span>•</span>
               <div className="flex items-center gap-1">
                 {getVisibilityIcon(post.visibility)}
               </div>
+              {wordCount >= 50 && (
+                <>
+                  <span>•</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-slate-800 text-slate-400 border border-slate-700/60 inline-flex items-center gap-1">
+                    <Clock size={10} /> {readingTimeMin} min read
+                  </span>
+                </>
+              )}
             </div>
           </div>
         </div>
