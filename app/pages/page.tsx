@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
-import { Flag, Plus, ThumbsUp, ExternalLink, Share2, Check, Globe, Search, X } from "lucide-react";
+import { Flag, Plus, ThumbsUp, ExternalLink, Share2, Check, Globe, Search, X, ArrowUpDown } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { pageService } from "@/services/pageService";
@@ -70,6 +70,7 @@ export default function PagesHubPage() {
   const [copiedPageId, setCopiedPageId] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<string>("all");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
+  const [sortBy, setSortBy] = useState<"popular" | "name">("popular");
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [name, setName] = useState("");
@@ -256,6 +257,12 @@ export default function PagesHubPage() {
     return true;
   });
 
+  const sortedPages = [...filteredPages].sort((a, b) => {
+    if (sortBy === "popular") return (b.likes || 0) - (a.likes || 0);
+    if (sortBy === "name") return a.name.localeCompare(b.name);
+    return 0;
+  });
+
   return (
     <div className="min-h-screen bg-[#0f172a] text-white">
       <div className="flex">
@@ -302,27 +309,42 @@ export default function PagesHubPage() {
               variant="line"
             />
 
-            {/* Category Filter Pills */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-              {PAGE_CATEGORIES.map((cat) => {
-                const isSelected = selectedCategory === cat;
-                return (
-                  <button
-                    key={cat}
-                    onClick={() => setSelectedCategory(isSelected && cat !== "All" ? "All" : cat)}
-                    className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
-                      isSelected
-                        ? "bg-blue-600 text-white shadow-sm shadow-blue-500/20"
-                        : "bg-[#1e293b] text-slate-400 hover:text-slate-200 hover:bg-[#334155]"
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                );
-              })}
+            {/* Category Filter Pills & Sort Controls */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1">
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+                {PAGE_CATEGORIES.map((cat) => {
+                  const isSelected = selectedCategory === cat;
+                  return (
+                    <button
+                      key={cat}
+                      onClick={() => setSelectedCategory(isSelected && cat !== "All" ? "All" : cat)}
+                      className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-all cursor-pointer ${
+                        isSelected
+                          ? "bg-blue-600 text-white shadow-sm shadow-blue-500/20"
+                          : "bg-[#1e293b] text-slate-400 hover:text-slate-200 hover:bg-[#334155]"
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto text-xs">
+                <ArrowUpDown size={12} className="text-slate-400" />
+                <span className="text-[11px] text-slate-500 font-medium">Sort:</span>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                  className="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-1 outline-none cursor-pointer focus:border-blue-500"
+                >
+                  <option value="popular">Most Popular</option>
+                  <option value="name">Name (A-Z)</option>
+                </select>
+              </div>
             </div>
 
-            {filteredPages.length === 0 ? (
+            {sortedPages.length === 0 ? (
               <div className="py-16 text-center space-y-3 rounded-2xl border border-dashed border-[#1f2937] bg-[#111827]/40 p-8">
                 <Flag size={36} className="mx-auto text-slate-500" />
                 <h3 className="text-sm font-bold text-white">No pages found</h3>
@@ -338,7 +360,7 @@ export default function PagesHubPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {filteredPages.map((p) => {
+                {sortedPages.map((p) => {
                   const isLiked = likedMap[p.id] ?? p.isLiked;
                   return (
                     <Card key={p.id} hover className="flex flex-col justify-between group overflow-hidden">
