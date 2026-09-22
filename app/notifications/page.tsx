@@ -23,7 +23,7 @@ export interface NotificationItem {
   text: string;
   time: string;
   unread: boolean;
-  type?: "like" | "comment" | "follow" | "mention" | "system";
+  type?: "like" | "comment" | "follow" | "mention" | "system" | "friend_request";
 }
 
 const fallbackNotifications: NotificationItem[] = [
@@ -49,19 +49,37 @@ const fallbackNotifications: NotificationItem[] = [
     id: "n3",
     sender: "Elena Rostova",
     avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100",
-    text: "started following your profile.",
+    text: "sent you a friend connection request.",
+    time: "3h ago",
+    unread: true,
+    type: "friend_request",
+  },
+  {
+    id: "n4",
+    sender: "Marcus Vance",
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100",
+    text: "started following your profile updates.",
     time: "4h ago",
     unread: false,
     type: "follow",
   },
   {
-    id: "n4",
+    id: "n5",
     sender: "Alex Thorne",
     avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100",
     text: "mentioned you in a comment on Tech Meetup 2026.",
     time: "1d ago",
     unread: false,
     type: "mention",
+  },
+  {
+    id: "n6",
+    sender: "System Security",
+    avatar: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=100",
+    text: "Your account security settings were reviewed successfully.",
+    time: "2d ago",
+    unread: false,
+    type: "system",
   },
 ];
 
@@ -142,6 +160,14 @@ export default function NotificationsPage() {
 
   const unreadCount = notifications.filter((n) => n.unread).length;
 
+  const readCount = notifications.length - unreadCount;
+
+  const handleClearReadNotifications = () => {
+    setNotifications((prev) => prev.filter((n) => n.unread));
+    setReadBanner("Cleared all read notifications from view.");
+    setTimeout(() => setReadBanner(null), 3000);
+  };
+
   const primaryTabs = [
     { id: "all", label: `All (${notifications.length})` },
     { id: "unread", label: `Unread (${unreadCount})` },
@@ -152,11 +178,19 @@ export default function NotificationsPage() {
     { id: "like", label: `Likes (${notifications.filter((n) => n.type === "like").length})` },
     { id: "comment", label: `Comments (${notifications.filter((n) => n.type === "comment").length})` },
     { id: "mention", label: `Mentions (${notifications.filter((n) => n.type === "mention").length})` },
+    { id: "friend_request", label: `Requests (${notifications.filter((n) => n.type === "friend_request" || n.type === "follow").length})` },
+    { id: "system", label: `System (${notifications.filter((n) => n.type === "system").length})` },
   ];
 
   const filteredNotifications = notifications.filter((item) => {
     if (activeTab === "unread" && !item.unread) return false;
-    if (typeFilter !== "all" && item.type !== typeFilter) return false;
+    if (typeFilter !== "all") {
+      if (typeFilter === "friend_request") {
+        if (item.type !== "friend_request" && item.type !== "follow") return false;
+      } else if (item.type !== typeFilter) {
+        return false;
+      }
+    }
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -175,9 +209,12 @@ export default function NotificationsPage() {
       case "comment":
         return <MessageSquare className="w-3.5 h-3.5 text-blue-500 fill-blue-500" />;
       case "follow":
+      case "friend_request":
         return <UserPlus className="w-3.5 h-3.5 text-emerald-500" />;
       case "mention":
         return <Bell className="w-3.5 h-3.5 text-purple-500 fill-purple-500" />;
+      case "system":
+        return <Bell className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />;
       default:
         return <Bell className="w-3.5 h-3.5 text-primary fill-primary" />;
     }
@@ -215,6 +252,17 @@ export default function NotificationsPage() {
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
             Refresh
           </Button>
+          {readCount > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleClearReadNotifications}
+              className="flex items-center gap-1.5 rounded-xl text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border-border/40"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Clear Read
+            </Button>
+          )}
           <Button
             variant="secondary"
             size="sm"
