@@ -26,6 +26,8 @@ import {
   Share2,
   Check,
   X,
+  Search,
+  Film,
 } from "lucide-react";
 import Image from "next/image";
 import { Dialog, Input, Button, Avatar, Loader } from "@/components/ui";
@@ -45,6 +47,7 @@ export default function ProfilePage() {
   const [skills, setSkills] = useState<string[]>(["UI/UX", "Fullstack", "React 19", "TypeScript"]);
   const [newSkillInput, setNewSkillInput] = useState("");
   const [isAddingSkill, setIsAddingSkill] = useState(false);
+  const [postSearchQuery, setPostSearchQuery] = useState("");
 
   useEffect(() => {
     try {
@@ -274,6 +277,8 @@ export default function ProfilePage() {
 
   // Media posts (images or videos)
   const mediaPosts = userPosts.filter((post) => post.type === "image" || post.type === "video" || (post.images && post.images.length > 0) || !!post.video);
+  const photosCount = mediaPosts.filter((post) => (post.images && post.images.length > 0) || post.type === "image").length;
+  const videosCount = mediaPosts.filter((post) => !!post.video || post.type === "video").length;
 
   // Likes (posts user reacted to)
   const likedPosts = posts.filter((post) => !!post.userReaction);
@@ -290,11 +295,22 @@ export default function ProfilePage() {
     else if (activeTab === "saved") list = savedPosts;
     else if (activeTab === "tagged") list = displayedTaggedPosts;
 
+    if (postSearchQuery.trim()) {
+      const q = postSearchQuery.toLowerCase();
+      list = list.filter((p) => p.content?.toLowerCase().includes(q));
+    }
+
     if (list.length === 0) {
       return (
         <div className="flex flex-col items-center justify-center py-16 text-center space-y-3 rounded-2xl border border-dashed border-[#1f2937] bg-[#111827]/40">
-          <p className="text-slate-400 font-semibold text-sm">No items found in this section</p>
-          <p className="text-xs text-slate-500 max-w-xs">Items you post or interact with will display here.</p>
+          <p className="text-slate-400 font-semibold text-sm">
+            {postSearchQuery ? `No posts matching "${postSearchQuery}"` : "No items found in this section"}
+          </p>
+          <p className="text-xs text-slate-500 max-w-xs">
+            {postSearchQuery
+              ? "Try searching for a different keyword or clear the search query."
+              : "Items you post or interact with will display here."}
+          </p>
         </div>
       );
     }
@@ -466,7 +482,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Profile Navigation Tabs Bar */}
-      <div className="px-12 border-b border-[#1f2937]/80 bg-[#111827]/10 sticky top-0 z-30 backdrop-blur-xs">
+      <div className="px-4 md:px-12 border-b border-[#1f2937]/80 bg-[#111827]/30 sticky top-0 z-30 backdrop-blur-md flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div className="flex gap-6 overflow-x-auto scrollbar-none">
           {tabs.map((tab) => {
             const Icon = tab.icon;
@@ -477,7 +493,7 @@ export default function ProfilePage() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`
-                  flex items-center gap-2 py-4 px-1.5 border-b-2 text-xs font-bold transition-all relative shrink-0
+                  flex items-center gap-2 py-4 px-1.5 border-b-2 text-xs font-bold transition-all relative shrink-0 cursor-pointer
                   ${
                     isActive
                       ? "border-blue-500 text-blue-400 font-extrabold"
@@ -493,6 +509,28 @@ export default function ProfilePage() {
               </button>
             );
           })}
+        </div>
+
+        <div className="flex items-center gap-3 pb-3 md:pb-0">
+          <div className="hidden sm:flex items-center gap-2 text-[11px] text-slate-400">
+            <span className="flex items-center gap-1 bg-[#111827] px-2.5 py-1 rounded-lg border border-[#1f2937]">
+              <ImageIcon size={12} className="text-blue-400" /> {photosCount} photos
+            </span>
+            <span className="flex items-center gap-1 bg-[#111827] px-2.5 py-1 rounded-lg border border-[#1f2937]">
+              <Film size={12} className="text-purple-400" /> {videosCount} videos
+            </span>
+          </div>
+
+          <div className="relative w-full sm:w-52">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={13} />
+            <input
+              type="text"
+              value={postSearchQuery}
+              onChange={(e) => setPostSearchQuery(e.target.value)}
+              placeholder="Search user posts..."
+              className="w-full rounded-full bg-[#111827] border border-[#1f2937] pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
+            />
+          </div>
         </div>
       </div>
 
