@@ -7,7 +7,9 @@ import { Input, Button, Dialog } from "@/components/ui";
 import { useAuthStore } from "@/store/authStore";
 import { useAuth } from "@/hooks/useAuth";
 import { userService } from "@/services/userService";
-import { Check, AlertCircle, AlertTriangle, Trash2 } from "lucide-react";
+import { Check, AlertCircle, AlertTriangle, Trash2, Globe } from "lucide-react";
+
+const MAX_BIO_LENGTH = 200;
 
 export default function AccountSection() {
   const router = useRouter();
@@ -17,6 +19,7 @@ export default function AccountSection() {
   const [username, setUsername] = useState(user?.username || "");
   const [bio, setBio] = useState((user as any)?.bio || "");
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar || "");
+  const [website, setWebsite] = useState((user as any)?.website || "");
   const [saved, setSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -52,6 +55,7 @@ export default function AccountSection() {
       setUsername(user.username || "");
       setBio((user as any)?.bio || "");
       setAvatarUrl(user.avatar || "");
+      setWebsite((user as any)?.website || "");
     }
   }, [user]);
 
@@ -59,11 +63,20 @@ export default function AccountSection() {
     e.preventDefault();
     setIsSaving(true);
     setErrorMessage(null);
+
+    const isWebsiteValid = !website.trim() || /^https?:\/\/.+\..+/.test(website.trim());
+    if (!isWebsiteValid) {
+      setErrorMessage("Please enter a valid website URL beginning with http:// or https://");
+      setIsSaving(false);
+      return;
+    }
+
     try {
       await userService.updateProfile({
         displayName: fullName,
         bio: bio,
         avatar: avatarUrl,
+        website: website.trim(),
       });
       updateUser({
         displayName: fullName,
@@ -104,10 +117,32 @@ export default function AccountSection() {
             placeholder="https://images.unsplash.com/..."
           />
 
+          <div className="space-y-1">
+            <Input
+              label="Website or Portfolio URL"
+              value={website}
+              onChange={(e) => setWebsite(e.target.value)}
+              placeholder="https://yourportfolio.dev"
+            />
+            {website && !/^https?:\/\/.+\..+/.test(website.trim()) && (
+              <p className="text-[10px] text-amber-400">Must start with http:// or https://</p>
+            )}
+          </div>
+
           <div className="space-y-1 md:col-span-2">
-            <label className="text-xs font-semibold text-slate-300 block">Short Bio</label>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-slate-300 block">Short Bio</label>
+              <span
+                className={`text-[11px] font-mono ${
+                  bio.length >= MAX_BIO_LENGTH ? "text-amber-400 font-bold" : "text-slate-500"
+                }`}
+              >
+                {bio.length} / {MAX_BIO_LENGTH}
+              </span>
+            </div>
             <textarea
               value={bio}
+              maxLength={MAX_BIO_LENGTH}
               onChange={(e) => setBio(e.target.value)}
               placeholder="Tell the community about yourself..."
               className="w-full h-20 rounded-xl border border-[#374151] bg-[#1f2937] p-3 text-xs text-white outline-none resize-none focus:border-blue-500 transition"
