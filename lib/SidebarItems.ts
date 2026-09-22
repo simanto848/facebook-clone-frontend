@@ -1,4 +1,4 @@
-import { Bell, Bookmark, House, User, Compass, Users, UserPlus, Calendar, Flag, Film, MessageSquare } from "lucide-react";
+import { Bell, Bookmark, House, User, Compass, Users, UserPlus, Calendar, Flag, Film, MessageSquare, Sparkles } from "lucide-react";
 
 export const LeftSidebarItems = [
   {
@@ -20,6 +20,11 @@ export const LeftSidebarItems = [
     label: "Explore",
     href: "/explore",
     icon: Compass,
+  },
+  {
+    label: "Memories",
+    href: "/memories",
+    icon: Sparkles,
   },
   {
     label: "Groups",

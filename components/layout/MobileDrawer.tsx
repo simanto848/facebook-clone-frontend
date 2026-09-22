@@ -4,7 +4,7 @@ import React, { useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
-import { X, Bookmark, Settings, User, LogOut, HelpCircle, Shield, Calendar, Bell, Clapperboard } from "lucide-react";
+import { X, Bookmark, Settings, User, LogOut, HelpCircle, Shield, Calendar, Bell, Clapperboard, Sparkles } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 interface MobileDrawerProps {
@@ -114,6 +114,16 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
           >
             <Clapperboard size={18} />
             Reels & Clips
+          </Link>
+
+          <Link
+            href="/memories"
+            className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition ${
+              pathname === "/memories" ? "bg-[#7aa2ff]/10 text-[#7aa2ff]" : "text-slate-300 hover:bg-[#1f2937]"
+            }`}
+          >
+            <Sparkles size={18} />
+            Memories
           </Link>
 
           <Link
