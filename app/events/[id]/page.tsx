@@ -60,6 +60,38 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
     startTime: "",
     coverUrl: "",
   });
+  const [countdown, setCountdown] = useState<{
+    days: number;
+    hours: number;
+    minutes: number;
+    seconds: number;
+    ended: boolean;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!event?.startTime) return;
+    const calculate = () => {
+      const diff = new Date(event.startTime).getTime() - Date.now();
+      if (isNaN(diff)) {
+        setCountdown(null);
+        return;
+      }
+      if (diff <= 0) {
+        setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0, ended: true });
+        return;
+      }
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+      const minutes = Math.floor((diff / (1000 * 60)) % 60);
+      const seconds = Math.floor((diff / 1000) % 60);
+      setCountdown({ days, hours, minutes, seconds, ended: false });
+    };
+
+    calculate();
+    const timer = setInterval(calculate, 1000);
+    return () => clearInterval(timer);
+  }, [event?.startTime]);
+
   const [newCommentText, setNewCommentText] = useState("");
   const [discussions, setDiscussions] = useState<
     Array<{
@@ -496,6 +528,39 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
                         </div>
                       </div>
                     </div>
+
+                    {/* Live Event Countdown */}
+                    {countdown && (
+                      <div className="p-4 rounded-2xl bg-[#0f172a] border border-[#1f2937] flex flex-col sm:flex-row items-center justify-between gap-3 shadow-inner">
+                        <div className="flex items-center gap-2 text-xs font-semibold text-slate-300">
+                          <Clock size={16} className="text-blue-400" />
+                          <span>{countdown.ended ? "Event Concluded / Live Now" : "Event Starts In:"}</span>
+                        </div>
+                        {!countdown.ended && (
+                          <div className="flex items-center gap-2 text-center">
+                            <div className="bg-[#1e293b] border border-[#334155]/50 px-2.5 py-1.5 rounded-xl min-w-12">
+                              <span className="text-sm font-bold text-white block">{countdown.days}</span>
+                              <span className="text-[10px] text-slate-400 uppercase tracking-wider">Days</span>
+                            </div>
+                            <span className="text-slate-500 font-bold">:</span>
+                            <div className="bg-[#1e293b] border border-[#334155]/50 px-2.5 py-1.5 rounded-xl min-w-12">
+                              <span className="text-sm font-bold text-white block">{countdown.hours}</span>
+                              <span className="text-[10px] text-slate-400 uppercase tracking-wider">Hours</span>
+                            </div>
+                            <span className="text-slate-500 font-bold">:</span>
+                            <div className="bg-[#1e293b] border border-[#334155]/50 px-2.5 py-1.5 rounded-xl min-w-12">
+                              <span className="text-sm font-bold text-white block">{countdown.minutes}</span>
+                              <span className="text-[10px] text-slate-400 uppercase tracking-wider">Mins</span>
+                            </div>
+                            <span className="text-slate-500 font-bold">:</span>
+                            <div className="bg-[#1e293b] border border-[#334155]/50 px-2.5 py-1.5 rounded-xl min-w-12">
+                              <span className="text-sm font-bold text-blue-400 block font-mono">{countdown.seconds}</span>
+                              <span className="text-[10px] text-slate-400 uppercase tracking-wider">Secs</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* RSVP Buttons */}
                     <div className="flex flex-wrap items-center gap-3 pt-2">
