@@ -84,6 +84,8 @@ export default function ReelsPage() {
   const [soundBadge, setSoundBadge] = useState<"muted" | "unmuted" | null>(null);
   const [isPlaying, setIsPlaying] = useState(true);
   const [isAutoplay, setIsAutoplay] = useState(true);
+  const [heartAnim, setHeartAnim] = useState<{ id: number; x: number; y: number } | null>(null);
+  const lastClickTimeRef = useRef<number>(0);
 
   const toggleSound = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -106,6 +108,30 @@ export default function ReelsPage() {
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const currentReel = reels[activeReelIndex] || reels[0];
+
+  const handleVideoClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const now = Date.now();
+    if (now - lastClickTimeRef.current < 320) {
+      // Double tap detected: spawn heart animation and like reel
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      setHeartAnim({ id: now, x, y });
+      if (!currentReel.hasLiked) {
+        toggleLike(currentReel.id);
+      }
+      setTimeout(() => setHeartAnim(null), 850);
+      lastClickTimeRef.current = 0;
+    } else {
+      lastClickTimeRef.current = now;
+      setTimeout(() => {
+        if (Date.now() - lastClickTimeRef.current >= 300 && lastClickTimeRef.current !== 0) {
+          togglePlay();
+          lastClickTimeRef.current = 0;
+        }
+      }, 320);
+    }
+  };
 
   useEffect(() => {
     const loadVideoPosts = async () => {
@@ -428,7 +454,7 @@ export default function ReelsPage() {
             </div>
 
             {/* Video Player */}
-            <div className="absolute inset-0 cursor-pointer" onClick={togglePlay}>
+            <div className="absolute inset-0 cursor-pointer" onClick={handleVideoClick}>
               <video
                 ref={videoRef}
                 src={currentReel.videoUrl}
@@ -440,6 +466,19 @@ export default function ReelsPage() {
                 className="h-full w-full object-cover"
               />
               <div className="absolute inset-0 bg-linear-to-b from-black/40 via-transparent to-black/80" />
+
+              {/* Double-tap Floating Heart Animation */}
+              {heartAnim && (
+                <div
+                  className="absolute pointer-events-none z-40 -translate-x-1/2 -translate-y-1/2 animate-in zoom-in-50 fade-in duration-200"
+                  style={{ left: heartAnim.x, top: heartAnim.y }}
+                >
+                  <Heart
+                    size={84}
+                    className="text-rose-500 fill-rose-500 drop-shadow-[0_0_24px_rgba(244,63,94,0.9)] animate-bounce"
+                  />
+                </div>
+              )}
 
               {!isPlaying && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/30">
