@@ -3,7 +3,7 @@
 import React, { useState, useEffect, use } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Flag, ThumbsUp, Plus, Globe, Send, MessageSquare, Image as ImageIcon, X, FileText, Info, ExternalLink, ShieldCheck, Mail, Share2, Check } from "lucide-react";
+import { ArrowLeft, Flag, ThumbsUp, Plus, Globe, Send, MessageSquare, Image as ImageIcon, X, FileText, Info, ExternalLink, ShieldCheck, Mail, Share2, Check, Star } from "lucide-react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
@@ -34,7 +34,7 @@ export default function BrandPageDetailPage({ params }: PageProps) {
 
   const [page, setPage] = useState<any>(null);
   const [pagePosts, setPagePosts] = useState<PostType[]>([]);
-  const [activeTab, setActiveTab] = useState<"posts" | "about">("posts");
+  const [activeTab, setActiveTab] = useState<"posts" | "about" | "reviews">("posts");
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
   const [likeLoading, setLikeLoading] = useState(false);
@@ -47,6 +47,54 @@ export default function BrandPageDetailPage({ params }: PageProps) {
   const [postSuccess, setPostSuccess] = useState(false);
   const [postError, setPostError] = useState<string | null>(null);
   const [isReportOpen, setIsReportOpen] = useState(false);
+
+  // Reviews state
+  const [reviews, setReviews] = useState([
+    {
+      id: "rev-1",
+      author: "Alex Morgan",
+      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
+      rating: 5,
+      comment: "Outstanding updates and transparent communication with the community. Highly recommended!",
+      date: "2 days ago",
+    },
+    {
+      id: "rev-2",
+      author: "David Chen",
+      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100",
+      rating: 5,
+      comment: "Great quality content, prompt answers to messages and very helpful resources.",
+      date: "1 week ago",
+    },
+    {
+      id: "rev-3",
+      author: "Sarah Jenkins",
+      avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100",
+      rating: 4,
+      comment: "Really enjoy following this brand page. Looking forward to upcoming event meetups!",
+      date: "2 weeks ago",
+    },
+  ]);
+  const [newRating, setNewRating] = useState(5);
+  const [newReviewComment, setNewReviewComment] = useState("");
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
+
+  const handleAddReview = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newReviewComment.trim()) return;
+    const newRev = {
+      id: `rev-${Date.now()}`,
+      author: user?.displayName || user?.username || "Community Member",
+      avatar: user?.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100",
+      rating: newRating,
+      comment: newReviewComment.trim(),
+      date: "Just now",
+    };
+    setReviews([newRev, ...reviews]);
+    setNewReviewComment("");
+    setReviewSubmitted(true);
+    setTimeout(() => setReviewSubmitted(false), 3000);
+  };
 
   useEffect(() => {
     const fetchPageData = async () => {
@@ -309,6 +357,7 @@ export default function BrandPageDetailPage({ params }: PageProps) {
                 <div className="flex items-center gap-2 border-b border-[#1f2937] pb-1">
                   {[
                     { key: "posts", label: "Posts & Updates", icon: FileText },
+                    { key: "reviews", label: "Reviews & Ratings", icon: Star },
                     { key: "about", label: "About & Info", icon: Info },
                   ].map((tab) => {
                     const Icon = tab.icon;
@@ -530,6 +579,149 @@ export default function BrandPageDetailPage({ params }: PageProps) {
                       </div>
                     </CardContent>
                   </Card>
+                )}
+
+                {activeTab === "reviews" && (
+                  <div className="space-y-6">
+                    {/* Rating Overview Card */}
+                    <Card>
+                      <CardContent className="p-6">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+                          <div className="flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-[#1f2937] pb-4 md:pb-0">
+                            <span className="text-4xl font-extrabold text-white">4.8</span>
+                            <div className="flex items-center gap-1 my-2">
+                              {[1, 2, 3, 4, 5].map((s) => (
+                                <Star
+                                  key={s}
+                                  size={18}
+                                  className={s <= 5 ? "text-amber-400 fill-amber-400" : "text-slate-600"}
+                                />
+                              ))}
+                            </div>
+                            <span className="text-xs text-slate-400">Based on {reviews.length} community reviews</span>
+                          </div>
+
+                          <div className="col-span-2 space-y-2">
+                            {[
+                              { stars: 5, pct: 85 },
+                              { stars: 4, pct: 15 },
+                              { stars: 3, pct: 0 },
+                              { stars: 2, pct: 0 },
+                              { stars: 1, pct: 0 },
+                            ].map((row) => (
+                              <div key={row.stars} className="flex items-center gap-3 text-xs">
+                                <span className="w-12 text-slate-400 flex items-center gap-1">
+                                  {row.stars} <Star size={11} className="text-amber-400 fill-amber-400" />
+                                </span>
+                                <div className="flex-1 h-2 rounded-full bg-slate-800 overflow-hidden">
+                                  <div
+                                    className="h-full bg-linear-to-r from-amber-400 to-amber-500 rounded-full"
+                                    style={{ width: `${row.pct}%` }}
+                                  />
+                                </div>
+                                <span className="w-8 text-right text-slate-500 font-mono text-[10px]">{row.pct}%</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Write a Review Card */}
+                    <Card>
+                      <CardContent className="p-5 space-y-4">
+                        <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                          <Star size={16} className="text-amber-400 fill-amber-400" />
+                          Share your experience with {page.name}
+                        </h4>
+
+                        {reviewSubmitted && (
+                          <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-xs flex items-center gap-2">
+                            <Check size={14} />
+                            <span>Thank you! Your review has been added to the page.</span>
+                          </div>
+                        )}
+
+                        <form onSubmit={handleAddReview} className="space-y-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-slate-400">Rating:</span>
+                            <div className="flex items-center gap-1">
+                              {[1, 2, 3, 4, 5].map((s) => (
+                                <button
+                                  type="button"
+                                  key={s}
+                                  onClick={() => setNewRating(s)}
+                                  className="cursor-pointer p-0.5 hover:scale-110 transition-transform"
+                                >
+                                  <Star
+                                    size={18}
+                                    className={
+                                      s <= newRating
+                                        ? "text-amber-400 fill-amber-400"
+                                        : "text-slate-600 hover:text-slate-400"
+                                    }
+                                  />
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <textarea
+                            value={newReviewComment}
+                            onChange={(e) => setNewReviewComment(e.target.value)}
+                            placeholder={`What do you think of ${page.name}? Write your feedback or review here...`}
+                            rows={3}
+                            className="w-full rounded-xl bg-[#0f172a] border border-[#1f2937] p-3 text-xs text-slate-200 placeholder-slate-500 focus:outline-hidden focus:border-blue-500 transition resize-none"
+                          />
+
+                          <div className="flex justify-end">
+                            <Button
+                              type="submit"
+                              size="sm"
+                              variant="primary"
+                              disabled={!newReviewComment.trim()}
+                            >
+                              Submit Review
+                            </Button>
+                          </div>
+                        </form>
+                      </CardContent>
+                    </Card>
+
+                    {/* Community Reviews List */}
+                    <div className="space-y-3">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                        Recent Community Reviews ({reviews.length})
+                      </h4>
+                      {reviews.map((rev) => (
+                        <Card key={rev.id}>
+                          <CardContent className="p-4 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2.5">
+                                <Avatar src={rev.avatar} name={rev.author} size="sm" />
+                                <div>
+                                  <span className="text-xs font-semibold text-white block">{rev.author}</span>
+                                  <span className="text-[10px] text-slate-400">{rev.date}</span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-0.5">
+                                {[1, 2, 3, 4, 5].map((s) => (
+                                  <Star
+                                    key={s}
+                                    size={13}
+                                    className={s <= rev.rating ? "text-amber-400 fill-amber-400" : "text-slate-700"}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                            <p className="text-xs text-slate-300 leading-relaxed pl-10">
+                              {rev.comment}
+                            </p>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </>
             )}
