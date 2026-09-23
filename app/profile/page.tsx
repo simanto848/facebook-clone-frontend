@@ -28,6 +28,8 @@ import {
   X,
   Search,
   Film,
+  LayoutGrid,
+  List,
 } from "lucide-react";
 import Image from "next/image";
 import { Dialog, Input, Button, Avatar, Loader } from "@/components/ui";
@@ -48,6 +50,7 @@ export default function ProfilePage() {
   const [newSkillInput, setNewSkillInput] = useState("");
   const [isAddingSkill, setIsAddingSkill] = useState(false);
   const [postSearchQuery, setPostSearchQuery] = useState("");
+  const [postLayout, setPostLayout] = useState<"feed" | "grid">("feed");
 
   useEffect(() => {
     try {
@@ -355,6 +358,67 @@ export default function ProfilePage() {
       );
     }
 
+    if (postLayout === "grid") {
+      return (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {list.map((post) => {
+            const mediaUrl = post.images?.[0] || (post.video ? (typeof post.video === "string" ? post.video : post.video.url) : (post as any).image);
+            const totalLikes = post.reactions ? Object.values(post.reactions).reduce((sum, val) => sum + (typeof val === "number" ? val : 0), 0) : 0;
+            return (
+              <div
+                key={post.id}
+                className="bg-[#111827] border border-[#1f2937] hover:border-slate-700 rounded-2xl overflow-hidden shadow-xl transition flex flex-col justify-between group"
+              >
+                <div>
+                  {mediaUrl && (
+                    <div className="relative aspect-video w-full bg-slate-900 overflow-hidden">
+                      <Image
+                        src={mediaUrl}
+                        alt="Post media"
+                        fill
+                        sizes="(max-width: 640px) 100vw, 50vw"
+                        className="object-cover group-hover:scale-105 transition duration-300"
+                      />
+                    </div>
+                  )}
+                  <div className="p-4 space-y-2.5">
+                    <div className="flex items-center gap-2">
+                      <Avatar
+                        src={post.author?.avatar}
+                        name={post.author?.name || post.author?.username || "User"}
+                        size="xs"
+                      />
+                      <span className="text-xs font-semibold text-slate-200 truncate">
+                        {post.author?.name || post.author?.username}
+                      </span>
+                      <span className="text-[10px] text-slate-500 ml-auto">
+                        {post.createdAt ? new Date(post.createdAt).toLocaleDateString() : ""}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-300 line-clamp-3 leading-relaxed">
+                      {post.content || "Media attachment"}
+                    </p>
+                  </div>
+                </div>
+                <div className="px-4 py-3 bg-[#0d131f]/80 border-t border-[#1f2937] flex items-center justify-between text-[11px] text-slate-400">
+                  <span className="flex items-center gap-1.5">
+                    <Heart size={13} className="text-rose-400" />
+                    <span>{totalLikes}</span>
+                  </span>
+                  <Link
+                    href={`/post/${post.id}`}
+                    className="text-blue-400 hover:text-blue-300 font-semibold transition"
+                  >
+                    View post →
+                  </Link>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-6">
         {list.map((post) => (
@@ -530,6 +594,29 @@ export default function ProfilePage() {
               placeholder="Search user posts..."
               className="w-full rounded-full bg-[#111827] border border-[#1f2937] pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
             />
+          </div>
+
+          <div className="flex items-center bg-[#111827] p-0.5 rounded-xl border border-[#1f2937]">
+            <button
+              type="button"
+              onClick={() => setPostLayout("feed")}
+              className={`p-1.5 rounded-lg text-xs transition cursor-pointer ${
+                postLayout === "feed" ? "bg-blue-600 text-white shadow-sm" : "text-slate-400 hover:text-white"
+              }`}
+              title="Feed layout"
+            >
+              <List size={14} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setPostLayout("grid")}
+              className={`p-1.5 rounded-lg text-xs transition cursor-pointer ${
+                postLayout === "grid" ? "bg-blue-600 text-white shadow-sm" : "text-slate-400 hover:text-white"
+              }`}
+              title="Compact grid layout"
+            >
+              <LayoutGrid size={14} />
+            </button>
           </div>
         </div>
       </div>
