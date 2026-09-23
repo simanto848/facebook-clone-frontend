@@ -306,8 +306,57 @@ export default function PostComments({ postId, comments }: Props) {
     }
   };
 
+  const [sortBy, setSortBy] = useState<"newest" | "top">("newest");
+
+  const handleQuickEmoji = (emoji: string) => {
+    setCommentText((prev) => (prev ? `${prev} ${emoji}` : emoji));
+  };
+
+  const sortedComments = [...commentList].sort((a, b) => {
+    if (sortBy === "top") return (b.likes || 0) - (a.likes || 0);
+    return 0;
+  });
+
   return (
     <div className="border-t border-[#1f2937] bg-[#111827]/30 px-5 py-4">
+      {/* Quick Emoji Reaction Bar */}
+      <div className="flex items-center justify-between gap-2 mb-2.5">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar text-xs">
+          <span className="text-[10px] text-slate-500 font-medium shrink-0">Quick react:</span>
+          {["❤️", "👍", "🔥", "😂", "👏", "🎉", "🚀", "💯"].map((emoji) => (
+            <button
+              key={emoji}
+              type="button"
+              onClick={() => handleQuickEmoji(emoji)}
+              className="px-2 py-0.5 rounded-full bg-[#1f2937]/70 hover:bg-[#1f2937] hover:scale-110 active:scale-95 text-xs transition cursor-pointer border border-[#374151]/40"
+              title={`Insert ${emoji}`}
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
+
+        {commentList.length > 1 && (
+          <div className="flex items-center gap-1 text-[10px] shrink-0 text-slate-400">
+            <button
+              type="button"
+              onClick={() => setSortBy("newest")}
+              className={`px-1.5 py-0.5 rounded ${sortBy === "newest" ? "text-blue-400 font-bold" : "hover:text-white"}`}
+            >
+              Newest
+            </button>
+            <span>•</span>
+            <button
+              type="button"
+              onClick={() => setSortBy("top")}
+              className={`px-1.5 py-0.5 rounded ${sortBy === "top" ? "text-blue-400 font-bold" : "hover:text-white"}`}
+            >
+              Top
+            </button>
+          </div>
+        )}
+      </div>
+
       {/* Comment Form */}
       <form onSubmit={handleSubmit} className="flex gap-3">
         <div className="relative h-9 w-9 overflow-hidden rounded-full shrink-0 border border-[#1f2937]">
@@ -379,7 +428,7 @@ export default function PostComments({ postId, comments }: Props) {
         ) : commentList.length === 0 ? (
           <p className="text-center text-xs text-slate-500 py-3">No comments yet. Start the conversation!</p>
         ) : (
-          commentList.map((comment) => (
+          sortedComments.map((comment) => (
             <CommentItem
               key={comment.id}
               comment={comment}
