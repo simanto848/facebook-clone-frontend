@@ -70,6 +70,7 @@ export default function Home() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [formatFilter, setFormatFilter] = useState<"all" | "media" | "text" | "poll">("all");
 
   useEffect(() => {
     const handleScroll = () => {
@@ -136,6 +137,14 @@ export default function Home() {
       list = list.filter((p) => p.author.username !== "alex");
     }
 
+    if (formatFilter === "media") {
+      list = list.filter((p) => (p.images && p.images.length > 0) || !!p.video || !!(p as any).image);
+    } else if (formatFilter === "text") {
+      list = list.filter((p) => (!p.images || p.images.length === 0) && !p.video && !(p as any).image && !p.poll && p.type !== "poll");
+    } else if (formatFilter === "poll") {
+      list = list.filter((p) => p.type === "poll" || !!p.poll);
+    }
+
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       list = list.filter(
@@ -164,9 +173,14 @@ export default function Home() {
           <div className="w-full max-w-3xl px-6 py-6 space-y-6">
             {isLoading ? <StoriesSkeleton /> : <Stories />}
             <CreatePost />
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
               <div className="flex-1">
-                <FeedFilter value={filter} onChange={setFilter} />
+                <FeedFilter
+                  value={filter}
+                  onChange={setFilter}
+                  formatFilter={formatFilter}
+                  onFormatChange={setFormatFilter}
+                />
               </div>
               <div className="flex items-center gap-2">
                 <div className="relative">
