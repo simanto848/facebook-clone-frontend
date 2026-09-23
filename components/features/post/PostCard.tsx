@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { MessageSquare, Share2, Send, Heart, ShieldAlert, Globe, Users, Lock, EyeOff, Clock } from "lucide-react";
+import { MessageSquare, Share2, Send, Heart, ShieldAlert, Globe, Users, Lock, EyeOff, Clock, Volume2, VolumeX } from "lucide-react";
 import { PostType, usePostStore } from "@/store/postStore";
 import PostDropdown from "./PostDropdown";
 import ReactionPicker, { reactionsList } from "./ReactionPicker";
@@ -74,6 +74,31 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
   const [sharesCount, setSharesCount] = useState<number>((post as any).sharesCount || 0);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
+  const handleToggleSpeech = () => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+    } else {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(post.content || "");
+      utterance.rate = 1.0;
+      utterance.onend = () => setIsSpeaking(false);
+      utterance.onerror = () => setIsSpeaking(false);
+      window.speechSynthesis.speak(utterance);
+      setIsSpeaking(true);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (typeof window !== "undefined" && "speechSynthesis" in window && isSpeaking) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, [isSpeaking]);
 
   useEffect(() => {
     const fetchShares = async () => {
@@ -254,6 +279,24 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
                   <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-slate-800 text-slate-400 border border-slate-700/60 inline-flex items-center gap-1">
                     <Clock size={10} /> {readingTimeMin} min read
                   </span>
+                </>
+              )}
+              {post.content && post.content.trim().length > 0 && (
+                <>
+                  <span>•</span>
+                  <button
+                    type="button"
+                    onClick={handleToggleSpeech}
+                    className={`text-[10px] px-1.5 py-0.5 rounded-md border inline-flex items-center gap-1 transition cursor-pointer ${
+                      isSpeaking
+                        ? "bg-blue-600/30 text-blue-300 border-blue-500/50 animate-pulse"
+                        : "bg-slate-800 text-slate-400 hover:text-slate-200 border-slate-700/60"
+                    }`}
+                    title={isSpeaking ? "Stop listening" : "Listen to post"}
+                  >
+                    {isSpeaking ? <VolumeX size={10} className="text-blue-400" /> : <Volume2 size={10} />}
+                    <span>{isSpeaking ? "Speaking..." : "Listen"}</span>
+                  </button>
                 </>
               )}
             </div>
