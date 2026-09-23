@@ -9,6 +9,14 @@ import { storyService } from "@/services/storyService";
 import { StoryViewerModal } from "./StoryViewerModal";
 import { Dialog, Button, Input, Select, Avatar } from "@/components/ui";
 
+const GRADIENT_THEMES = [
+  { id: "midnight", label: "Midnight", bgClass: "from-indigo-900 via-purple-900 to-slate-900", preview: "bg-linear-to-br from-indigo-900 via-purple-900 to-slate-900", fallbackImg: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600" },
+  { id: "sunset", label: "Sunset", bgClass: "from-pink-600 via-rose-600 to-amber-600", preview: "bg-linear-to-br from-pink-600 via-rose-600 to-amber-600", fallbackImg: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600" },
+  { id: "ocean", label: "Ocean", bgClass: "from-blue-600 via-cyan-600 to-teal-700", preview: "bg-linear-to-br from-blue-600 via-cyan-600 to-teal-700", fallbackImg: "https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=600" },
+  { id: "emerald", label: "Emerald", bgClass: "from-emerald-600 via-teal-700 to-slate-950", preview: "bg-linear-to-br from-emerald-600 via-teal-700 to-slate-950", fallbackImg: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=600" },
+  { id: "neon", label: "Neon", bgClass: "from-purple-600 via-fuchsia-600 to-blue-700", preview: "bg-linear-to-br from-purple-600 via-fuchsia-600 to-blue-700", fallbackImg: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=600" },
+];
+
 export default function Stories() {
   const { stories, addStory, deleteStory, viewStory, reactStory } = usePostStore();
   const { user: authUser } = useAuthStore();
@@ -17,6 +25,7 @@ export default function Stories() {
   const [newStoryType, setNewStoryType] = useState<"text" | "image" | "video">("text");
   const [newStoryText, setNewStoryText] = useState("");
   const [newStoryMedia, setNewStoryMedia] = useState("");
+  const [selectedGradient, setSelectedGradient] = useState("midnight");
   const [isSubmittingStory, setIsSubmittingStory] = useState(false);
   const [storyError, setStoryError] = useState<string | null>(null);
   const [storyToDelete, setStoryToDelete] = useState<string | null>(null);
@@ -92,9 +101,10 @@ export default function Stories() {
     e.preventDefault();
     setStoryError(null);
 
+    const theme = GRADIENT_THEMES.find((t) => t.id === selectedGradient) || GRADIENT_THEMES[0];
     const mediaUrl =
       newStoryType === "text"
-        ? "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600"
+        ? theme.fallbackImg
         : newStoryMedia.trim();
 
     if (!mediaUrl) {
@@ -325,11 +335,33 @@ export default function Stories() {
                 />
               </div>
 
+              {/* Gradient Theme Selector */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300 block">Gradient Theme</label>
+                <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                  {GRADIENT_THEMES.map((theme) => (
+                    <button
+                      key={theme.id}
+                      type="button"
+                      onClick={() => setSelectedGradient(theme.id)}
+                      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium transition cursor-pointer border shrink-0 ${
+                        selectedGradient === theme.id
+                          ? "border-blue-500 bg-blue-500/20 text-white shadow-sm"
+                          : "border-slate-700 bg-slate-800 text-slate-400 hover:text-white"
+                      }`}
+                    >
+                      <span className={`w-3.5 h-3.5 rounded-full ${theme.preview}`} />
+                      <span>{theme.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Text Card Preview */}
               {newStoryText.trim() && (
                 <div className="space-y-1">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Card Preview</span>
-                  <div className="h-28 rounded-xl bg-linear-to-br from-indigo-900 via-purple-900 to-slate-900 p-3 flex items-center justify-center text-center">
+                  <div className={`h-28 rounded-xl bg-linear-to-br ${(GRADIENT_THEMES.find((t) => t.id === selectedGradient) || GRADIENT_THEMES[0]).bgClass} p-3 flex items-center justify-center text-center shadow-inner`}>
                     <p className="text-xs font-bold text-white line-clamp-3">{newStoryText}</p>
                   </div>
                 </div>
