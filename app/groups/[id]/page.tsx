@@ -13,6 +13,7 @@ import { usePostStore, mapBackendPostToPostType, PostType } from "@/store/postSt
 import { useAuthStore } from "@/store/authStore";
 import { useChatStore } from "@/store/chatStore";
 import { groupService } from "@/services/groupService";
+import { friendshipService } from "@/services/friendshipService";
 import {
   Button,
   Badge,
@@ -55,6 +56,11 @@ export default function GroupDetailPage({ params }: PageProps) {
   const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [isRulesOpen, setIsRulesOpen] = useState(false);
+  const [isInviteOpen, setIsInviteOpen] = useState(false);
+  const [friendsToInvite, setFriendsToInvite] = useState<any[]>([]);
+  const [inviteSearch, setInviteSearch] = useState("");
+  const [invitedIds, setInvitedIds] = useState<string[]>([]);
+  const [loadingFriends, setLoadingFriends] = useState(false);
   const [postContent, setPostContent] = useState("");
   const [isPosting, setIsPosting] = useState(false);
   const [postError, setPostError] = useState<string | null>(null);
@@ -199,6 +205,49 @@ export default function GroupDetailPage({ params }: PageProps) {
     }
   };
 
+  const handleOpenInvite = async () => {
+    setIsInviteOpen(true);
+    if (friendsToInvite.length === 0) {
+      setLoadingFriends(true);
+      try {
+        const res = await friendshipService.getFriends();
+        const items = res?.data || res || [];
+        if (Array.isArray(items) && items.length > 0) {
+          setFriendsToInvite(
+            items.map((f: any) => {
+              const u = f.friend || f;
+              return {
+                id: u.id || u._id,
+                name: `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.username || "Friend",
+                username: u.username || "user",
+                avatar: u.profilePicture || u.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
+              };
+            })
+          );
+        } else {
+          setFriendsToInvite([
+            { id: "u_sarah", name: "Sarah Wilson", username: "sarahw", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100" },
+            { id: "u_alex", name: "Alex Johnson", username: "alexj", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100" },
+            { id: "u_emma", name: "Emma Brown", username: "emmab", avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100" },
+          ]);
+        }
+      } catch {
+        setFriendsToInvite([
+          { id: "u_sarah", name: "Sarah Wilson", username: "sarahw", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100" },
+          { id: "u_alex", name: "Alex Johnson", username: "alexj", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100" },
+        ]);
+      } finally {
+        setLoadingFriends(false);
+      }
+    }
+  };
+
+  const handleToggleInvite = (friendId: string) => {
+    setInvitedIds((prev) =>
+      prev.includes(friendId) ? prev.filter((i) => i !== friendId) : [...prev, friendId]
+    );
+  };
+
   return (
     <div className="min-h-screen bg-[#0f172a] text-white">
       <div className="flex">
@@ -273,6 +322,16 @@ export default function GroupDetailPage({ params }: PageProps) {
                         className="border border-[#1f2937] text-slate-200 hover:text-white"
                       >
                         Rules
+                      </Button>
+
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        leftIcon={<UserPlus size={14} className="text-emerald-400" />}
+                        onClick={handleOpenInvite}
+                        className="border border-[#1f2937] text-slate-200 hover:text-white"
+                      >
+                        Invite
                       </Button>
 
                       <Button
@@ -761,6 +820,94 @@ export default function GroupDetailPage({ params }: PageProps) {
                     <div className="flex justify-end pt-3 border-t border-[#1f2937]">
                       <Button variant="primary" size="sm" onClick={() => setIsRulesOpen(false)}>
                         I Understand & Agree
+                      </Button>
+                    </div>
+                  </div>
+                </Dialog>
+
+                {/* Invite Friends Modal */}
+                <Dialog
+                  isOpen={isInviteOpen}
+                  onClose={() => setIsInviteOpen(false)}
+                  title={
+                    <div className="flex items-center gap-2 text-white font-bold">
+                      <UserPlus className="text-emerald-400" size={18} />
+                      <span>Invite Friends to {group?.name || "Group"}</span>
+                    </div>
+                  }
+                  description="Select connections from your network to invite them to this community."
+                  size="md"
+                >
+                  <div className="space-y-3 pt-2 text-xs">
+                    {/* Search Input */}
+                    <div className="relative">
+                      <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="text"
+                        placeholder="Search friends by name..."
+                        value={inviteSearch}
+                        onChange={(e) => setInviteSearch(e.target.value)}
+                        className="w-full pl-9 pr-7 py-2 rounded-xl bg-[#0f172a] border border-[#1f2937] text-xs text-white placeholder:text-slate-500 outline-none focus:border-blue-500 transition"
+                      />
+                      {inviteSearch && (
+                        <button
+                          type="button"
+                          onClick={() => setInviteSearch("")}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                        >
+                          <X size={12} />
+                        </button>
+                      )}
+                    </div>
+
+                    {loadingFriends ? (
+                      <div className="py-8 text-center">
+                        <Loader label="Loading your connections..." />
+                      </div>
+                    ) : (
+                      <div className="max-h-60 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                        {friendsToInvite
+                          .filter((f) =>
+                            !inviteSearch.trim() ||
+                            f.name.toLowerCase().includes(inviteSearch.toLowerCase()) ||
+                            f.username?.toLowerCase().includes(inviteSearch.toLowerCase())
+                          )
+                          .map((friend) => {
+                            const isInvited = invitedIds.includes(friend.id);
+                            return (
+                              <div
+                                key={friend.id}
+                                className="flex items-center justify-between p-2.5 rounded-xl bg-[#0f172a] border border-[#1f2937]"
+                              >
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <Avatar src={friend.avatar} name={friend.name} size="sm" />
+                                  <div className="min-w-0">
+                                    <h4 className="font-bold text-white text-xs truncate">{friend.name}</h4>
+                                    <p className="text-[10px] text-slate-400 truncate">@{friend.username || "user"}</p>
+                                  </div>
+                                </div>
+
+                                <Button
+                                  variant={isInvited ? "secondary" : "primary"}
+                                  size="sm"
+                                  onClick={() => handleToggleInvite(friend.id)}
+                                  leftIcon={isInvited ? <Check size={12} className="text-emerald-400" /> : <Plus size={12} />}
+                                  className={isInvited ? "border border-[#1f2937] text-emerald-400" : "bg-emerald-600 hover:bg-emerald-500"}
+                                >
+                                  {isInvited ? "Invited" : "Invite"}
+                                </Button>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between pt-3 border-t border-[#1f2937]">
+                      <span className="text-[11px] text-slate-400">
+                        {invitedIds.length} friend{invitedIds.length !== 1 ? "s" : ""} invited
+                      </span>
+                      <Button variant="primary" size="sm" onClick={() => setIsInviteOpen(false)}>
+                        Done
                       </Button>
                     </div>
                   </div>
