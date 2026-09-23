@@ -224,6 +224,38 @@ export default function ReelsPage() {
     setActiveReelIndex((prev) => (prev < reels.length - 1 ? prev + 1 : 0));
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable ||
+          target.getAttribute("role") === "textbox")
+      ) {
+        return;
+      }
+
+      if (e.key === "ArrowDown" || e.key === "j") {
+        e.preventDefault();
+        handleNextReel();
+      } else if (e.key === "ArrowUp" || e.key === "k") {
+        e.preventDefault();
+        handlePrevReel();
+      } else if (e.key === " " || e.code === "Space") {
+        e.preventDefault();
+        togglePlay();
+      } else if (e.key === "m" || e.key === "M") {
+        e.preventDefault();
+        toggleSound();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isPlaying, isMuted, reels.length]);
+
   const [shareToast, setShareToast] = useState<string | null>(null);
   const [followedAuthors, setFollowedAuthors] = useState<Record<string, boolean>>({});
   const [showReactionPicker, setShowReactionPicker] = useState(false);
