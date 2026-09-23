@@ -20,6 +20,8 @@ import {
   Pencil,
   Send,
   Heart,
+  Search,
+  X,
 } from "lucide-react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
@@ -50,6 +52,8 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
   const [attendeesCount, setAttendeesCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [attendeeFilter, setAttendeeFilter] = useState<"ALL" | "GOING" | "INTERESTED">("ALL");
+  const [attendeeSearch, setAttendeeSearch] = useState("");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
   const [rsvpToast, setRsvpToast] = useState<{ message: string; type: "success" | "info" } | null>(null);
@@ -661,7 +665,7 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
                 {/* Attendees Section */}
                 <Card className="border-[#1f2937] bg-[#111827]/80">
                   <CardContent className="p-6 space-y-4">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex items-center gap-2">
                         <Users size={18} className="text-emerald-400" />
                         <h2 className="text-base font-bold text-white">Who&apos;s Going</h2>
@@ -671,41 +675,108 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
                       </Badge>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 pt-2">
-                      {(event.rsvps && event.rsvps.length > 0 ? event.rsvps : [
+                    {/* Attendee Search & Status Filter Controls */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-1">
+                      <div className="relative flex-1">
+                        <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input
+                          type="text"
+                          placeholder="Search attendees by name..."
+                          value={attendeeSearch}
+                          onChange={(e) => setAttendeeSearch(e.target.value)}
+                          className="w-full pl-8 pr-7 py-1.5 rounded-xl bg-[#0f172a] border border-[#1f2937] text-xs text-white placeholder:text-slate-500 outline-none focus:border-blue-500 transition"
+                        />
+                        {attendeeSearch && (
+                          <button
+                            type="button"
+                            onClick={() => setAttendeeSearch("")}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                          >
+                            <X size={12} />
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-1 shrink-0 text-xs">
+                        {(["ALL", "GOING", "INTERESTED"] as const).map((filter) => (
+                          <button
+                            key={filter}
+                            type="button"
+                            onClick={() => setAttendeeFilter(filter)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-semibold capitalize transition cursor-pointer ${
+                              attendeeFilter === filter
+                                ? "bg-blue-600 text-white shadow-xs"
+                                : "bg-[#0f172a] text-slate-400 hover:text-white border border-[#1f2937]"
+                            }`}
+                          >
+                            {filter.toLowerCase()}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Filtered Attendees Grid */}
+                    {(() => {
+                      const rawAttendees = (event.rsvps && event.rsvps.length > 0 ? event.rsvps : [
                         { user: { id: "att-1", name: "Alex Rivers", username: "alexr", avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100" }, status: "GOING" },
                         { user: { id: "att-2", name: "Elena Rostova", username: "elena", avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100" }, status: "GOING" },
                         { user: { id: "att-3", name: "David Kim", username: "davidk", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100" }, status: "INTERESTED" },
-                      ]).slice(0, 6).map((item: any, idx: number) => {
-                        const u = item.user || item;
-                        const name = `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.name || u.username || "Guest";
-                        const isGoing = (item.status || "GOING").toUpperCase() === "GOING";
+                        { user: { id: "att-4", name: "Sarah Wilson", username: "sarahw", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100" }, status: "GOING" },
+                        { user: { id: "att-5", name: "Marcus Brody", username: "marcusb", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100" }, status: "INTERESTED" },
+                      ]);
 
+                      const filtered = rawAttendees.filter((item: any) => {
+                        const status = (item.status || "GOING").toUpperCase();
+                        if (attendeeFilter !== "ALL" && status !== attendeeFilter) return false;
+                        if (!attendeeSearch.trim()) return true;
+                        const q = attendeeSearch.toLowerCase();
+                        const u = item.user || item;
+                        const name = `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.name || u.username || "";
+                        return name.toLowerCase().includes(q) || (u.username && u.username.toLowerCase().includes(q));
+                      });
+
+                      if (filtered.length === 0) {
                         return (
-                          <div
-                            key={u.id || idx}
-                            className="flex items-center justify-between p-3 rounded-xl bg-[#0f172a] border border-[#1f2937]"
-                          >
-                            <Link href={`/profile/${u.id}`} className="flex items-center gap-2.5 min-w-0">
-                              <Avatar src={u.avatar} name={name} size="sm" />
-                              <div className="truncate">
-                                <p className="text-xs font-semibold text-white truncate hover:text-blue-400 transition-colors">
-                                  {name}
-                                </p>
-                                <span className="text-[10px] text-slate-400 block truncate">@{u.username || "attendee"}</span>
-                              </div>
-                            </Link>
-                            <Badge
-                              variant={isGoing ? "success" : "secondary"}
-                              size="sm"
-                              className="text-[9px] px-1.5 py-0 shrink-0 capitalize"
-                            >
-                              {isGoing ? "Going" : "Interested"}
-                            </Badge>
-                          </div>
+                          <p className="text-xs text-slate-500 py-4 text-center">
+                            No attendees found matching &quot;{attendeeSearch}&quot;.
+                          </p>
                         );
-                      })}
-                    </div>
+                      }
+
+                      return (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 pt-2">
+                          {filtered.map((item: any, idx: number) => {
+                            const u = item.user || item;
+                            const name = `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.name || u.username || "Guest";
+                            const isGoing = (item.status || "GOING").toUpperCase() === "GOING";
+
+                            return (
+                              <div
+                                key={u.id || idx}
+                                className="flex items-center justify-between p-3 rounded-xl bg-[#0f172a] border border-[#1f2937]"
+                              >
+                                <Link href={`/profile/${u.id}`} className="flex items-center gap-2.5 min-w-0">
+                                  <Avatar src={u.avatar} name={name} size="sm" />
+                                  <div className="truncate">
+                                    <p className="text-xs font-semibold text-white truncate hover:text-blue-400 transition-colors">
+                                      {name}
+                                    </p>
+                                    <span className="text-[10px] text-slate-400 block truncate">@{u.username || "attendee"}</span>
+                                  </div>
+                                </Link>
+                                <Badge
+                                  variant={isGoing ? "success" : "secondary"}
+                                  size="sm"
+                                  className="text-[9px] px-1.5 py-0 shrink-0 capitalize"
+                                >
+                                  {isGoing ? "Going" : "Interested"}
+                                </Badge>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
                   </CardContent>
                 </Card>
 
