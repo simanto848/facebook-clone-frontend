@@ -4,7 +4,8 @@ import React, { useEffect, useState } from "react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
-import { Bookmark, BookmarkX, Search, X, Tag, Download, Check, Image as ImageIcon, Video, FileText, BarChart2, AlignLeft, Trash2, AlertTriangle, ArrowUpDown } from "lucide-react";
+import Link from "next/link";
+import { Bookmark, BookmarkX, Search, X, Tag, Download, Check, Image as ImageIcon, Video, FileText, BarChart2, AlignLeft, Trash2, AlertTriangle, ArrowUpDown, LayoutGrid, List } from "lucide-react";
 import { bookmarkService } from "@/services/bookmarkService";
 import { mapBackendPostToPostType, PostType, usePostStore } from "@/store/postStore";
 import { PageHeader, Badge, EmptyState, Loader } from "@/components/ui";
@@ -18,6 +19,7 @@ export default function SavedPostsPage() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedType, setSelectedType] = useState("all");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "popular">("newest");
+  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [searchQuery, setSearchQuery] = useState("");
   const { toggleSavePost } = usePostStore();
 
@@ -338,19 +340,44 @@ export default function SavedPostsPage() {
                 })}
               </div>
 
-              {/* Sort selector */}
-              <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
-                <ArrowUpDown size={12} className="text-slate-400" />
-                <span className="text-[11px] text-slate-500 font-medium">Sort:</span>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as any)}
-                  className="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-1 outline-none cursor-pointer focus:border-blue-500"
-                >
-                  <option value="newest">Newest First</option>
-                  <option value="oldest">Oldest First</option>
-                  <option value="popular">Most Popular</option>
-                </select>
+              {/* Sort selector & View Mode Switcher */}
+              <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                <div className="flex items-center gap-1.5">
+                  <ArrowUpDown size={12} className="text-slate-400" />
+                  <span className="text-[11px] text-slate-500 font-medium">Sort:</span>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as any)}
+                    className="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg px-2.5 py-1 outline-none cursor-pointer focus:border-blue-500"
+                  >
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="popular">Most Popular</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center rounded-lg bg-slate-800 p-0.5 border border-slate-700">
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("list")}
+                    className={`p-1 rounded-md text-xs transition cursor-pointer ${
+                      viewMode === "list" ? "bg-blue-600 text-white shadow-xs" : "text-slate-400 hover:text-white"
+                    }`}
+                    title="List View"
+                  >
+                    <List size={13} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("grid")}
+                    className={`p-1 rounded-md text-xs transition cursor-pointer ${
+                      viewMode === "grid" ? "bg-blue-600 text-white shadow-xs" : "text-slate-400 hover:text-white"
+                    }`}
+                    title="Grid View"
+                  >
+                    <LayoutGrid size={13} />
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -370,6 +397,58 @@ export default function SavedPostsPage() {
                     : `No saved posts match the "${selectedCategory}" category filter.`
                 }
               />
+            ) : viewMode === "grid" ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {sortedPosts.map((post) => (
+                  <div key={post.id} className="rounded-2xl border border-[#1f2937] bg-[#111827] overflow-hidden flex flex-col justify-between group hover:border-slate-700 transition">
+                    <div className="relative aspect-video bg-slate-900 overflow-hidden">
+                      {post.images && post.images.length > 0 ? (
+                        <img src={post.images[0]} alt="" className="w-full h-full object-cover group-hover:scale-105 transition duration-300" />
+                      ) : post.article?.thumbnail ? (
+                        <img src={post.article.thumbnail} alt="" className="w-full h-full object-cover group-hover:scale-105 transition duration-300" />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-linear-to-br from-slate-900 to-[#1e293b] p-4 text-center">
+                          <Bookmark className="text-yellow-400/40 mb-1" size={26} />
+                          <p className="text-xs text-slate-400 line-clamp-2 px-2">{post.content || "Saved Post"}</p>
+                        </div>
+                      )}
+                      <div className="absolute top-2 right-2 flex items-center gap-1.5">
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-black/70 backdrop-blur-xs text-white border border-white/10 uppercase">
+                          {post.category || "discussions"}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleUnbookmark(post.bookmarkId || "", post.id)}
+                          className="p-1 rounded-md bg-black/70 hover:bg-rose-600 text-white transition cursor-pointer"
+                          title="Remove bookmark"
+                        >
+                          <BookmarkX size={13} />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-2">
+                          <img src={post.author.avatar} alt="" className="w-5 h-5 rounded-full object-cover" />
+                          <span className="text-xs font-bold text-white truncate">{post.author.name}</span>
+                          <span className="text-[10px] text-slate-500">• {post.createdAt}</span>
+                        </div>
+                        <p className="text-xs text-slate-300 line-clamp-3 leading-relaxed">
+                          {post.article?.title || post.content || "Saved item"}
+                        </p>
+                      </div>
+
+                      <div className="pt-2 border-t border-[#1f2937]/70 flex items-center justify-between text-[11px] text-slate-400">
+                        <Link href={`/post/${post.id}`} className="text-blue-400 hover:text-blue-300 font-semibold">
+                          View Post →
+                        </Link>
+                        <span className="capitalize text-slate-500">{post.type}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             ) : (
               <div className="space-y-6">
                 {sortedPosts.map((post) => (
