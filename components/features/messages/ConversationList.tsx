@@ -11,10 +11,28 @@ export default function ConversationList() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterTab, setFilterTab] = useState<"all" | "unread" | "online" | "groups">("all");
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
+  const [pinnedIds, setPinnedIds] = useState<string[]>([]);
 
   useEffect(() => {
     fetchConversations();
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("pinned_conversations");
+        if (stored) setPinnedIds(JSON.parse(stored));
+      } catch {}
+    }
   }, [fetchConversations]);
+
+  const togglePin = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setPinnedIds((prev) => {
+      const next = prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id];
+      if (typeof window !== "undefined") {
+        localStorage.setItem("pinned_conversations", JSON.stringify(next));
+      }
+      return next;
+    });
+  };
 
   const unreadCount = conversations.filter((c) => c.hasUnread).length;
   const onlineCount = conversations.filter((c) => c.online).length;
@@ -38,6 +56,12 @@ export default function ConversationList() {
     const matchesName = c.name.toLowerCase().includes(q);
     const matchesMessage = c.messages.some((m) => m.text?.toLowerCase().includes(q));
     return matchesName || matchesMessage;
+  });
+
+  const sortedConversations = [...filteredConversations].sort((a, b) => {
+    const aPinned = pinnedIds.includes(a.id) ? 1 : 0;
+    const bPinned = pinnedIds.includes(b.id) ? 1 : 0;
+    return bPinned - aPinned;
   });
 
   return (
@@ -148,19 +172,20 @@ export default function ConversationList() {
             </p>
           </div>
         ) : (
-          filteredConversations.map((user) => {
+          sortedConversations.map((user) => {
             const isActive = user.id === activeConversationId;
+            const isPinned = pinnedIds.includes(user.id);
             const lastMsg = user.messages[user.messages.length - 1];
 
             return (
-              <button
+              <div
                 key={user.id}
-                onClick={() => setActiveConversationId(user.id)}
-                className={`flex w-full items-center gap-3 rounded-xl p-3 text-left transition ${
+                className={`group relative flex w-full items-center gap-3 rounded-xl p-3 text-left transition cursor-pointer ${
                   isActive ? "bg-[#1f2937]" : "hover:bg-[#1f2937]/50"
                 }`}
+                onClick={() => setActiveConversationId(user.id)}
               >
-                <div className="relative">
+                <div className="relative shrink-0">
                   <Image
                     src={user.avatar}
                     alt={user.name}
@@ -175,9 +200,26 @@ export default function ConversationList() {
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-medium text-white text-sm truncate">{user.name}</h3>
-                    {lastMsg && <span className="text-[10px] text-slate-500 shrink-0">{lastMsg.time}</span>}
+                  <div className="flex items-center justify-between gap-1">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <h3 className="font-medium text-white text-sm truncate">{user.name}</h3>
+                      {isPinned && (
+                        <Pin size={11} className="text-blue-400 rotate-45 shrink-0 fill-blue-400" />
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {lastMsg && <span className="text-[10px] text-slate-500">{lastMsg.time}</span>}
+                      <button
+                        type="button"
+                        onClick={(e) => togglePin(e, user.id)}
+                        className={`p-1 rounded-md text-xs transition cursor-pointer opacity-0 group-hover:opacity-100 ${
+                          isPinned ? "opacity-100 text-blue-400 hover:text-blue-300" : "text-slate-400 hover:text-white hover:bg-slate-700/50"
+                        }`}
+                        title={isPinned ? "Unpin conversation" : "Pin conversation to top"}
+                      >
+                        <Pin size={12} className={isPinned ? "fill-blue-400 rotate-45" : ""} />
+                      </button>
+                    </div>
                   </div>
 
                   <p className={`truncate text-xs ${isActive ? "text-slate-200" : "text-slate-400"}`}>
@@ -188,7 +230,7 @@ export default function ConversationList() {
                 {user.hasUnread && (
                   <span className="h-2.5 w-2.5 rounded-full bg-blue-500 shrink-0 self-center" />
                 )}
-              </button>
+              </div>
             );
           })
         )}
