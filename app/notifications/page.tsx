@@ -11,7 +11,9 @@ import {
   Filter, 
   Search, 
   CheckCircle2, 
-  RefreshCw 
+  RefreshCw,
+  Volume2,
+  VolumeX
 } from "lucide-react";
 import { Avatar, Badge, Button, EmptyState, Tabs } from "@/components/ui";
 import { notificationService } from "@/services/notificationService";
@@ -91,6 +93,57 @@ export default function NotificationsPage() {
   const [loading, setLoading] = useState(false);
   const [markingAll, setMarkingAll] = useState(false);
   const [readBanner, setReadBanner] = useState<string | null>(null);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("notification_sound_enabled");
+      if (stored !== null) {
+        setSoundEnabled(stored === "true");
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const playNotificationSound = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.12);
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.25);
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleToggleSound = () => {
+    const next = !soundEnabled;
+    setSoundEnabled(next);
+    try {
+      localStorage.setItem("notification_sound_enabled", String(next));
+    } catch {
+      // ignore
+    }
+    if (next) {
+      playNotificationSound();
+      setReadBanner("Notification audio chime enabled (test sound played)");
+      setTimeout(() => setReadBanner(null), 3000);
+    } else {
+      setReadBanner("Notification audio muted");
+      setTimeout(() => setReadBanner(null), 3000);
+    }
+  };
 
   const fetchNotifications = async () => {
     setLoading(true);
@@ -108,6 +161,9 @@ export default function NotificationsPage() {
           type: (n.type?.toLowerCase() as any) || "system",
         }));
         setNotifications(parsed);
+        if (soundEnabled && parsed.some((n) => n.unread)) {
+          playNotificationSound();
+        }
       }
     } catch {
       // Fallback notifications preserved
@@ -242,6 +298,18 @@ export default function NotificationsPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleToggleSound}
+            className={`flex items-center gap-1.5 rounded-xl text-xs transition ${
+              soundEnabled ? "text-primary border-primary/40 bg-primary/5" : "text-muted-foreground border-border/40"
+            }`}
+            title={soundEnabled ? "Mute notification sounds" : "Enable notification sounds"}
+          >
+            {soundEnabled ? <Volume2 className="w-3.5 h-3.5 text-primary" /> : <VolumeX className="w-3.5 h-3.5" />}
+            <span>{soundEnabled ? "Sound On" : "Muted"}</span>
+          </Button>
           <Button
             variant="outline"
             size="sm"
