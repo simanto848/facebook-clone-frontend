@@ -1,4 +1,4 @@
-import { ChartLine, Circle, MessageSquare, RefreshCw, Search, X } from "lucide-react";
+import { ChartLine, Circle, MessageSquare, RefreshCw, Search, X, Calendar } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useState, useEffect } from "react";
@@ -6,6 +6,11 @@ import { hashtagService } from "@/services/hashtagService";
 import { friendshipService } from "@/services/friendshipService";
 import { activeStatusService } from "@/services/activeStatusService";
 import { useChatStore } from "@/store/chatStore";
+
+const UPCOMING_EVENTS = [
+  { id: "e1", title: "React 19 & Next.js Meetup", date: "Tomorrow, 6:00 PM", location: "Online Live", attendees: 48 },
+  { id: "e2", title: "Open Source Hackathon 2026", date: "Saturday, 10:00 AM", location: "Dev Guild Discord", attendees: 112 },
+];
 
 interface FriendItem {
   id?: string;
@@ -191,6 +196,44 @@ const RightSidebar = () => {
               </Link>
             );
           })}
+        </div>
+      </div>
+
+      {/* Upcoming Events Card */}
+      <div className="mt-6 rounded-2xl border border-[#232d42] bg-linear-to-br from-[#141625] to-[#111827] p-5 shadow-lg shadow-black/20">
+        <div className="flex items-center justify-between text-[#8ea2d5]">
+          <div className="flex items-center gap-2">
+            <Calendar size={14} className="text-purple-400" />
+            <h2 className="text-xs font-bold uppercase tracking-wider text-purple-300">
+              Upcoming Events
+            </h2>
+          </div>
+          <Link href="/events" className="text-[11px] text-blue-400 hover:text-blue-300 font-semibold transition">
+            See All
+          </Link>
+        </div>
+
+        <div className="my-3 h-px bg-[#232d42]" />
+
+        <div className="space-y-2.5">
+          {UPCOMING_EVENTS.map((event) => (
+            <Link
+              key={event.id}
+              href="/events"
+              className="block p-2.5 rounded-xl bg-[#0f172a]/60 hover:bg-[#1f2937]/70 border border-[#1f2937]/80 transition group"
+            >
+              <h3 className="text-xs font-bold text-slate-200 group-hover:text-white truncate transition">
+                {event.title}
+              </h3>
+              <p className="text-[10px] text-purple-400 font-medium mt-1">
+                {event.date}
+              </p>
+              <div className="flex items-center justify-between text-[10px] text-slate-500 mt-1">
+                <span className="truncate">{event.location}</span>
+                <span className="shrink-0">{event.attendees} going</span>
+              </div>
+            </Link>
+          ))}
         </div>
       </div>
 
