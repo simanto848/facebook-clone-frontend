@@ -54,6 +54,7 @@ export default function GroupDetailPage({ params }: PageProps) {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
+  const [isRulesOpen, setIsRulesOpen] = useState(false);
   const [postContent, setPostContent] = useState("");
   const [isPosting, setIsPosting] = useState(false);
   const [postError, setPostError] = useState<string | null>(null);
@@ -262,6 +263,16 @@ export default function GroupDetailPage({ params }: PageProps) {
                         className="border border-[#1f2937] text-slate-200 hover:text-white"
                       >
                         {copied ? "Copied!" : "Share"}
+                      </Button>
+
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        leftIcon={<Shield size={14} className="text-blue-400" />}
+                        onClick={() => setIsRulesOpen(true)}
+                        className="border border-[#1f2937] text-slate-200 hover:text-white"
+                      >
+                        Rules
                       </Button>
 
                       <Button
@@ -714,6 +725,46 @@ export default function GroupDetailPage({ params }: PageProps) {
                   targetId={group?.id || id}
                   targetType="GROUP"
                 />
+
+                {/* Group Rules Modal */}
+                <Dialog
+                  isOpen={isRulesOpen}
+                  onClose={() => setIsRulesOpen(false)}
+                  title={
+                    <div className="flex items-center gap-2 text-white font-bold">
+                      <Shield className="text-blue-400" size={18} />
+                      <span>Group Rules & Guidelines</span>
+                    </div>
+                  }
+                  description={`Community standards for ${group?.name || "this group"}.`}
+                  size="md"
+                >
+                  <div className="space-y-3 pt-2 text-xs">
+                    {[
+                      { num: "1", title: "Be Respectful & Kind", desc: "Treat fellow members with empathy and courtesy. Constructive debate is welcome; harassment or abuse is strictly prohibited." },
+                      { num: "2", title: "No Spam or Self-Promotion", desc: "Avoid repetitive promotional links, unsolicited advertisements, or commercial pitching outside of designated showcase threads." },
+                      { num: "3", title: "Keep Discussions Relevant", desc: "Ensure your posts, questions, and responses align directly with the topics and mission of this community." },
+                      { num: "4", title: "Respect Privacy & Security", desc: "Never share private conversations, API keys, credentials, or proprietary source code without explicit consent." },
+                      { num: "5", title: "Offer Constructive Feedback", desc: "When sharing code reviews or critiques, offer actionable suggestions and celebrate member achievements." },
+                    ].map((rule) => (
+                      <div key={rule.num} className="p-3 rounded-xl bg-[#0f172a] border border-[#1f2937] flex gap-3">
+                        <span className="h-6 w-6 rounded-full bg-blue-600/20 text-blue-400 font-bold flex items-center justify-center shrink-0 text-xs border border-blue-500/30">
+                          {rule.num}
+                        </span>
+                        <div>
+                          <h4 className="font-bold text-white text-xs">{rule.title}</h4>
+                          <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">{rule.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+
+                    <div className="flex justify-end pt-3 border-t border-[#1f2937]">
+                      <Button variant="primary" size="sm" onClick={() => setIsRulesOpen(false)}>
+                        I Understand & Agree
+                      </Button>
+                    </div>
+                  </div>
+                </Dialog>
               </div>
             ) : (
               <div className="py-20 text-center space-y-3">
