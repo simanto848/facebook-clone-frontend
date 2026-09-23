@@ -19,6 +19,8 @@ import {
   UserX,
   Flag,
   FileText,
+  Share2,
+  Check,
 } from "lucide-react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
@@ -56,6 +58,17 @@ export default function UserProfileDetailPage({ params }: ProfilePageProps) {
   const [isBlocked, setIsBlocked] = useState(false);
   const [blockLoading, setBlockLoading] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [copiedProfile, setCopiedProfile] = useState(false);
+
+  const handleCopyProfileLink = async () => {
+    if (typeof window !== "undefined") {
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        setCopiedProfile(true);
+        setTimeout(() => setCopiedProfile(false), 2000);
+      } catch {}
+    }
+  };
 
   const handleBlockUser = async () => {
     if (!user?.id) return;
@@ -351,6 +364,17 @@ export default function UserProfileDetailPage({ params }: ProfilePageProps) {
                       className="border border-[#1f2937] text-slate-400 hover:text-amber-400 hover:bg-amber-500/10"
                     >
                       Report
+                    </Button>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      leftIcon={copiedProfile ? <Check size={14} className="text-emerald-400" /> : <Share2 size={14} />}
+                      onClick={handleCopyProfileLink}
+                      className="border border-[#1f2937] text-slate-300 hover:text-white"
+                      title="Copy profile link"
+                    >
+                      {copiedProfile ? "Copied!" : "Share"}
                     </Button>
                   </div>
                 )}
