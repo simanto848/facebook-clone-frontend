@@ -6,11 +6,14 @@ import BlockedUsersSection from "@/components/features/settings/sections/Blocked
 import { Select, Switch, Button } from "@/components/ui";
 import { userService } from "@/services/userService";
 import { useAuthStore } from "@/store/authStore";
-import { Check, CheckCircle2, Download } from "lucide-react";
+import { Check, CheckCircle2, Download, ShieldCheck, Lock, Unlock, Search, Tag } from "lucide-react";
 
 export default function PrivacySection() {
   const { user } = useAuthStore();
   const [isPrivate, setIsPrivate] = useState(false);
+  const [profileLocked, setProfileLocked] = useState(false);
+  const [allowSearchEngines, setAllowSearchEngines] = useState(true);
+  const [reviewTags, setReviewTags] = useState(true);
   const [showOnlineStatus, setShowOnlineStatus] = useState(true);
   const [visibility, setVisibility] = useState("public");
   const [saving, setSaving] = useState(false);
@@ -74,6 +77,9 @@ export default function PrivacySection() {
       if (stored) {
         const parsed = JSON.parse(stored);
         if (typeof parsed.isPrivate === "boolean") setIsPrivate(parsed.isPrivate);
+        if (typeof parsed.profileLocked === "boolean") setProfileLocked(parsed.profileLocked);
+        if (typeof parsed.allowSearchEngines === "boolean") setAllowSearchEngines(parsed.allowSearchEngines);
+        if (typeof parsed.reviewTags === "boolean") setReviewTags(parsed.reviewTags);
         if (typeof parsed.showOnlineStatus === "boolean") setShowOnlineStatus(parsed.showOnlineStatus);
         if (parsed.visibility) setVisibility(parsed.visibility);
       } else if (user) {
@@ -92,7 +98,7 @@ export default function PrivacySection() {
     try {
       localStorage.setItem(
         "user_privacy_settings",
-        JSON.stringify({ isPrivate, showOnlineStatus, visibility })
+        JSON.stringify({ isPrivate, profileLocked, allowSearchEngines, reviewTags, showOnlineStatus, visibility })
       );
 
       await userService.updateProfile({
@@ -125,11 +131,88 @@ export default function PrivacySection() {
             </div>
           )}
 
+          {/* Profile Lock Feature Card */}
+          <div className={`p-4 rounded-2xl border transition ${
+            profileLocked
+              ? "bg-blue-950/20 border-blue-500/40"
+              : "bg-[#0f172a] border-[#1f2937]"
+          }`}>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <div className={`p-2 rounded-xl ${profileLocked ? "bg-blue-600 text-white" : "bg-[#1f2937] text-slate-400"}`}>
+                    {profileLocked ? <Lock size={16} /> : <Unlock size={16} />}
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+                      <span>Lock Your Profile</span>
+                      {profileLocked && (
+                        <span className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-semibold border border-blue-500/30">
+                          Active
+                        </span>
+                      )}
+                    </h4>
+                    <p className="text-[11px] text-slate-400">
+                      Make your photos, timeline, and stories private in one step.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <Button
+                variant={profileLocked ? "secondary" : "primary"}
+                size="sm"
+                onClick={() => {
+                  const nextState = !profileLocked;
+                  setProfileLocked(nextState);
+                  if (nextState) {
+                    setIsPrivate(true);
+                    setVisibility("friends");
+                  }
+                }}
+                className={profileLocked ? "border border-blue-500/40 text-blue-300 hover:bg-blue-600/10" : ""}
+              >
+                {profileLocked ? "Unlock Profile" : "Lock Profile"}
+              </Button>
+            </div>
+
+            {profileLocked && (
+              <div className="mt-3 pt-3 border-t border-blue-500/20 grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] text-slate-300">
+                <div className="flex items-center gap-1.5">
+                  <ShieldCheck size={13} className="text-blue-400 shrink-0" />
+                  <span>Only friends see full photos</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <ShieldCheck size={13} className="text-blue-400 shrink-0" />
+                  <span>Stories visible to friends only</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <ShieldCheck size={13} className="text-blue-400 shrink-0" />
+                  <span>External search link hidden</span>
+                </div>
+              </div>
+            )}
+          </div>
+
           <Switch
             label="Private Account"
             description="Only approved followers can see your posts and media."
             checked={isPrivate}
             onChange={(e) => setIsPrivate(e.target.checked)}
+          />
+
+          <Switch
+            label="Search Engine Indexing"
+            description="Allow search engines outside of the platform to discover and link to your public profile."
+            checked={allowSearchEngines}
+            onChange={(e) => setAllowSearchEngines(e.target.checked)}
+          />
+
+          <Switch
+            label="Tag Review"
+            description="Manually review posts you are tagged in before they appear on your profile timeline."
+            checked={reviewTags}
+            onChange={(e) => setReviewTags(e.target.checked)}
           />
 
           <Switch
