@@ -88,9 +88,23 @@ export function StoryViewerModal({
 
   return (
     <Dialog isOpen={isOpen} onClose={onClose} size="lg" showHeader={false}>
-      <div className="relative h-[540px] w-full bg-black rounded-2xl overflow-hidden flex flex-col justify-between p-4">
+      <div
+        className="relative h-[540px] w-full bg-black rounded-2xl overflow-hidden flex flex-col justify-between p-4 select-none cursor-pointer"
+        onMouseDown={() => setIsPaused(true)}
+        onMouseUp={() => setIsPaused(false)}
+        onTouchStart={() => setIsPaused(true)}
+        onTouchEnd={() => setIsPaused(false)}
+      >
+        {/* Paused Indicator Floating Pill */}
+        {isPaused && (
+          <div className="absolute top-14 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/70 backdrop-blur-md border border-white/20 text-white text-xs font-semibold shadow-lg pointer-events-none animate-pulse">
+            <Pause size={12} className="text-amber-400" />
+            <span>Paused</span>
+          </div>
+        )}
+
         {/* Top Progress bar */}
-        <div className="flex gap-1 z-20">
+        <div className="flex gap-1 z-20" onMouseDown={(e) => e.stopPropagation()}>
           {stories.map((s, idx) => (
             <div key={s.id} className="h-1 flex-1 bg-white/20 rounded-full overflow-hidden">
               <div
@@ -105,7 +119,11 @@ export function StoryViewerModal({
         </div>
 
         {/* Author Header */}
-        <div className="flex items-center justify-between z-20 pt-2">
+        <div
+          className="flex items-center justify-between z-20 pt-2"
+          onMouseDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+        >
           <div className="flex items-center gap-2.5">
             <Avatar src={currentStory.author.avatar} name={currentStory.author.name} size="sm" />
             <div>
@@ -161,6 +179,8 @@ export function StoryViewerModal({
         {currentIndex > 0 && (
           <button
             onClick={() => onNavigate(currentIndex - 1)}
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
             className="absolute left-3 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-black/50 hover:bg-black/80 flex items-center justify-center text-white transition"
           >
             <ChevronLeft size={20} />
@@ -170,6 +190,8 @@ export function StoryViewerModal({
         {currentIndex < stories.length - 1 && (
           <button
             onClick={() => onNavigate(currentIndex + 1)}
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
             className="absolute right-3 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-black/50 hover:bg-black/80 flex items-center justify-center text-white transition"
           >
             <ChevronRight size={20} />
@@ -177,7 +199,7 @@ export function StoryViewerModal({
         )}
 
         {/* Media Content */}
-        <div className="absolute inset-0 flex items-center justify-center">
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           {currentStory.type === "text" ? (
             <div className="h-full w-full bg-linear-to-br from-indigo-900 via-purple-900 to-slate-900 flex items-center justify-center p-8 text-center">
               <p className="text-xl font-bold text-white drop-shadow-md leading-relaxed">
@@ -205,7 +227,11 @@ export function StoryViewerModal({
         </div>
 
         {/* Footer Actions */}
-        <div className="flex items-center justify-between z-20 border-t border-white/10 pt-3">
+        <div
+          className="flex items-center justify-between z-20 border-t border-white/10 pt-3"
+          onMouseDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+        >
           <div className="flex items-center gap-2 text-xs text-slate-300">
             <Eye size={14} />
             <span>{currentStory.views || 12} views</span>
