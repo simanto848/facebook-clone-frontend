@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Images, Video, BarChart2, BookOpen, Trash2, Plus, X, Loader2, Smile, Clock } from "lucide-react";
+import { Images, Video, BarChart2, BookOpen, Trash2, Plus, X, Loader2, Smile, Clock, Bold, Italic, Code, Quote, Link2 } from "lucide-react";
 import Image from "next/image";
 import { usePostStore } from "@/store/postStore";
 import { useAuthStore } from "@/store/authStore";
@@ -143,6 +143,13 @@ export default function CreatePost() {
     setPollOptions(pollOptions.filter((_, i) => i !== index));
   };
 
+  const applyFormat = (prefix: string, suffix: string = prefix, placeholder: string = "text") => {
+    setContent((prev) => {
+      if (!prev) return `${prefix}${placeholder}${suffix}`;
+      return `${prev} ${prefix}${placeholder}${suffix}`;
+    });
+  };
+
   return (
     <>
       <div className="bg-[#111827] border border-[#1f2937] rounded-2xl overflow-hidden shadow-xl">
@@ -177,6 +184,51 @@ export default function CreatePost() {
                 </button>
               </div>
             )}
+
+            {/* Markdown Text Formatting Toolbar */}
+            <div className="flex items-center gap-1 py-1 px-2 rounded-lg bg-[#0f172a] border border-[#1f2937]/70">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mr-1">Format:</span>
+              <button
+                type="button"
+                onClick={() => applyFormat("**", "**", "bold text")}
+                className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+                title="Bold (**text**)"
+              >
+                <Bold size={13} />
+              </button>
+              <button
+                type="button"
+                onClick={() => applyFormat("*", "*", "italic text")}
+                className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+                title="Italic (*text*)"
+              >
+                <Italic size={13} />
+              </button>
+              <button
+                type="button"
+                onClick={() => applyFormat("`", "`", "code")}
+                className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+                title="Inline Code (`code`)"
+              >
+                <Code size={13} />
+              </button>
+              <button
+                type="button"
+                onClick={() => applyFormat("> ", "", "quoted text")}
+                className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+                title="Blockquote (> text)"
+              >
+                <Quote size={13} />
+              </button>
+              <button
+                type="button"
+                onClick={() => applyFormat("[", "](https://)", "link title")}
+                className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+                title="Insert Link ([title](url))"
+              >
+                <Link2 size={13} />
+              </button>
+            </div>
 
             <textarea
               placeholder={`What's on your mind, ${user?.displayName?.split(" ")[0] || "Alex"}?`}
