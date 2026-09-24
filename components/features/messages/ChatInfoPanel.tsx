@@ -1,8 +1,8 @@
 "use client";
 
-import { X, Bell, BellOff, Download, Trash2 } from "lucide-react";
+import { X, Bell, BellOff, Download, Trash2, Copy, Check, ExternalLink } from "lucide-react";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useChatStore } from "@/store/chatStore";
 
 type Props = {
@@ -13,11 +13,43 @@ export default function ChatInfoPanel({ onClose }: Props) {
   const [activeTab, setActiveTab] = useState("images");
   const [isMuted, setIsMuted] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [copiedPinnedIndex, setCopiedPinnedIndex] = useState<number | null>(null);
   const { conversations, activeConversationId, clearConversationMessages } = useChatStore();
 
   const activeConversation = conversations.find(
     (c) => c.id === activeConversationId
   );
+
+  useEffect(() => {
+    if (!activeConversation) return;
+    try {
+      const mutedList = JSON.parse(localStorage.getItem("muted_conversations") || "[]");
+      setIsMuted(mutedList.includes(activeConversation.id));
+    } catch {
+      // ignore
+    }
+  }, [activeConversation?.id]);
+
+  const handleToggleMute = () => {
+    if (!activeConversation) return;
+    const next = !isMuted;
+    setIsMuted(next);
+    try {
+      const mutedList: string[] = JSON.parse(localStorage.getItem("muted_conversations") || "[]");
+      const updated = next
+        ? [...mutedList, activeConversation.id]
+        : mutedList.filter((id) => id !== activeConversation.id);
+      localStorage.setItem("muted_conversations", JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleCopyPinned = (text: string, index: number) => {
+    navigator.clipboard.writeText(text);
+    setCopiedPinnedIndex(index);
+    setTimeout(() => setCopiedPinnedIndex(null), 2000);
+  };
 
   const handleExportChat = () => {
     if (!activeConversation) return;
@@ -136,25 +168,57 @@ export default function ChatInfoPanel({ onClose }: Props) {
 
         {activeTab === "links" && (
           <div className="space-y-3">
-            <div className="rounded-lg bg-[#1f2937]/50 border border-[#374151]/30 p-3 text-sm text-blue-400 hover:underline cursor-pointer">
-              https://github.com/facebook/react
-            </div>
-
-            <div className="rounded-lg bg-[#1f2937]/50 border border-[#374151]/30 p-3 text-sm text-blue-400 hover:underline cursor-pointer">
-              https://nextjs.org/docs
-            </div>
+            {[
+              "https://github.com/facebook/react",
+              "https://nextjs.org/docs",
+              "https://tailwindcss.com"
+            ].map((link) => (
+              <a
+                key={link}
+                href={link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between p-3 rounded-lg bg-[#1f2937]/50 border border-[#374151]/30 text-xs text-blue-400 hover:text-blue-300 hover:bg-[#1f2937] transition group cursor-pointer"
+              >
+                <span className="truncate mr-2">{link}</span>
+                <ExternalLink size={13} className="shrink-0 text-slate-400 group-hover:text-blue-300" />
+              </a>
+            ))}
           </div>
         )}
 
         {activeTab === "pinned" && (
           <div className="space-y-3">
-            <div className="rounded-lg bg-[#1f2937]/50 border border-[#374151]/30 p-4 text-xs text-slate-300 leading-relaxed">
-              🚀 Launching the new UI today. Let me know if you hit any roadblocks.
-            </div>
-
-            <div className="rounded-lg bg-[#1f2937]/50 border border-[#374151]/30 p-4 text-xs text-slate-300 leading-relaxed">
-              🔥 Remember to update the API docs with the new payload format.
-            </div>
+            {[
+              "🚀 Launching the new UI today. Let me know if you hit any roadblocks.",
+              "🔥 Remember to update the API docs with the new payload format."
+            ].map((pinnedText, idx) => (
+              <div
+                key={idx}
+                className="rounded-lg bg-[#1f2937]/50 border border-[#374151]/30 p-3.5 text-xs text-slate-300 leading-relaxed space-y-2 group"
+              >
+                <p>{pinnedText}</p>
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => handleCopyPinned(pinnedText, idx)}
+                    className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-white transition cursor-pointer"
+                  >
+                    {copiedPinnedIndex === idx ? (
+                      <>
+                        <Check size={12} className="text-emerald-400" />
+                        <span className="text-emerald-400">Copied</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy size={12} />
+                        <span>Copy</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
@@ -166,7 +230,7 @@ export default function ChatInfoPanel({ onClose }: Props) {
         </h4>
 
         <button
-          onClick={() => setIsMuted(!isMuted)}
+          onClick={handleToggleMute}
           className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-[#1f2937] text-xs text-slate-300 hover:text-white transition cursor-pointer"
         >
           <div className="flex items-center gap-2.5">
