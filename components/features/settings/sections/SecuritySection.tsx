@@ -6,7 +6,7 @@ import SettingsSection from "@/components/features/settings/SettingsSection";
 import { PasswordStrength, Input, Button, Switch, Dialog } from "@/components/ui";
 import { userService } from "@/services/userService";
 import { useAuth } from "@/hooks/useAuth";
-import { CheckCircle2, AlertCircle, AlertTriangle, ShieldCheck, QrCode, Copy, Check, RefreshCw, KeyRound } from "lucide-react";
+import { CheckCircle2, AlertCircle, AlertTriangle, ShieldCheck, QrCode, Copy, Check, RefreshCw, KeyRound, Laptop, Smartphone, Monitor, LogOut, ShieldAlert, Globe } from "lucide-react";
 
 export default function SecuritySection() {
   const router = useRouter();
@@ -30,6 +30,49 @@ export default function SecuritySection() {
   ]);
   const [copiedCodes, setCopiedCodes] = useState(false);
   const [showBackupCodes, setShowBackupCodes] = useState(false);
+
+  // Active Sessions
+  const [sessions, setSessions] = useState([
+    {
+      id: "sess-1",
+      device: "MacBook Pro (Apple Silicon)",
+      browser: "Chrome 124.0",
+      location: "San Francisco, USA",
+      time: "Active now",
+      current: true,
+      type: "laptop" as const,
+    },
+    {
+      id: "sess-2",
+      device: "iPhone 15 Pro",
+      browser: "Mobile Safari",
+      location: "San Jose, USA",
+      time: "3 hours ago",
+      current: false,
+      type: "mobile" as const,
+    },
+    {
+      id: "sess-3",
+      device: "Windows Desktop PC",
+      browser: "Firefox 125",
+      location: "Austin, USA",
+      time: "2 days ago",
+      current: false,
+      type: "desktop" as const,
+    },
+  ]);
+  const [loggedOutOther, setLoggedOutOther] = useState(false);
+  const [unrecognizedLoginAlerts, setUnrecognizedLoginAlerts] = useState(true);
+
+  const handleLogOutSession = (id: string) => {
+    setSessions((prev) => prev.filter((s) => s.id !== id));
+  };
+
+  const handleLogOutAllOtherSessions = () => {
+    setSessions((prev) => prev.filter((s) => s.current));
+    setLoggedOutOther(true);
+    setTimeout(() => setLoggedOutOther(false), 3000);
+  };
 
   const generateNewBackupCodes = () => {
     const chars = "0123456789ABCDEF";
@@ -274,6 +317,112 @@ export default function SecuritySection() {
               )}
             </div>
           )}
+        </div>
+
+        {/* Where You're Logged In (Active Sessions) */}
+        <div className="p-4 rounded-2xl bg-[#111827] border border-[#1f2937] space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="space-y-0.5">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <Laptop size={16} className="text-blue-400" />
+                <span>Where You&apos;re Logged In</span>
+              </h3>
+              <p className="text-xs text-slate-400">
+                Review devices that have recent or active sessions with your account.
+              </p>
+            </div>
+
+            {sessions.some((s) => !s.current) && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleLogOutAllOtherSessions}
+                leftIcon={<LogOut size={13} />}
+                className="shrink-0 text-xs border border-rose-500/30 text-rose-300 hover:bg-rose-500/10"
+              >
+                Log Out All Other Devices
+              </Button>
+            )}
+          </div>
+
+          {loggedOutOther && (
+            <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-xs flex items-center gap-2">
+              <CheckCircle2 size={15} />
+              <span>All other sessions have been logged out securely.</span>
+            </div>
+          )}
+
+          <div className="space-y-2.5">
+            {sessions.map((sess) => (
+              <div
+                key={sess.id}
+                className="p-3 rounded-xl bg-[#0f172a] border border-[#1f2937] flex items-center justify-between gap-3"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="p-2 rounded-xl bg-[#111827] text-blue-400 shrink-0">
+                    {sess.type === "mobile" ? (
+                      <Smartphone size={16} />
+                    ) : sess.type === "desktop" ? (
+                      <Monitor size={16} />
+                    ) : (
+                      <Laptop size={16} />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-white truncate">{sess.device}</span>
+                      {sess.current && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-semibold border border-emerald-500/30">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          This Device
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[11px] text-slate-400 flex items-center gap-2 flex-wrap">
+                      <span>{sess.browser}</span>
+                      <span>·</span>
+                      <span className="flex items-center gap-1">
+                        <Globe size={10} /> {sess.location}
+                      </span>
+                      <span>·</span>
+                      <span className={sess.current ? "text-emerald-400 font-medium" : "text-slate-500"}>
+                        {sess.time}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {!sess.current && (
+                  <button
+                    type="button"
+                    onClick={() => handleLogOutSession(sess.id)}
+                    className="text-xs text-rose-400 hover:text-rose-300 hover:underline shrink-0 px-2 py-1"
+                  >
+                    Log Out
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Unrecognized Login Alerts */}
+        <div className="p-4 rounded-2xl bg-[#111827] border border-[#1f2937] space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+                <ShieldAlert size={14} className="text-amber-400" />
+                <span>Unrecognized Login Alerts</span>
+              </h4>
+              <p className="text-[11px] text-slate-400">
+                Receive instant security notifications if someone logs in from an unknown device or location.
+              </p>
+            </div>
+            <Switch
+              checked={unrecognizedLoginAlerts}
+              onChange={(e) => setUnrecognizedLoginAlerts(e.target.checked)}
+            />
+          </div>
         </div>
 
         {/* Delete Account Trigger */}
