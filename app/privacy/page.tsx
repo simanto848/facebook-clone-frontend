@@ -11,6 +11,9 @@ import {
   AlertCircle,
   LogOut,
   Trash2,
+  Download,
+  Laptop,
+  Globe,
 } from "lucide-react";
 import {
   PageHeader,
@@ -34,9 +37,9 @@ export default function PrivacySecurityPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
 
   const [sessions, setSessions] = useState([
-    { id: "s1", device: "MacBook Pro (Chrome)", location: "Dhaka, Bangladesh · Active now", isCurrent: true },
-    { id: "s2", device: "iPhone 15 Pro (Safari)", location: "Dhaka, Bangladesh · 2 hours ago", isCurrent: false },
-    { id: "s3", device: "iPad Air (Chrome)", location: "Singapore · 3 days ago", isCurrent: false },
+    { id: "s1", device: "MacBook Pro (Chrome 122)", ip: "103.114.98.24", location: "Dhaka, Bangladesh · Active now", isCurrent: true, type: "desktop" },
+    { id: "s2", device: "iPhone 15 Pro (Safari 17)", ip: "103.114.98.81", location: "Dhaka, Bangladesh · 2 hours ago", isCurrent: false, type: "mobile" },
+    { id: "s3", device: "iPad Air (Chrome Mobile)", ip: "119.73.200.12", location: "Singapore · 3 days ago", isCurrent: false, type: "tablet" },
   ]);
   const [sessionNotice, setSessionNotice] = useState<string | null>(null);
 
@@ -49,6 +52,18 @@ export default function PrivacySecurityPage() {
   const handleRevokeAllOtherSessions = () => {
     setSessions((prev) => prev.filter((s) => s.isCurrent));
     setSessionNotice("All other sessions logged out successfully.");
+    setTimeout(() => setSessionNotice(null), 3000);
+  };
+
+  const handleExportSessions = () => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(sessions, null, 2));
+    const downloadAnchor = document.createElement("a");
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `security_sessions_${new Date().toISOString().slice(0, 10)}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+    setSessionNotice("Active login sessions audit log exported as JSON.");
     setTimeout(() => setSessionNotice(null), 3000);
   };
 
@@ -203,22 +218,33 @@ export default function PrivacySecurityPage() {
                 </Card>
 
                 <Card>
-                  <CardHeader className="flex flex-row items-center justify-between">
+                  <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <CardTitle className="flex items-center gap-2 text-base">
                       <Smartphone size={18} className="text-purple-400" />
                       Active Login Sessions ({sessions.length})
                     </CardTitle>
-                    {sessions.some((s) => !s.isCurrent) && (
+                    <div className="flex items-center gap-2">
                       <Button
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
-                        className="text-xs text-rose-400 hover:text-rose-300"
-                        leftIcon={<LogOut size={13} />}
-                        onClick={handleRevokeAllOtherSessions}
+                        className="text-xs text-slate-300 hover:text-white"
+                        leftIcon={<Download size={13} />}
+                        onClick={handleExportSessions}
                       >
-                        Log Out Other Sessions
+                        Export Log
                       </Button>
-                    )}
+                      {sessions.some((s) => !s.isCurrent) && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-xs text-rose-400 hover:text-rose-300"
+                          leftIcon={<LogOut size={13} />}
+                          onClick={handleRevokeAllOtherSessions}
+                        >
+                          Log Out Other Sessions
+                        </Button>
+                      )}
+                    </div>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     {sessionNotice && (
@@ -233,13 +259,25 @@ export default function PrivacySecurityPage() {
                         className="flex justify-between items-center bg-[#0b0f19]/60 p-3.5 rounded-xl border border-[#1f2937]"
                       >
                         <div className="flex items-center gap-3">
-                          <Smartphone
-                            size={18}
-                            className={session.isCurrent ? "text-green-400" : "text-slate-400"}
-                          />
+                          {session.type === "desktop" ? (
+                            <Laptop
+                              size={18}
+                              className={session.isCurrent ? "text-emerald-400" : "text-slate-400"}
+                            />
+                          ) : (
+                            <Smartphone
+                              size={18}
+                              className={session.isCurrent ? "text-emerald-400" : "text-slate-400"}
+                            />
+                          )}
                           <div>
-                            <p className="text-xs font-bold text-white">{session.device}</p>
-                            <p className="text-[10px] text-slate-400">{session.location}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-xs font-bold text-white">{session.device}</p>
+                              <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 border border-slate-700/60 font-mono">
+                                {session.ip}
+                              </span>
+                            </div>
+                            <p className="text-[10px] text-slate-400 mt-0.5">{session.location}</p>
                           </div>
                         </div>
                         {session.isCurrent ? (
