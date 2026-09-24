@@ -14,11 +14,51 @@ export default function ChatInfoPanel({ onClose }: Props) {
   const [isMuted, setIsMuted] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [copiedPinnedIndex, setCopiedPinnedIndex] = useState<number | null>(null);
+  const [pinnedNotes, setPinnedNotes] = useState<string[]>([]);
+  const [newPinText, setNewPinText] = useState("");
   const { conversations, activeConversationId, clearConversationMessages } = useChatStore();
 
   const activeConversation = conversations.find(
     (c) => c.id === activeConversationId
   );
+
+  useEffect(() => {
+    if (!activeConversation) return;
+    try {
+      const stored = localStorage.getItem(`pinned_notes_${activeConversation.id}`);
+      if (stored) {
+        setPinnedNotes(JSON.parse(stored));
+      } else {
+        const defaults = [
+          "🚀 Launching the new UI today. Let me know if you hit any roadblocks.",
+          "🔥 Remember to update the API docs with the new payload format."
+        ];
+        setPinnedNotes(defaults);
+      }
+    } catch {
+      // fallback
+    }
+  }, [activeConversation?.id]);
+
+  const handleAddPin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPinText.trim() || !activeConversation) return;
+    const updated = [newPinText.trim(), ...pinnedNotes];
+    setPinnedNotes(updated);
+    setNewPinText("");
+    try {
+      localStorage.setItem(`pinned_notes_${activeConversation.id}`, JSON.stringify(updated));
+    } catch {}
+  };
+
+  const handleRemovePin = (index: number) => {
+    if (!activeConversation) return;
+    const updated = pinnedNotes.filter((_, i) => i !== index);
+    setPinnedNotes(updated);
+    try {
+      localStorage.setItem(`pinned_notes_${activeConversation.id}`, JSON.stringify(updated));
+    } catch {}
+  };
 
   useEffect(() => {
     if (!activeConversation) return;
@@ -189,36 +229,61 @@ export default function ChatInfoPanel({ onClose }: Props) {
 
         {activeTab === "pinned" && (
           <div className="space-y-3">
-            {[
-              "🚀 Launching the new UI today. Let me know if you hit any roadblocks.",
-              "🔥 Remember to update the API docs with the new payload format."
-            ].map((pinnedText, idx) => (
-              <div
-                key={idx}
-                className="rounded-lg bg-[#1f2937]/50 border border-[#374151]/30 p-3.5 text-xs text-slate-300 leading-relaxed space-y-2 group"
+            <form onSubmit={handleAddPin} className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Pin a note or link..."
+                value={newPinText}
+                onChange={(e) => setNewPinText(e.target.value)}
+                className="flex-1 bg-[#1f2937]/70 border border-[#374151]/50 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder:text-slate-500 outline-none focus:border-blue-500"
+              />
+              <button
+                type="submit"
+                disabled={!newPinText.trim()}
+                className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-xs font-semibold text-white transition cursor-pointer"
               >
-                <p>{pinnedText}</p>
-                <div className="flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => handleCopyPinned(pinnedText, idx)}
-                    className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-white transition cursor-pointer"
-                  >
-                    {copiedPinnedIndex === idx ? (
-                      <>
-                        <Check size={12} className="text-emerald-400" />
-                        <span className="text-emerald-400">Copied</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy size={12} />
-                        <span>Copy</span>
-                      </>
-                    )}
-                  </button>
+                Pin
+              </button>
+            </form>
+            {pinnedNotes.length === 0 ? (
+              <p className="text-xs text-slate-500 text-center py-4">No pinned messages yet.</p>
+            ) : (
+              pinnedNotes.map((pinnedText, idx) => (
+                <div
+                  key={idx}
+                  className="rounded-lg bg-[#1f2937]/50 border border-[#374151]/30 p-3 text-xs text-slate-300 leading-relaxed space-y-2 group"
+                >
+                  <p>{pinnedText}</p>
+                  <div className="flex items-center justify-between pt-1 border-t border-[#374151]/30">
+                    <button
+                      type="button"
+                      onClick={() => handleRemovePin(idx)}
+                      className="text-slate-500 hover:text-red-400 p-0.5 transition cursor-pointer"
+                      title="Unpin message"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyPinned(pinnedText, idx)}
+                      className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-white transition cursor-pointer"
+                    >
+                      {copiedPinnedIndex === idx ? (
+                        <>
+                          <Check size={12} className="text-emerald-400" />
+                          <span className="text-emerald-400">Copied</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy size={12} />
+                          <span>Copy</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         )}
       </div>
