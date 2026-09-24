@@ -101,6 +101,20 @@ export default function ChatWindow() {
     return m.text?.toLowerCase().includes(inChatSearchQuery.toLowerCase().trim());
   });
 
+  const highlightChatMatch = (text: string, query: string) => {
+    if (!query.trim()) return text;
+    const parts = text.split(new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi"));
+    return parts.map((part, i) =>
+      part.toLowerCase() === query.toLowerCase() ? (
+        <mark key={i} className="bg-yellow-400/35 text-white font-medium px-0.5 rounded">
+          {part}
+        </mark>
+      ) : (
+        part
+      )
+    );
+  };
+
   useEffect(() => {
     if (activeConversationId) {
       fetchMessagesForUser(activeConversationId);
@@ -452,7 +466,7 @@ export default function ChatWindow() {
                               : "rounded-bl-none bg-[#1f2937]"
                           }`}
                         >
-                          {msg.text}
+                          {highlightChatMatch(msg.text, inChatSearchQuery)}
                         </div>
                       )}
 
