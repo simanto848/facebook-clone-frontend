@@ -579,6 +579,7 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
         post={post}
         isOpen={shareModalOpen}
         onClose={() => setShareModalOpen(false)}
+        onShareSuccess={() => setSharesCount((c) => c + 1)}
       />
 
       {/* Report Content Modal Dialog Overlay */}

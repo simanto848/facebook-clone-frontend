@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Share2, Send, Link as LinkIcon, Check, Globe, MessageCircle, ExternalLink } from "lucide-react";
+import { Share2, Send, Link as LinkIcon, Check, Globe, MessageCircle, ExternalLink, Mail, MessageSquare } from "lucide-react";
 import { shareService } from "@/services/shareService";
 import { Dialog, Button } from "@/components/ui";
 import { useChatStore } from "@/store/chatStore";
@@ -10,9 +10,10 @@ interface ShareModalProps {
   onClose: () => void;
   postId?: string;
   post?: { id: string; [key: string]: any };
+  onShareSuccess?: () => void;
 }
 
-export default function ShareModal({ isOpen, onClose, postId, post }: ShareModalProps) {
+export default function ShareModal({ isOpen, onClose, postId, post, onShareSuccess }: ShareModalProps) {
   const [caption, setCaption] = useState("");
   const [sharing, setSharing] = useState(false);
   const [shared, setShared] = useState(false);
@@ -25,6 +26,7 @@ export default function ShareModal({ isOpen, onClose, postId, post }: ShareModal
     const url = `${window.location.origin}/post/${targetPostId}`;
     navigator.clipboard.writeText(url);
     setCopied(true);
+    onShareSuccess?.();
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -32,23 +34,49 @@ export default function ShareModal({ isOpen, onClose, postId, post }: ShareModal
     const url = `${window.location.origin}/post/${targetPostId}`;
     const text = encodeURIComponent(`Check out this post: ${url}`);
     window.open(`https://api.whatsapp.com/send?text=${text}`, "_blank");
+    onShareSuccess?.();
   };
 
   const handleShareTwitter = () => {
     const url = `${window.location.origin}/post/${targetPostId}`;
     const text = encodeURIComponent(post?.content?.slice(0, 100) || "Check out this post");
     window.open(`https://twitter.com/intent/tweet?text=${text}&url=${encodeURIComponent(url)}`, "_blank");
+    onShareSuccess?.();
   };
 
   const handleShareLinkedIn = () => {
     const url = `${window.location.origin}/post/${targetPostId}`;
     window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, "_blank");
+    onShareSuccess?.();
+  };
+
+  const handleShareTelegram = () => {
+    const url = `${window.location.origin}/post/${targetPostId}`;
+    const text = encodeURIComponent(post?.content?.slice(0, 100) || "Check out this post");
+    window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${text}`, "_blank");
+    onShareSuccess?.();
+  };
+
+  const handleShareReddit = () => {
+    const url = `${window.location.origin}/post/${targetPostId}`;
+    const title = encodeURIComponent(post?.content?.slice(0, 80) || "Facebook Clone Post");
+    window.open(`https://reddit.com/submit?url=${encodeURIComponent(url)}&title=${title}`, "_blank");
+    onShareSuccess?.();
+  };
+
+  const handleShareEmail = () => {
+    const url = `${window.location.origin}/post/${targetPostId}`;
+    const subject = encodeURIComponent("Check out this post");
+    const body = encodeURIComponent(`Hey,\n\nCheck out this post on Facebook:\n${url}\n\n${post?.content || ""}`);
+    window.open(`mailto:?subject=${subject}&body=${body}`, "_blank");
+    onShareSuccess?.();
   };
 
   const handleSendToChat = (convId: string) => {
     const linkUrl = `${window.location.origin}/post/${targetPostId}`;
     sendDirectMessage(convId, `Shared post: ${linkUrl}`);
     setShared(true);
+    onShareSuccess?.();
     setTimeout(() => {
       setShared(false);
       onClose();
@@ -160,6 +188,33 @@ export default function ShareModal({ isOpen, onClose, postId, post }: ShareModal
               >
                 <ExternalLink size={16} className="text-blue-400 mb-1 group-hover:scale-110 transition" />
                 <span className="text-[10px] font-medium">LinkedIn</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleShareTelegram}
+                className="flex flex-col items-center justify-center p-2 rounded-xl bg-[#0f172a] border border-[#1f2937] hover:border-cyan-500 text-slate-300 hover:text-white transition group cursor-pointer"
+              >
+                <Send size={16} className="text-cyan-400 mb-1 group-hover:scale-110 transition" />
+                <span className="text-[10px] font-medium">Telegram</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleShareReddit}
+                className="flex flex-col items-center justify-center p-2 rounded-xl bg-[#0f172a] border border-[#1f2937] hover:border-orange-500 text-slate-300 hover:text-white transition group cursor-pointer"
+              >
+                <Globe size={16} className="text-orange-400 mb-1 group-hover:scale-110 transition" />
+                <span className="text-[10px] font-medium">Reddit</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleShareEmail}
+                className="flex flex-col items-center justify-center p-2 rounded-xl bg-[#0f172a] border border-[#1f2937] hover:border-violet-500 text-slate-300 hover:text-white transition group cursor-pointer"
+              >
+                <Mail size={16} className="text-violet-400 mb-1 group-hover:scale-110 transition" />
+                <span className="text-[10px] font-medium">Email</span>
               </button>
             </div>
           </div>
