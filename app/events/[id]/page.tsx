@@ -22,6 +22,8 @@ import {
   Heart,
   Search,
   X,
+  Bell,
+  BellRing,
 } from "lucide-react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
@@ -56,6 +58,7 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
   const [attendeeSearch, setAttendeeSearch] = useState("");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
+  const [reminderSet, setReminderSet] = useState(false);
   const [rsvpToast, setRsvpToast] = useState<{ message: string; type: "success" | "info" } | null>(null);
   const [editForm, setEditForm] = useState({
     title: "",
@@ -95,6 +98,48 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
     const timer = setInterval(calculate, 1000);
     return () => clearInterval(timer);
   }, [event?.startTime]);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("event_reminders");
+      if (stored) {
+        const reminders = JSON.parse(stored);
+        setReminderSet(!!reminders[id]);
+      }
+    } catch {
+      // ignore
+    }
+  }, [id]);
+
+  const handleToggleReminder = () => {
+    try {
+      const stored = localStorage.getItem("event_reminders");
+      const reminders = stored ? JSON.parse(stored) : {};
+      const nextState = !reminderSet;
+      if (nextState) {
+        reminders[id] = {
+          eventId: id,
+          title: event?.title || "Upcoming Event",
+          startTime: event?.startTime,
+          createdAt: new Date().toISOString(),
+        };
+        setRsvpToast({
+          message: "Reminder enabled! You will be reminded before this event starts.",
+          type: "success",
+        });
+      } else {
+        delete reminders[id];
+        setRsvpToast({
+          message: "Event reminder disabled.",
+          type: "info",
+        });
+      }
+      localStorage.setItem("event_reminders", JSON.stringify(reminders));
+      setReminderSet(nextState);
+    } catch {
+      setReminderSet(!reminderSet);
+    }
+  };
 
   const [newCommentText, setNewCommentText] = useState("");
   const [discussions, setDiscussions] = useState<
@@ -401,6 +446,16 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
                   Google Calendar
                 </Button>
                 <Button
+                  variant={reminderSet ? "success" : "secondary"}
+                  size="sm"
+                  leftIcon={reminderSet ? <BellRing size={14} className="text-emerald-400 animate-pulse" /> : <Bell size={14} />}
+                  onClick={handleToggleReminder}
+                  disabled={!event}
+                  className={reminderSet ? "border border-emerald-500/50 bg-emerald-950/30 text-emerald-300" : "border border-[#1f2937] text-slate-300 hover:text-white"}
+                >
+                  {reminderSet ? "Reminder Set" : "Remind Me"}
+                </Button>
+                <Button
                   variant="secondary"
                   size="sm"
                   leftIcon={copied ? <Check size={14} className="text-emerald-400" /> : <Share2 size={14} />}
@@ -593,6 +648,15 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
                         className="flex-1 sm:flex-none text-slate-400"
                       >
                         Can&apos;t Go
+                      </Button>
+                      <Button
+                        variant={reminderSet ? "secondary" : "ghost"}
+                        size="md"
+                        leftIcon={reminderSet ? <BellRing size={16} className="text-amber-400" /> : <Bell size={16} />}
+                        onClick={handleToggleReminder}
+                        className="flex-1 sm:flex-none border border-slate-700/60 text-slate-300 hover:text-white"
+                      >
+                        {reminderSet ? "Reminder On" : "Remind Me"}
                       </Button>
                     </div>
                   </CardContent>
