@@ -83,6 +83,7 @@ export default function GroupsPage() {
   const [ownedGuildIds, setOwnedGuildIds] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [sortBy, setSortBy] = useState<"members" | "az" | "za">("members");
 
   const fetchBackendGroups = async () => {
     try {
@@ -354,70 +355,85 @@ export default function GroupsPage() {
                 </div>
 
                 {/* Communities Grid */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between border-b border-[#1f2937] pb-3">
-                    <div className="flex items-center gap-2">
-                      <Compass size={16} className="text-blue-400" />
-                      <span className="text-xs font-bold tracking-wider uppercase text-slate-400">
-                        {activeTab === "joined" ? "Your Joined Guilds" : activeTab === "owned" ? "Guilds Created By You" : "Suggested Communities"}
-                      </span>
-                    </div>
-                    <span className="text-xs text-slate-400">
-                      {guilds.filter((g) => {
-                        if (activeTab === "joined" && !joinedGuilds[g.id]) return false;
-                        if (activeTab === "owned" && !ownedGuildIds[g.id]) return false;
-                        if (selectedCategory !== "All" && g.category !== selectedCategory) return false;
-                        if (searchQuery.trim()) {
-                          const q = searchQuery.toLowerCase();
-                          return (
-                            g.name.toLowerCase().includes(q) ||
-                            g.description.toLowerCase().includes(q) ||
-                            g.category.toLowerCase().includes(q)
-                          );
-                        }
-                        return true;
-                      }).length} results
-                    </span>
-                  </div>
+                {(() => {
+                  const filteredAndSortedGuilds = (() => {
+                    const filtered = guilds.filter((g) => {
+                      if (activeTab === "joined" && !joinedGuilds[g.id]) return false;
+                      if (activeTab === "owned" && !ownedGuildIds[g.id]) return false;
+                      if (selectedCategory !== "All" && g.category !== selectedCategory) return false;
+                      if (searchQuery.trim()) {
+                        const q = searchQuery.toLowerCase();
+                        return (
+                          g.name.toLowerCase().includes(q) ||
+                          g.description.toLowerCase().includes(q) ||
+                          g.category.toLowerCase().includes(q)
+                        );
+                      }
+                      return true;
+                    });
 
-                  {guilds.filter((g) => {
-                    if (activeTab === "joined" && !joinedGuilds[g.id]) return false;
-                    if (activeTab === "owned" && !ownedGuildIds[g.id]) return false;
-                    if (selectedCategory !== "All" && g.category !== selectedCategory) return false;
-                    if (searchQuery.trim()) {
-                      const q = searchQuery.toLowerCase();
-                      return (
-                        g.name.toLowerCase().includes(q) ||
-                        g.description.toLowerCase().includes(q) ||
-                        g.category.toLowerCase().includes(q)
-                      );
-                    }
-                    return true;
-                  }).length === 0 ? (
-                    <div className="text-center py-12 px-4 rounded-xl border border-dashed border-[#334155] bg-[#1e293b]/30">
-                      <Users size={32} className="mx-auto text-slate-500 mb-2" />
-                      <p className="text-sm font-medium text-slate-300">No communities found</p>
-                      <p className="text-xs text-slate-500 mt-1">Try adjusting your search query or category filter</p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {guilds
-                        .filter((g) => {
-                          if (activeTab === "joined" && !joinedGuilds[g.id]) return false;
-                          if (activeTab === "owned" && !ownedGuildIds[g.id]) return false;
-                          if (selectedCategory !== "All" && g.category !== selectedCategory) return false;
-                          if (searchQuery.trim()) {
-                            const q = searchQuery.toLowerCase();
-                            return (
-                              g.name.toLowerCase().includes(q) ||
-                              g.description.toLowerCase().includes(q) ||
-                              g.category.toLowerCase().includes(q)
-                            );
-                          }
-                          return true;
-                        })
-                      .map((guild) => (
-                      <Card key={guild.id} hover className="flex flex-col justify-between">
+                    const parseMembers = (m: string) => {
+                      const clean = m.toLowerCase().trim();
+                      if (clean.endsWith("k")) return parseFloat(clean) * 1000;
+                      if (clean.endsWith("m")) return parseFloat(clean) * 1000000;
+                      return parseFloat(clean) || 0;
+                    };
+
+                    return [...filtered].sort((a, b) => {
+                      if (sortBy === "az") return a.name.localeCompare(b.name);
+                      if (sortBy === "za") return b.name.localeCompare(a.name);
+                      return parseMembers(b.members) - parseMembers(a.members);
+                    });
+                  })();
+
+                  return (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between border-b border-[#1f2937] pb-3">
+                        <div className="flex items-center gap-2">
+                          <Compass size={16} className="text-blue-400" />
+                          <span className="text-xs font-bold tracking-wider uppercase text-slate-400">
+                            {activeTab === "joined" ? "Your Joined Guilds" : activeTab === "owned" ? "Guilds Created By You" : "Suggested Communities"}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs text-slate-400">
+                            {filteredAndSortedGuilds.length} results
+                          </span>
+                          <div className="flex items-center bg-[#1e293b] p-0.5 rounded-lg border border-[#334155] text-xs">
+                            <button
+                              type="button"
+                              onClick={() => setSortBy("members")}
+                              className={`px-2 py-0.5 rounded text-[11px] font-medium transition cursor-pointer ${
+                                sortBy === "members" ? "bg-blue-600 text-white" : "text-slate-400 hover:text-white"
+                              }`}
+                              title="Sort by Popularity / Members"
+                            >
+                              Popular
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setSortBy("az")}
+                              className={`px-2 py-0.5 rounded text-[11px] font-medium transition cursor-pointer ${
+                                sortBy === "az" ? "bg-blue-600 text-white" : "text-slate-400 hover:text-white"
+                              }`}
+                              title="Sort Alphabetically A-Z"
+                            >
+                              A-Z
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {filteredAndSortedGuilds.length === 0 ? (
+                        <div className="text-center py-12 px-4 rounded-xl border border-dashed border-[#334155] bg-[#1e293b]/30">
+                          <Users size={32} className="mx-auto text-slate-500 mb-2" />
+                          <p className="text-sm font-medium text-slate-300">No communities found</p>
+                          <p className="text-xs text-slate-500 mt-1">Try adjusting your search query or category filter</p>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {filteredAndSortedGuilds.map((guild) => (
+                            <Card key={guild.id} hover className="flex flex-col justify-between">
                         <CardContent className="space-y-3">
                           <div className="flex items-start gap-3">
                             <Link href={`/groups/${guild.id}`}>
@@ -458,13 +474,15 @@ export default function GroupsPage() {
                         </div>
                       </Card>
                     ))}
-                    </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        </main>
+            );
+          })()}
+        </div>
+      )}
+    </div>
+  </main>
 
         {/* RIGHT SIDEBAR */}
         <aside className="hidden xl:block w-80 shrink-0">
