@@ -14,6 +14,8 @@ import {
   Send,
   Check,
   X,
+  ThumbsUp,
+  ThumbsDown,
 } from "lucide-react";
 import {
   PageHeader,
@@ -38,6 +40,44 @@ export default function HelpSupportPage() {
     subject: "",
     message: "",
   });
+  const [faqFeedback, setFaqFeedback] = useState<Record<string, "yes" | "no">>({});
+
+  React.useEffect(() => {
+    try {
+      const stored = localStorage.getItem("faq_feedback_ratings");
+      if (stored) {
+        setFaqFeedback(JSON.parse(stored));
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const handleFeedback = (faqId: string, rating: "yes" | "no") => {
+    setFaqFeedback((prev) => {
+      const updated = { ...prev, [faqId]: rating };
+      try {
+        localStorage.setItem("faq_feedback_ratings", JSON.stringify(updated));
+      } catch {
+        // ignore
+      }
+      return updated;
+    });
+  };
+
+  const highlightText = (text: string, query: string) => {
+    if (!query.trim()) return text;
+    const parts = text.split(new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi"));
+    return parts.map((part, i) =>
+      part.toLowerCase() === query.toLowerCase() ? (
+        <mark key={i} className="bg-blue-500/30 text-blue-200 px-0.5 rounded">
+          {part}
+        </mark>
+      ) : (
+        part
+      )
+    );
+  };
 
   const faqs = [
     {
@@ -242,10 +282,10 @@ export default function HelpSupportPage() {
                       >
                         <button
                           onClick={() => toggleFaq(faq.id)}
-                          className="flex w-full items-center justify-between p-3.5 text-left font-bold text-xs text-slate-200 hover:text-white transition"
+                          className="flex w-full items-center justify-between p-3.5 text-left font-bold text-xs text-slate-200 hover:text-white transition cursor-pointer"
                         >
                           <div className="flex items-center gap-2 flex-1 pr-2">
-                            <span>{faq.question}</span>
+                            <span>{highlightText(faq.question, searchQuery)}</span>
                             <span className="text-[10px] font-normal px-2 py-0.5 rounded-full bg-slate-800 text-slate-400">
                               {faq.categoryLabel}
                             </span>
@@ -258,8 +298,35 @@ export default function HelpSupportPage() {
                         </button>
 
                         {isOpen && (
-                          <div className="border-t border-[#1f2937] p-3.5 text-xs text-slate-400 leading-relaxed bg-[#0b0f19]">
-                            {faq.answer}
+                          <div className="border-t border-[#1f2937] p-3.5 text-xs text-slate-300 leading-relaxed bg-[#0b0f19] space-y-3">
+                            <p>{highlightText(faq.answer, searchQuery)}</p>
+                            <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 text-[11px] text-slate-400">
+                              <span>Was this answer helpful?</span>
+                              {faqFeedback[faq.id] ? (
+                                <span className="text-emerald-400 font-medium flex items-center gap-1">
+                                  <Check size={12} /> Thank you for your feedback!
+                                </span>
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleFeedback(faq.id, "yes")}
+                                    className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-800/60 hover:bg-emerald-500/20 hover:text-emerald-300 text-slate-400 transition cursor-pointer"
+                                  >
+                                    <ThumbsUp size={11} />
+                                    <span>Yes</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleFeedback(faq.id, "no")}
+                                    className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-800/60 hover:bg-rose-500/20 hover:text-rose-300 text-slate-400 transition cursor-pointer"
+                                  >
+                                    <ThumbsDown size={11} />
+                                    <span>No</span>
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         )}
                       </div>
