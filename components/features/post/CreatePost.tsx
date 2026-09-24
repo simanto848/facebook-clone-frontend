@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Images, Video, BarChart2, BookOpen, Trash2, Plus, X, Loader2, Smile } from "lucide-react";
+import { Images, Video, BarChart2, BookOpen, Trash2, Plus, X, Loader2, Smile, Clock } from "lucide-react";
 import Image from "next/image";
 import { usePostStore } from "@/store/postStore";
 import { useAuthStore } from "@/store/authStore";
@@ -28,6 +28,7 @@ export default function CreatePost() {
   const [videoUrl, setVideoUrl] = useState("");
   const [pollQuestion, setPollQuestion] = useState("");
   const [pollOptions, setPollOptions] = useState<string[]>(["", ""]);
+  const [pollDuration, setPollDuration] = useState<"1d" | "3d" | "7d" | "never">("1d");
   const [articleDetails, setArticleDetails] = useState({
     title: "",
     summary: "",
@@ -84,6 +85,7 @@ export default function CreatePost() {
     } else if (type === "poll" && pollQuestion) {
       postPayload.poll = {
         question: pollQuestion,
+        duration: pollDuration,
         options: pollOptions
           .filter((opt) => opt.trim() !== "")
           .map((opt, i) => ({ id: `opt_${i}`, text: opt, votes: 0 })),
@@ -108,6 +110,7 @@ export default function CreatePost() {
     setVideoUrl("");
     setPollQuestion("");
     setPollOptions(["", ""]);
+    setPollDuration("1d");
     setArticleDetails({ title: "", summary: "", thumbnail: "", url: "" });
     setSubmitting(false);
   };
@@ -341,13 +344,53 @@ export default function CreatePost() {
                     </div>
                   ))}
                 </div>
-                <button
-                  type="button"
-                  onClick={addPollOption}
-                  className="flex items-center gap-1 text-[11px] font-bold text-blue-400 hover:text-blue-500"
-                >
-                  <Plus size={12} /> Add Option
-                </button>
+                <div className="flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={addPollOption}
+                    className="flex items-center gap-1 text-[11px] font-bold text-blue-400 hover:text-blue-500"
+                  >
+                    <Plus size={12} /> Add Option
+                  </button>
+                  <span className="text-[10px] text-slate-400 font-medium">
+                    {pollOptions.filter((o) => o.trim()).length} options configured
+                  </span>
+                </div>
+
+                <div className="pt-2 border-t border-[#1f2937]/70 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1 text-[11px] font-semibold text-slate-300">
+                      <Clock size={12} className="text-blue-400" /> Poll Duration:
+                    </span>
+                    <span className="text-[10px] text-blue-400 font-medium">
+                      {pollDuration === "1d" && "Ends in 24 hours"}
+                      {pollDuration === "3d" && "Ends in 3 days"}
+                      {pollDuration === "7d" && "Ends in 7 days"}
+                      {pollDuration === "never" && "No expiration"}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {[
+                      { id: "1d", label: "24 Hours" },
+                      { id: "3d", label: "3 Days" },
+                      { id: "7d", label: "1 Week" },
+                      { id: "never", label: "No Limit" },
+                    ].map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setPollDuration(item.id as any)}
+                        className={`py-1 px-2 rounded-lg text-[10px] font-semibold transition-all text-center ${
+                          pollDuration === item.id
+                            ? "bg-blue-600 text-white shadow-sm shadow-blue-500/30"
+                            : "bg-[#111827] text-slate-400 hover:text-slate-200 border border-[#1f2937]"
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
 
