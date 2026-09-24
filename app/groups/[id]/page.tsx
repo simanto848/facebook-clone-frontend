@@ -4,7 +4,7 @@ import React, { useState, useEffect, use } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Users, Shield, Plus, Check, UserPlus, Crown, MessageSquare, Info, ShieldCheck, Share2, Flag, Search, X, Clock, Flame, Filter } from "lucide-react";
+import { ArrowLeft, Users, Shield, Plus, Check, UserPlus, Crown, MessageSquare, Info, ShieldCheck, Share2, Flag, Search, X, Clock, Flame, Filter, Pin, Megaphone, Pencil } from "lucide-react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
@@ -50,6 +50,9 @@ export default function GroupDetailPage({ params }: PageProps) {
   const [memberRoleFilter, setMemberRoleFilter] = useState<"all" | "admins" | "members">("all");
   const [feedSearchQuery, setFeedSearchQuery] = useState("");
   const [feedSort, setFeedSort] = useState<"latest" | "popular">("latest");
+  const [pinnedAnnouncement, setPinnedAnnouncement] = useState<{ id: string; title: string; content: string; authorName: string; date: string } | null>(null);
+  const [isEditingAnnouncement, setIsEditingAnnouncement] = useState(false);
+  const [announcementText, setAnnouncementText] = useState("");
 
   // Post creation modal
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -64,6 +67,49 @@ export default function GroupDetailPage({ params }: PageProps) {
   const [postContent, setPostContent] = useState("");
   const [isPosting, setIsPosting] = useState(false);
   const [postError, setPostError] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(`group_announcement_${id}`);
+      if (stored) {
+        setPinnedAnnouncement(JSON.parse(stored));
+      } else {
+        const defaultAnnounce = {
+          id: `ann_${id}`,
+          title: "Community Guidelines & Welcome",
+          content: "Welcome to our group! Please be respectful, keep discussions on topic, and check out the group rules tab.",
+          authorName: group?.creator?.name || "Admin",
+          date: "Pinned Announcement",
+        };
+        setPinnedAnnouncement(defaultAnnounce);
+      }
+    } catch {}
+  }, [id, group?.creator?.name]);
+
+  const handleSaveAnnouncement = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!announcementText.trim()) return;
+    const next = {
+      id: `ann_${Date.now()}`,
+      title: "Pinned Announcement",
+      content: announcementText.trim(),
+      authorName: authUser?.displayName || "Admin",
+      date: "Just now",
+    };
+    setPinnedAnnouncement(next);
+    setIsEditingAnnouncement(false);
+    setAnnouncementText("");
+    try {
+      localStorage.setItem(`group_announcement_${id}`, JSON.stringify(next));
+    } catch {}
+  };
+
+  const handleUnpinAnnouncement = () => {
+    setPinnedAnnouncement(null);
+    try {
+      localStorage.removeItem(`group_announcement_${id}`);
+    } catch {}
+  };
 
   const fetchGroupData = async () => {
     setLoading(true);
@@ -398,6 +444,93 @@ export default function GroupDetailPage({ params }: PageProps) {
                         New Post
                       </Button>
                     </div>
+
+                    {/* Pinned Announcement Banner */}
+                    {pinnedAnnouncement ? (
+                      <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-950/40 to-slate-900 border border-blue-500/30 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="p-1.5 rounded-lg bg-blue-600/20 text-blue-400">
+                              <Pin size={14} className="rotate-45" />
+                            </span>
+                            <span className="text-xs font-bold text-white uppercase tracking-wider">
+                              {pinnedAnnouncement.title}
+                            </span>
+                            <span className="text-[10px] text-blue-400 font-medium">• {pinnedAnnouncement.date}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAnnouncementText(pinnedAnnouncement.content);
+                                setIsEditingAnnouncement(true);
+                              }}
+                              className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+                              title="Edit Announcement"
+                            >
+                              <Pencil size={13} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleUnpinAnnouncement}
+                              className="p-1 rounded-md text-slate-400 hover:text-red-400 hover:bg-slate-800 transition cursor-pointer"
+                              title="Unpin Announcement"
+                            >
+                              <X size={13} />
+                            </button>
+                          </div>
+                        </div>
+                        {isEditingAnnouncement ? (
+                          <form onSubmit={handleSaveAnnouncement} className="space-y-2 pt-1">
+                            <textarea
+                              value={announcementText}
+                              onChange={(e) => setAnnouncementText(e.target.value)}
+                              className="w-full h-18 rounded-xl bg-slate-900/90 border border-blue-500/40 p-2 text-xs text-white outline-none resize-none"
+                            />
+                            <div className="flex justify-end gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setIsEditingAnnouncement(false)}
+                                className="px-2.5 py-1 rounded-lg text-xs text-slate-400 hover:text-white cursor-pointer"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                type="submit"
+                                className="px-3 py-1 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white cursor-pointer"
+                              >
+                                Save Announcement
+                              </button>
+                            </div>
+                          </form>
+                        ) : (
+                          <p className="text-xs text-slate-300 leading-relaxed">
+                            {pinnedAnnouncement.content}
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAnnouncementText("");
+                            setIsEditingAnnouncement(true);
+                            setPinnedAnnouncement({
+                              id: "new",
+                              title: "Pinned Announcement",
+                              content: "",
+                              authorName: authUser?.displayName || "Admin",
+                              date: "Now",
+                            });
+                          }}
+                          className="flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 transition cursor-pointer"
+                        >
+                          <Pin size={12} className="rotate-45" />
+                          <span>Pin an announcement</span>
+                        </button>
+                      </div>
+                    )}
 
                     {/* Feed Search & Sort Bar */}
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-[#111827] p-3 rounded-2xl border border-[#1f2937]">
