@@ -18,6 +18,7 @@ import {
   X,
   Send,
   Loader2,
+  Bookmark,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import LeftSidebar from "@/components/layout/LeftSidebar";
@@ -276,6 +277,31 @@ export default function ReelsPage() {
 
   const [shareToast, setShareToast] = useState<string | null>(null);
   const [followedAuthors, setFollowedAuthors] = useState<Record<string, boolean>>({});
+  const [savedReelIds, setSavedReelIds] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("saved_reel_ids");
+      if (stored) {
+        setSavedReelIds(JSON.parse(stored));
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const handleToggleSaveReel = (reelId: string) => {
+    const nextSaved = !savedReelIds[reelId];
+    const updated = { ...savedReelIds, [reelId]: nextSaved };
+    setSavedReelIds(updated);
+    try {
+      localStorage.setItem("saved_reel_ids", JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
+    setShareToast(nextSaved ? "Reel saved to bookmarks!" : "Reel removed from bookmarks");
+    setTimeout(() => setShareToast(null), 2500);
+  };
   const [showReactionPicker, setShowReactionPicker] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [reelComments, setReelComments] = useState<any[]>([]);
@@ -673,6 +699,28 @@ export default function ReelsPage() {
                   <Share2 size={22} />
                 </button>
                 <span className="text-[11px] font-bold drop-shadow-md">{currentReel.shares}</span>
+              </div>
+
+              {/* Bookmark / Save Button */}
+              <div className="flex flex-col items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => handleToggleSaveReel(currentReel.id)}
+                  className={`flex h-12 w-12 items-center justify-center rounded-full transition cursor-pointer shadow-lg ${
+                    savedReelIds[currentReel.id]
+                      ? "bg-amber-500 text-slate-900 border border-amber-400 scale-105"
+                      : "bg-black/50 text-white hover:bg-black/70"
+                  }`}
+                  title={savedReelIds[currentReel.id] ? "Saved to bookmarks" : "Save reel"}
+                >
+                  <Bookmark
+                    size={22}
+                    className={savedReelIds[currentReel.id] ? "fill-current" : ""}
+                  />
+                </button>
+                <span className="text-[10px] font-bold drop-shadow-md">
+                  {savedReelIds[currentReel.id] ? "Saved" : "Save"}
+                </span>
               </div>
 
               {/* Audio Spinner */}
