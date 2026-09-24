@@ -3,7 +3,7 @@
 import React, { useState, useEffect, use } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Flag, ThumbsUp, Plus, Globe, Send, MessageSquare, Image as ImageIcon, X, FileText, Info, ExternalLink, ShieldCheck, Mail, Share2, Check, Star } from "lucide-react";
+import { ArrowLeft, Flag, ThumbsUp, Plus, Globe, Send, MessageSquare, Image as ImageIcon, X, FileText, Info, ExternalLink, ShieldCheck, Mail, Share2, Check, Star, Clock, Phone } from "lucide-react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
@@ -558,6 +558,52 @@ export default function BrandPageDetailPage({ params }: PageProps) {
                           <p className="text-emerald-400 font-medium flex items-center gap-1">
                             <ShieldCheck size={13} /> Verified Page
                           </p>
+                        </div>
+                      </div>
+
+                      {/* Business Hours & Operating Status */}
+                      <div className="pt-4 border-t border-[#1f2937]/80 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+                            <Clock size={14} className="text-blue-400" />
+                            Business Hours & Operation
+                          </h4>
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-semibold">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                            Open Now
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                          <div className="p-3 rounded-xl bg-[#0f172a] border border-[#1f2937] space-y-1.5">
+                            <div className="flex justify-between text-slate-300">
+                              <span>Monday – Friday:</span>
+                              <span className="font-semibold text-white">9:00 AM – 6:00 PM</span>
+                            </div>
+                            <div className="flex justify-between text-slate-300">
+                              <span>Saturday:</span>
+                              <span className="font-semibold text-white">10:00 AM – 4:00 PM</span>
+                            </div>
+                            <div className="flex justify-between text-slate-400">
+                              <span>Sunday:</span>
+                              <span className="text-rose-400 font-medium">Closed</span>
+                            </div>
+                          </div>
+
+                          <div className="p-3 rounded-xl bg-[#0f172a] border border-[#1f2937] space-y-2">
+                            <div className="flex items-center gap-2 text-slate-300">
+                              <Phone size={13} className="text-blue-400 shrink-0" />
+                              <span className="text-[11px]">+1 (555) 019-2834</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-slate-300">
+                              <Mail size={13} className="text-blue-400 shrink-0" />
+                              <span className="text-[11px]">contact@{page.handle || "page"}.org</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-slate-400 text-[11px]">
+                              <Clock size={13} className="text-amber-400 shrink-0" />
+                              <span>Typically replies within 1 hour</span>
+                            </div>
+                          </div>
                         </div>
                       </div>
 
