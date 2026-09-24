@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { MessageSquare, Share2, Send, Heart, ShieldAlert, Globe, Users, Lock, EyeOff, Clock, Volume2, VolumeX, Languages } from "lucide-react";
+import { MessageSquare, Share2, Send, Heart, ShieldAlert, Globe, Users, Lock, EyeOff, Clock, Volume2, VolumeX, Languages, Copy, Check } from "lucide-react";
 import { PostType, usePostStore } from "@/store/postStore";
 import PostDropdown from "./PostDropdown";
 import ReactionPicker, { reactionsList } from "./ReactionPicker";
@@ -77,6 +77,14 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isTranslated, setIsTranslated] = useState(false);
   const [translating, setTranslating] = useState(false);
+  const [copiedText, setCopiedText] = useState(false);
+
+  const handleCopyPostText = () => {
+    if (!post.content) return;
+    navigator.clipboard.writeText(post.content);
+    setCopiedText(true);
+    setTimeout(() => setCopiedText(false), 2000);
+  };
 
   const handleToggleTranslation = () => {
     if (isTranslated) {
@@ -314,6 +322,25 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
                   >
                     {isSpeaking ? <VolumeX size={10} className="text-blue-400" /> : <Volume2 size={10} />}
                     <span>{isSpeaking ? "Speaking..." : "Listen"}</span>
+                  </button>
+                  <span>•</span>
+                  <button
+                    type="button"
+                    onClick={handleCopyPostText}
+                    className="text-[10px] px-1.5 py-0.5 rounded-md border bg-slate-800 text-slate-400 hover:text-slate-200 border-slate-700/60 inline-flex items-center gap-1 transition cursor-pointer"
+                    title="Copy post text to clipboard"
+                  >
+                    {copiedText ? (
+                      <>
+                        <Check size={10} className="text-emerald-400" />
+                        <span className="text-emerald-400">Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy size={10} />
+                        <span>Copy</span>
+                      </>
+                    )}
                   </button>
                 </>
               )}
