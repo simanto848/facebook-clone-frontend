@@ -3,11 +3,21 @@
 import React, { useEffect, useState } from "react";
 import SettingsSection from "@/components/features/settings/SettingsSection";
 import { Select, ToggleGroup, Switch, Button } from "@/components/ui";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Check } from "lucide-react";
 import { userService } from "@/services/userService";
+
+const ACCENT_COLORS = [
+  { id: "blue", label: "Facebook Blue", color: "#2563eb", bgClass: "bg-blue-600" },
+  { id: "emerald", label: "Emerald Green", color: "#10b981", bgClass: "bg-emerald-500" },
+  { id: "purple", label: "Royal Purple", color: "#8b5cf6", bgClass: "bg-purple-600" },
+  { id: "rose", label: "Crimson Rose", color: "#f43f5e", bgClass: "bg-rose-500" },
+  { id: "amber", label: "Amber Gold", color: "#f59e0b", bgClass: "bg-amber-500" },
+  { id: "cyan", label: "Cyan Neon", color: "#06b6d4", bgClass: "bg-cyan-500" },
+];
 
 export default function AppearanceSection() {
   const [theme, setTheme] = useState("dark");
+  const [accentColor, setAccentColor] = useState("blue");
   const [fontSize, setFontSize] = useState("medium");
   const [compactMode, setCompactMode] = useState(false);
   const [reduceMotion, setReduceMotion] = useState(false);
@@ -17,16 +27,25 @@ export default function AppearanceSection() {
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("app-theme") || "dark";
+    const savedAccent = localStorage.getItem("app-accent-color") || "blue";
     const savedSize = localStorage.getItem("app-fontsize") || "medium";
     const savedCompact = localStorage.getItem("app-compact") === "true";
     const savedMotion = localStorage.getItem("app-reduce-motion") === "true";
     const savedContrast = localStorage.getItem("app-high-contrast") === "true";
     setTheme(savedTheme);
+    setAccentColor(savedAccent);
+    document.documentElement.setAttribute("data-accent", savedAccent);
     setFontSize(savedSize);
     setCompactMode(savedCompact);
     setReduceMotion(savedMotion);
     setHighContrast(savedContrast);
   }, []);
+
+  const handleAccentChange = (accent: string) => {
+    setAccentColor(accent);
+    localStorage.setItem("app-accent-color", accent);
+    document.documentElement.setAttribute("data-accent", accent);
+  };
 
   const handleThemeChange = (newTheme: string) => {
     setTheme(newTheme);
@@ -66,6 +85,7 @@ export default function AppearanceSection() {
     setSavedSuccess(false);
     try {
       localStorage.setItem("app-theme", theme);
+      localStorage.setItem("app-accent-color", accentColor);
       localStorage.setItem("app-fontsize", fontSize);
       localStorage.setItem("app-compact", String(compactMode));
       localStorage.setItem("app-reduce-motion", String(reduceMotion));
@@ -109,6 +129,33 @@ export default function AppearanceSection() {
             value={theme}
             onChange={handleThemeChange}
           />
+        </div>
+
+        {/* Accent Color Swatches */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-semibold text-slate-300 block">Accent Color</label>
+            <span className="text-[11px] text-slate-400 capitalize">
+              {ACCENT_COLORS.find((c) => c.id === accentColor)?.label || "Blue"}
+            </span>
+          </div>
+          <div className="grid grid-cols-6 gap-2">
+            {ACCENT_COLORS.map((acc) => (
+              <button
+                key={acc.id}
+                type="button"
+                onClick={() => handleAccentChange(acc.id)}
+                className={`h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer ${acc.bgClass} ${
+                  accentColor === acc.id
+                    ? "ring-2 ring-white ring-offset-2 ring-offset-[#0f172a] scale-105 shadow-md shadow-black/50"
+                    : "opacity-80 hover:opacity-100 hover:scale-102"
+                }`}
+                title={acc.label}
+              >
+                {accentColor === acc.id && <Check size={14} className="text-white drop-shadow-md stroke-[3]" />}
+              </button>
+            ))}
+          </div>
         </div>
 
         <Select
