@@ -568,7 +568,12 @@ export default function CreatePost() {
             </div>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex items-center gap-3">
+            {content.trim().length > 0 && (
+              <span className="text-[11px] font-mono text-slate-400 bg-[#0f172a] px-2.5 py-1 rounded-full border border-[#1f2937]/70">
+                {content.length} chars • {content.trim().split(/\s+/).filter(Boolean).length} words
+              </span>
+            )}
             <button
               onClick={handlePost}
               disabled={submitting}
