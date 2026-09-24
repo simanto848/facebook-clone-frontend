@@ -7,7 +7,7 @@ import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
 import { usePostStore, mapBackendPostToPostType, PostType } from "@/store/postStore";
 import { useChatStore } from "@/store/chatStore";
-import { Search, Hash, Compass, User, Users, UserPlus, MessageSquare, Loader2, ArrowRight, History, Check, X, Filter, ArrowUpDown } from "lucide-react";
+import { Search, Hash, Compass, User, Users, UserPlus, MessageSquare, Loader2, ArrowRight, History, Check, X, Filter, ArrowUpDown, LayoutGrid, List } from "lucide-react";
 import { searchService } from "@/services/searchService";
 import { hashtagService } from "@/services/hashtagService";
 import { followService } from "@/services/followService";
@@ -34,6 +34,7 @@ export default function ExplorePage() {
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [postSort, setPostSort] = useState<"newest" | "popular">("newest");
   const [formatFilter, setFormatFilter] = useState<"all" | "media" | "text">("all");
+  const [postLayout, setPostLayout] = useState<"list" | "grid">("list");
   const [popularTags, setPopularTags] = useState<string[]>(defaultPopularTags);
   const [searching, setSearching] = useState(false);
   const [matchedUsers, setMatchedUsers] = useState<any[]>([]);
@@ -671,17 +672,38 @@ export default function ExplorePage() {
                         </button>
                       ))}
                     </div>
-                    <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
-                      <ArrowUpDown size={12} className="text-slate-400" />
-                      <span className="text-[11px] text-slate-500 font-medium">Sort:</span>
-                      <select
-                        value={postSort}
-                        onChange={(e) => setPostSort(e.target.value as any)}
-                        className="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg px-2 py-1 outline-none cursor-pointer"
-                      >
-                        <option value="newest">Newest First</option>
-                        <option value="popular">Most Popular</option>
-                      </select>
+                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                      <div className="flex items-center gap-1.5">
+                        <ArrowUpDown size={12} className="text-slate-400" />
+                        <span className="text-[11px] text-slate-500 font-medium">Sort:</span>
+                        <select
+                          value={postSort}
+                          onChange={(e) => setPostSort(e.target.value as any)}
+                          className="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg px-2 py-1 outline-none cursor-pointer"
+                        >
+                          <option value="newest">Newest First</option>
+                          <option value="popular">Most Popular</option>
+                        </select>
+                      </div>
+
+                      <div className="flex items-center gap-1 bg-slate-800/80 p-0.5 rounded-lg border border-slate-700/60">
+                        <button
+                          type="button"
+                          onClick={() => setPostLayout("list")}
+                          className={`p-1 rounded-md transition cursor-pointer ${postLayout === "list" ? "bg-blue-600 text-white shadow-xs" : "text-slate-400 hover:text-slate-200"}`}
+                          title="List View"
+                        >
+                          <List size={13} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPostLayout("grid")}
+                          className={`p-1 rounded-md transition cursor-pointer ${postLayout === "grid" ? "bg-blue-600 text-white shadow-xs" : "text-slate-400 hover:text-slate-200"}`}
+                          title="Grid View"
+                        >
+                          <LayoutGrid size={13} />
+                        </button>
+                      </div>
                     </div>
                   </div>
 
@@ -692,7 +714,7 @@ export default function ExplorePage() {
                       description={searchQuery ? `No posts matched your search for "${searchQuery}".` : "No posts found in this topic."}
                     />
                   ) : (
-                    <div className="space-y-6">
+                    <div className={postLayout === "grid" ? "grid grid-cols-1 md:grid-cols-2 gap-4 items-start" : "space-y-6"}>
                       {filteredPosts.map((post) => (
                         <PostCard key={post.id} post={post} />
                       ))}
@@ -776,9 +798,11 @@ export default function ExplorePage() {
                       description="Try selecting a different topic tag or adjusting your search phrase."
                     />
                   ) : (
-                    filteredPosts.map((post) => (
-                      <PostCard key={post.id} post={post} />
-                    ))
+                    <div className={postLayout === "grid" ? "grid grid-cols-1 md:grid-cols-2 gap-4 items-start" : "space-y-6"}>
+                      {filteredPosts.map((post) => (
+                        <PostCard key={post.id} post={post} />
+                      ))}
+                    </div>
                   )}
                 </div>
               )}
