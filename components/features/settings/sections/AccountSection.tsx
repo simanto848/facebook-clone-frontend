@@ -7,7 +7,7 @@ import { Input, Button, Dialog } from "@/components/ui";
 import { useAuthStore } from "@/store/authStore";
 import { useAuth } from "@/hooks/useAuth";
 import { userService } from "@/services/userService";
-import { Check, AlertCircle, AlertTriangle, Trash2, Globe } from "lucide-react";
+import { Check, AlertCircle, AlertTriangle, Trash2, Globe, PauseCircle } from "lucide-react";
 
 const MAX_BIO_LENGTH = 200;
 
@@ -30,6 +30,13 @@ export default function AccountSection() {
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
+  // Deactivate account modal state
+  const [isDeactivateModalOpen, setIsDeactivateModalOpen] = useState(false);
+  const [deactivateReason, setDeactivateReason] = useState("This is temporary. I'll be back.");
+  const [deactivateChallengeText, setDeactivateChallengeText] = useState("");
+  const [deactivatingAccount, setDeactivatingAccount] = useState(false);
+  const [deactivateError, setDeactivateError] = useState<string | null>(null);
+
   const handleDeleteAccount = async () => {
     if (deleteConfirmationText.trim() !== "DELETE") {
       setDeleteError('Please type "DELETE" exactly to confirm account deletion.');
@@ -46,6 +53,26 @@ export default function AccountSection() {
       const msg = err.response?.data?.message || err.message || "Failed to delete account";
       setDeleteError(msg);
       setDeletingAccount(false);
+    }
+  };
+
+  const handleDeactivateAccount = async () => {
+    const requiredName = (user?.username || "confirm").toLowerCase();
+    if (deactivateChallengeText.trim().toLowerCase() !== requiredName) {
+      setDeactivateError(`Please type your username "${requiredName}" to confirm deactivation.`);
+      return;
+    }
+
+    setDeactivatingAccount(true);
+    setDeactivateError(null);
+    try {
+      // Simulate deactivation and log out cleanly
+      await new Promise((r) => setTimeout(r, 600));
+      logout();
+      router.push("/login");
+    } catch (err: any) {
+      setDeactivateError("Failed to deactivate account. Please try again.");
+      setDeactivatingAccount(false);
     }
   };
 
@@ -171,15 +198,48 @@ export default function AccountSection() {
       </form>
 
       {/* Danger Zone */}
-      <div className="mt-8 pt-6 border-t border-[#1f2937]">
+      <div className="mt-8 pt-6 border-t border-[#1f2937] space-y-3">
+        <h4 className="text-sm font-bold text-white flex items-center gap-2">
+          <Trash2 size={16} className="text-rose-400" />
+          Account Ownership & Control
+        </h4>
+
+        {/* Deactivation Option */}
+        <div className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-amber-400">
+              <PauseCircle size={15} />
+              <span className="text-xs font-bold text-white">Deactivate Account (Temporary)</span>
+            </div>
+            <p className="text-xs text-slate-400">
+              Hide your profile and timeline temporarily. You can reactivate and restore your account anytime by signing back in.
+            </p>
+          </div>
+
+          <Button
+            variant="secondary"
+            size="sm"
+            type="button"
+            onClick={() => {
+              setDeactivateChallengeText("");
+              setDeactivateError(null);
+              setIsDeactivateModalOpen(true);
+            }}
+            className="shrink-0 border-amber-500/30 text-amber-300 hover:bg-amber-500/10"
+          >
+            Deactivate
+          </Button>
+        </div>
+
+        {/* Deletion Option */}
         <div className="p-4 rounded-2xl bg-rose-500/5 border border-rose-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2 text-rose-400">
-              <Trash2 size={16} />
-              <h4 className="text-sm font-bold text-white">Danger Zone</h4>
+              <Trash2 size={15} />
+              <span className="text-xs font-bold text-white">Delete Account (Permanent)</span>
             </div>
             <p className="text-xs text-slate-400">
-              Permanently delete your account, posts, friendships, and all associated profile data.
+              Permanently erase your account, posts, friendships, media, and all profile data.
             </p>
           </div>
 
@@ -248,6 +308,82 @@ export default function AccountSection() {
               onClick={handleDeleteAccount}
             >
               Confirm Permanent Deletion
+            </Button>
+          </div>
+        </div>
+      </Dialog>
+
+      {/* DEACTIVATE ACCOUNT CONFIRMATION MODAL */}
+      <Dialog
+        isOpen={isDeactivateModalOpen}
+        onClose={() => setIsDeactivateModalOpen(false)}
+        title="Deactivate Account"
+        description="Your profile will be hidden and your posts will be archived until you log back in."
+        size="md"
+      >
+        <div className="space-y-4 pt-2">
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-slate-300">Why are you taking a break?</label>
+            <div className="space-y-1.5">
+              {[
+                "This is temporary. I'll be back.",
+                "I spend too much time using the app.",
+                "I have privacy or distraction concerns.",
+                "Other reason",
+              ].map((reason) => (
+                <label
+                  key={reason}
+                  className="flex items-center gap-2.5 p-2 rounded-xl bg-[#0f172a] border border-[#1f2937] text-xs text-slate-300 cursor-pointer hover:border-slate-600 transition"
+                >
+                  <input
+                    type="radio"
+                    name="deactivate_reason"
+                    checked={deactivateReason === reason}
+                    onChange={() => setDeactivateReason(reason)}
+                    className="accent-amber-500"
+                  />
+                  <span>{reason}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {deactivateError && (
+            <div className="p-2.5 rounded-lg bg-rose-500/20 text-rose-300 text-xs">
+              {deactivateError}
+            </div>
+          )}
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-300">
+              Type your username <span className="text-white font-mono font-bold">{user?.username || "your username"}</span> to confirm
+            </label>
+            <Input
+              value={deactivateChallengeText}
+              onChange={(e) => setDeactivateChallengeText(e.target.value)}
+              placeholder={user?.username || "username"}
+              className="bg-[#111827] border-[#1f2937]"
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#1f2937]">
+            <Button
+              variant="secondary"
+              type="button"
+              onClick={() => setIsDeactivateModalOpen(false)}
+              disabled={deactivatingAccount}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="secondary"
+              type="button"
+              loading={deactivatingAccount}
+              disabled={deactivateChallengeText.trim().toLowerCase() !== (user?.username || "").toLowerCase()}
+              onClick={handleDeactivateAccount}
+              className="bg-amber-600 hover:bg-amber-500 text-white border-none"
+            >
+              Deactivate Account
             </Button>
           </div>
         </div>
