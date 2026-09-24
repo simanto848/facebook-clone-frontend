@@ -5,7 +5,7 @@ import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
 import Link from "next/link";
-import { Bookmark, BookmarkX, Search, X, Tag, Download, Check, Image as ImageIcon, Video, FileText, BarChart2, AlignLeft, Trash2, AlertTriangle, ArrowUpDown, LayoutGrid, List } from "lucide-react";
+import { Bookmark, BookmarkX, Search, X, Tag, Download, Check, Image as ImageIcon, Video, FileText, BarChart2, AlignLeft, Trash2, AlertTriangle, ArrowUpDown, LayoutGrid, List, FileSpreadsheet } from "lucide-react";
 import { bookmarkService } from "@/services/bookmarkService";
 import { mapBackendPostToPostType, PostType, usePostStore } from "@/store/postStore";
 import { PageHeader, Badge, EmptyState, Loader } from "@/components/ui";
@@ -43,6 +43,32 @@ export default function SavedPostsPage() {
     const a = document.createElement("a");
     a.href = url;
     a.download = `facebook-bookmarks-export-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setCopiedExport(true);
+    setTimeout(() => setCopiedExport(false), 3000);
+  };
+
+  const handleExportCSV = () => {
+    if (savedPosts.length === 0) return;
+    const headers = ["ID", "Author", "Content", "Category", "Type", "MediaCount", "CreatedAt"];
+    const rows = savedPosts.map((p) => [
+      `"${p.id}"`,
+      `"${(p.author?.name || p.author?.username || "Unknown").replace(/"/g, '""')}"`,
+      `"${(p.content || "").replace(/"/g, '""').replace(/\n/g, ' ')}"`,
+      `"${p.category || "discussions"}"`,
+      `"${p.type}"`,
+      p.images?.length || 0,
+      `"${p.createdAt || ""}"`,
+    ]);
+    const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `facebook-bookmarks-export-${new Date().toISOString().slice(0, 10)}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -216,7 +242,16 @@ export default function SavedPostsPage() {
                         title="Export bookmarks as JSON"
                       >
                         {copiedExport ? <Check size={13} className="text-emerald-400" /> : <Download size={13} />}
-                        <span>{copiedExport ? "Exported!" : "Export"}</span>
+                        <span>Export JSON</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleExportCSV}
+                        className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer"
+                        title="Export bookmarks as CSV spreadsheet"
+                      >
+                        <FileSpreadsheet size={13} className="text-emerald-400" />
+                        <span>Export CSV</span>
                       </button>
                       <button
                         type="button"
