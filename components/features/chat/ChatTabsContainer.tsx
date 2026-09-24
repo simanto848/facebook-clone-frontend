@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { X, Minimize2, Maximize2, Send, Phone, Video, MoreVertical, BellOff, Trash2, User, ThumbsUp } from "lucide-react";
+import { X, Minimize2, Maximize2, Send, Phone, Video, MoreVertical, BellOff, Trash2, User, ThumbsUp, ExternalLink } from "lucide-react";
 import { useChatStore, ChatBox } from "@/store/chatStore";
 import { Avatar, Button, Input } from "@/components/ui";
 import { CallModal } from "./CallModal";
@@ -82,17 +82,28 @@ function ChatTab({ box }: { box: ChatBox }) {
                   router.push(`/profile/${box.id}`);
                   setShowMenu(false);
                 }}
-                className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-slate-300 hover:bg-[#1f2937] hover:text-white transition text-left"
+                className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-slate-300 hover:bg-[#1f2937] hover:text-white transition text-left cursor-pointer"
               >
                 <User size={13} />
                 <span>View Profile</span>
               </button>
               <button
                 onClick={() => {
+                  useChatStore.getState().setActiveConversationId(box.id);
+                  router.push("/messages");
+                  setShowMenu(false);
+                }}
+                className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-slate-300 hover:bg-[#1f2937] hover:text-white transition text-left cursor-pointer"
+              >
+                <ExternalLink size={13} />
+                <span>Open in Messenger</span>
+              </button>
+              <button
+                onClick={() => {
                   alert("Muted notifications.");
                   setShowMenu(false);
                 }}
-                className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-slate-300 hover:bg-[#1f2937] hover:text-white transition text-left"
+                className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-slate-300 hover:bg-[#1f2937] hover:text-white transition text-left cursor-pointer"
               >
                 <BellOff size={13} />
                 <span>Mute Notifications</span>
@@ -104,7 +115,7 @@ function ChatTab({ box }: { box: ChatBox }) {
                   }
                   setShowMenu(false);
                 }}
-                className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-rose-400 hover:bg-rose-500/10 transition text-left"
+                className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-rose-400 hover:bg-rose-500/10 transition text-left cursor-pointer"
               >
                 <Trash2 size={13} />
                 <span>Clear Chat History</span>
@@ -114,7 +125,7 @@ function ChatTab({ box }: { box: ChatBox }) {
                   closeChat(box.id);
                   setShowMenu(false);
                 }}
-                className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-slate-300 hover:bg-[#1f2937] hover:text-white transition text-left"
+                className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-slate-300 hover:bg-[#1f2937] hover:text-white transition text-left cursor-pointer"
               >
                 <X size={13} />
                 <span>Close Chat</span>
@@ -138,21 +149,31 @@ function ChatTab({ box }: { box: ChatBox }) {
               <>
                 <button
                   onClick={() => useChatStore.getState().startCall({ id: box.id, name: box.name, avatar: box.avatar }, "audio")}
-                  className="hover:text-blue-400 p-1 rounded-md transition"
+                  className="hover:text-blue-400 p-1 rounded-md transition cursor-pointer"
                   title="Audio call"
                 >
                   <Phone size={14} />
                 </button>
                 <button
                   onClick={() => useChatStore.getState().startCall({ id: box.id, name: box.name, avatar: box.avatar }, "video")}
-                  className="hover:text-blue-400 p-1 rounded-md transition"
+                  className="hover:text-blue-400 p-1 rounded-md transition cursor-pointer"
                   title="Video call"
                 >
                   <Video size={14} />
                 </button>
                 <button
+                  onClick={() => {
+                    useChatStore.getState().setActiveConversationId(box.id);
+                    router.push("/messages");
+                  }}
+                  className="hover:text-blue-400 p-1 rounded-md transition cursor-pointer"
+                  title="Open in full Messenger"
+                >
+                  <ExternalLink size={13} />
+                </button>
+                <button
                   onClick={() => setShowMenu(!showMenu)}
-                  className="hover:text-white p-1 rounded-md transition"
+                  className="hover:text-white p-1 rounded-md transition cursor-pointer"
                   title="More options"
                 >
                   <MoreVertical size={14} />
@@ -161,14 +182,14 @@ function ChatTab({ box }: { box: ChatBox }) {
             )}
             <button
               onClick={() => toggleCollapse(box.id)}
-              className="hover:text-white p-1 rounded-md transition"
+              className="hover:text-white p-1 rounded-md transition cursor-pointer"
               title={box.isCollapsed ? "Expand" : "Minimize"}
             >
               {box.isCollapsed ? <Maximize2 size={13} /> : <Minimize2 size={13} />}
             </button>
             <button
               onClick={() => closeChat(box.id)}
-              className="hover:text-red-400 p-1 rounded-md transition"
+              className="hover:text-red-400 p-1 rounded-md transition cursor-pointer"
               title="Close chat"
             >
               <X size={14} />
