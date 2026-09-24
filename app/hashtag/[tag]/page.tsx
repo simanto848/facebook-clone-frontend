@@ -6,7 +6,7 @@ import Link from "next/link";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
-import { Hash, Flame, Bell, Loader2, Sparkles, TrendingUp, Check, Send, Plus, Clock, Image as ImageIcon, FileText, Filter } from "lucide-react";
+import { Hash, Flame, Bell, Loader2, Sparkles, TrendingUp, Check, Send, Plus, Clock, Image as ImageIcon, FileText, Filter, Share2, Search, X } from "lucide-react";
 import { usePostStore, mapBackendPostToPostType, PostType } from "@/store/postStore";
 import { useAuthStore } from "@/store/authStore";
 import { hashtagService } from "@/services/hashtagService";
@@ -25,11 +25,21 @@ export default function HashtagPage() {
   const [hashtagPosts, setHashtagPosts] = useState<PostType[]>([]);
   const [sortBy, setSortBy] = useState<"top" | "latest">("latest");
   const [mediaFilter, setMediaFilter] = useState<"all" | "media" | "text">("all");
+  const [tagSearchQuery, setTagSearchQuery] = useState("");
+  const [copiedLink, setCopiedLink] = useState(false);
   const [trendingTopics, setTrendingTopics] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [newPostText, setNewPostText] = useState("");
   const [isPosting, setIsPosting] = useState(false);
   const [postError, setPostError] = useState<string | null>(null);
+
+  const handleShareTag = () => {
+    if (typeof window !== "undefined") {
+      navigator.clipboard.writeText(window.location.href);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2500);
+    }
+  };
 
   const handleCreateTagPost = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -200,6 +210,14 @@ export default function HashtagPage() {
   });
 
   const displayedPosts = sortedHashtagPosts.filter((post) => {
+    if (tagSearchQuery.trim()) {
+      const q = tagSearchQuery.toLowerCase().trim();
+      const matches =
+        post.content.toLowerCase().includes(q) ||
+        post.author.name.toLowerCase().includes(q) ||
+        (post.author.username && post.author.username.toLowerCase().includes(q));
+      if (!matches) return false;
+    }
     if (mediaFilter === "media") {
       return (post.images && post.images.length > 0) || Boolean(post.video) || post.type === "image" || post.type === "video";
     }
@@ -231,14 +249,24 @@ export default function HashtagPage() {
                 </div>
               }
               actions={
-                <Button
-                  variant={following ? "secondary" : "primary"}
-                  size="sm"
-                  leftIcon={following ? <Check size={14} className="text-emerald-400" /> : <Bell size={14} />}
-                  onClick={handleToggleFollow}
-                >
-                  {following ? "Following Topic" : "Follow Topic"}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    leftIcon={copiedLink ? <Check size={14} className="text-emerald-400" /> : <Share2 size={14} />}
+                    onClick={handleShareTag}
+                  >
+                    {copiedLink ? "Copied Link" : "Share Topic"}
+                  </Button>
+                  <Button
+                    variant={following ? "secondary" : "primary"}
+                    size="sm"
+                    leftIcon={following ? <Check size={14} className="text-emerald-400" /> : <Bell size={14} />}
+                    onClick={handleToggleFollow}
+                  >
+                    {following ? "Following Topic" : "Follow Topic"}
+                  </Button>
+                </div>
               }
             />
 
@@ -404,6 +432,27 @@ export default function HashtagPage() {
                     <TrendingUp size={12} />
                     <span>Top</span>
                   </button>
+                </div>
+
+                {/* Search in topic */}
+                <div className="relative">
+                  <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder={`Search #${tag}...`}
+                    value={tagSearchQuery}
+                    onChange={(e) => setTagSearchQuery(e.target.value)}
+                    className="pl-7 pr-6 py-1 rounded-xl bg-[#111827] border border-[#1f2937] text-xs text-white placeholder:text-slate-500 outline-none focus:border-blue-500 transition w-36 sm:w-44"
+                  />
+                  {tagSearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setTagSearchQuery("")}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                    >
+                      <X size={12} />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
