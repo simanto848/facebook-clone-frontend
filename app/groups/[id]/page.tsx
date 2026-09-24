@@ -4,7 +4,7 @@ import React, { useState, useEffect, use } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Users, Shield, Plus, Check, UserPlus, Crown, MessageSquare, Info, ShieldCheck, Share2, Flag, Search, X, Clock, Flame, Filter, Pin, Megaphone, Pencil } from "lucide-react";
+import { ArrowLeft, Users, Shield, Plus, Check, UserPlus, Crown, MessageSquare, Info, ShieldCheck, Share2, Flag, Search, X, Clock, Flame, Filter, Pin, Megaphone, Pencil, Link as LinkIcon, Copy } from "lucide-react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
@@ -64,6 +64,7 @@ export default function GroupDetailPage({ params }: PageProps) {
   const [inviteSearch, setInviteSearch] = useState("");
   const [invitedIds, setInvitedIds] = useState<string[]>([]);
   const [loadingFriends, setLoadingFriends] = useState(false);
+  const [copiedInviteLink, setCopiedInviteLink] = useState(false);
   const [postContent, setPostContent] = useState("");
   const [isPosting, setIsPosting] = useState(false);
   const [postError, setPostError] = useState<string | null>(null);
@@ -972,6 +973,41 @@ export default function GroupDetailPage({ params }: PageProps) {
                   size="md"
                 >
                   <div className="space-y-3 pt-2 text-xs">
+                    {/* Shareable Invite Link Bar */}
+                    <div className="p-3 rounded-xl bg-[#0f172a] border border-[#1f2937] space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-semibold text-slate-300 flex items-center gap-1.5">
+                          <LinkIcon size={12} className="text-blue-400" /> Shareable Invite Link
+                        </span>
+                        {copiedInviteLink && (
+                          <span className="text-[10px] text-emerald-400 font-medium">Copied to clipboard!</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          readOnly
+                          value={typeof window !== "undefined" ? `${window.location.origin}/groups/${id}` : `/groups/${id}`}
+                          className="flex-1 bg-[#111827] border border-[#374151]/60 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 font-mono select-all outline-none"
+                        />
+                        <Button
+                          variant={copiedInviteLink ? "success" : "secondary"}
+                          size="sm"
+                          leftIcon={copiedInviteLink ? <Check size={13} /> : <Copy size={13} />}
+                          onClick={() => {
+                            if (typeof window !== "undefined") {
+                              navigator.clipboard.writeText(`${window.location.origin}/groups/${id}`);
+                              setCopiedInviteLink(true);
+                              setTimeout(() => setCopiedInviteLink(false), 2500);
+                            }
+                          }}
+                          className="shrink-0"
+                        >
+                          {copiedInviteLink ? "Copied" : "Copy Link"}
+                        </Button>
+                      </div>
+                    </div>
+
                     {/* Search Input */}
                     <div className="relative">
                       <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
