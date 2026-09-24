@@ -23,6 +23,7 @@ import {
 interface BrandPage {
   id: string;
   name: string;
+  handle?: string;
   category: string;
   description: string;
   likes: number;
@@ -37,6 +38,7 @@ const samplePages: BrandPage[] = [
   {
     id: "p1",
     name: "React Engineering Daily",
+    handle: "reactdaily",
     category: "Software & Technology",
     description: "Daily insights into React Server Components, state management, and modern Web APIs.",
     likes: 42300,
@@ -47,6 +49,7 @@ const samplePages: BrandPage[] = [
   {
     id: "p2",
     name: "Glassmorphism UI Labs",
+    handle: "glassmorphism_ui",
     category: "Design & Arts",
     description: "Inspiration and code snippets for modern glass translucent UI components.",
     likes: 18900,
@@ -74,6 +77,7 @@ export default function PagesHubPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [name, setName] = useState("");
+  const [handle, setHandle] = useState("");
   const [category, setCategory] = useState("Software & Technology");
   const [description, setDescription] = useState("");
   const [website, setWebsite] = useState("");
@@ -203,6 +207,7 @@ export default function PagesHubPage() {
       const newPage: BrandPage = {
         id: created.id || `p_${Date.now()}`,
         name: created.name || name.trim(),
+        handle: handle.trim() || undefined,
         category,
         description: description.trim(),
         likes: 1,
@@ -213,6 +218,7 @@ export default function PagesHubPage() {
       setPages((prev) => [newPage, ...prev]);
       setShowCreateModal(false);
       setName("");
+      setHandle("");
       setDescription("");
       setWebsite("");
       setAvatarUrl("");
@@ -389,7 +395,10 @@ export default function PagesHubPage() {
                             <Link href={`/pages/${p.id}`} className="hover:text-blue-400 transition cursor-pointer">
                               <h3 className="text-sm font-bold text-white truncate hover:underline">{p.name}</h3>
                             </Link>
-                            <div className="flex items-center gap-1.5 mt-0.5">
+                            <p className="text-[11px] text-slate-400 font-mono truncate">
+                              @{p.handle || p.name.toLowerCase().replace(/[^a-z0-9]/g, "_").slice(0, 20)}
+                            </p>
+                            <div className="flex items-center gap-1.5 mt-1">
                               <Badge variant="primary" size="sm">{p.category}</Badge>
                               {p.website && (
                                 <a
@@ -466,8 +475,22 @@ export default function PagesHubPage() {
             label="Page Name"
             placeholder="e.g. NextJS Developers"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              setName(val);
+              if (!handle || handle === name.toLowerCase().replace(/[^a-z0-9]/g, "_").slice(0, 30)) {
+                setHandle(val.toLowerCase().replace(/[^a-z0-9]/g, "_").slice(0, 30));
+              }
+            }}
             required
+          />
+
+          <Input
+            label="Page Handle / Username"
+            placeholder="e.g. nextjs_developers"
+            value={handle}
+            onChange={(e) => setHandle(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
+            helperText={handle ? `@${handle}` : "Unique URL identifier for your brand page"}
           />
 
           <Select
