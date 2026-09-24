@@ -78,6 +78,11 @@ export default function BrandPageDetailPage({ params }: PageProps) {
   const [newRating, setNewRating] = useState(5);
   const [newReviewComment, setNewReviewComment] = useState("");
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
+  const [selectedRatingFilter, setSelectedRatingFilter] = useState<number | null>(null);
+
+  const filteredReviews = selectedRatingFilter
+    ? reviews.filter((r) => r.rating === selectedRatingFilter)
+    : reviews;
 
   const handleAddReview = (e: React.FormEvent) => {
     e.preventDefault();
@@ -736,36 +741,78 @@ export default function BrandPageDetailPage({ params }: PageProps) {
 
                     {/* Community Reviews List */}
                     <div className="space-y-3">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                        Recent Community Reviews ({reviews.length})
-                      </h4>
-                      {reviews.map((rev) => (
-                        <Card key={rev.id}>
-                          <CardContent className="p-4 space-y-2">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2.5">
-                                <Avatar src={rev.avatar} name={rev.author} size="sm" />
-                                <div>
-                                  <span className="text-xs font-semibold text-white block">{rev.author}</span>
-                                  <span className="text-[10px] text-slate-400">{rev.date}</span>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                          Community Reviews ({filteredReviews.length})
+                        </h4>
+                        {/* Rating Filter Chips */}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedRatingFilter(null)}
+                            className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition ${
+                              selectedRatingFilter === null
+                                ? "bg-blue-600 text-white shadow-xs"
+                                : "bg-[#0f172a] border border-[#1f2937] text-slate-400 hover:text-white"
+                            }`}
+                          >
+                            All ({reviews.length})
+                          </button>
+                          {[5, 4, 3, 2, 1].map((rating) => {
+                            const count = reviews.filter((r) => r.rating === rating).length;
+                            return (
+                              <button
+                                key={rating}
+                                type="button"
+                                onClick={() => setSelectedRatingFilter(selectedRatingFilter === rating ? null : rating)}
+                                className={`px-2 py-1 rounded-lg text-[11px] font-medium inline-flex items-center gap-1 transition ${
+                                  selectedRatingFilter === rating
+                                    ? "bg-amber-500/20 border border-amber-500/50 text-amber-300 shadow-xs"
+                                    : "bg-[#0f172a] border border-[#1f2937] text-slate-400 hover:text-white"
+                                }`}
+                              >
+                                <span>{rating}</span>
+                                <Star size={10} className="text-amber-400 fill-amber-400" />
+                                <span className="text-[10px] text-slate-500">({count})</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {filteredReviews.length === 0 ? (
+                        <div className="p-6 text-center rounded-xl bg-[#0f172a] border border-[#1f2937] text-slate-400 text-xs">
+                          No reviews found with {selectedRatingFilter} stars.
+                        </div>
+                      ) : (
+                        filteredReviews.map((rev) => (
+                          <Card key={rev.id}>
+                            <CardContent className="p-4 space-y-2">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2.5">
+                                  <Avatar src={rev.avatar} name={rev.author} size="sm" />
+                                  <div>
+                                    <span className="text-xs font-semibold text-white block">{rev.author}</span>
+                                    <span className="text-[10px] text-slate-400">{rev.date}</span>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-0.5">
+                                  {[1, 2, 3, 4, 5].map((s) => (
+                                    <Star
+                                      key={s}
+                                      size={13}
+                                      className={s <= rev.rating ? "text-amber-400 fill-amber-400" : "text-slate-700"}
+                                    />
+                                  ))}
                                 </div>
                               </div>
-                              <div className="flex items-center gap-0.5">
-                                {[1, 2, 3, 4, 5].map((s) => (
-                                  <Star
-                                    key={s}
-                                    size={13}
-                                    className={s <= rev.rating ? "text-amber-400 fill-amber-400" : "text-slate-700"}
-                                  />
-                                ))}
-                              </div>
-                            </div>
-                            <p className="text-xs text-slate-300 leading-relaxed pl-10">
-                              {rev.comment}
-                            </p>
-                          </CardContent>
-                        </Card>
-                      ))}
+                              <p className="text-xs text-slate-300 leading-relaxed pl-10">
+                                {rev.comment}
+                              </p>
+                            </CardContent>
+                          </Card>
+                        ))
+                      )}
                     </div>
                   </div>
                 )}
