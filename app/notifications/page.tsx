@@ -15,7 +15,7 @@ import {
   Volume2,
   VolumeX
 } from "lucide-react";
-import { Avatar, Badge, Button, EmptyState, Tabs } from "@/components/ui";
+import { Avatar, Badge, Button, EmptyState, Tabs, Dialog } from "@/components/ui";
 import { notificationService } from "@/services/notificationService";
 
 export interface NotificationItem {
@@ -94,6 +94,7 @@ export default function NotificationsPage() {
   const [markingAll, setMarkingAll] = useState(false);
   const [readBanner, setReadBanner] = useState<string | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   useEffect(() => {
     try {
@@ -320,15 +321,16 @@ export default function NotificationsPage() {
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
             Refresh
           </Button>
-          {readCount > 0 && (
+          {notifications.length > 0 && (
             <Button
               variant="outline"
               size="sm"
-              onClick={handleClearReadNotifications}
+              onClick={() => setShowClearConfirm(true)}
               className="flex items-center gap-1.5 rounded-xl text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border-border/40"
+              title="Clear all notifications"
             >
               <Trash2 className="w-3.5 h-3.5" />
-              Clear Read
+              Clear All
             </Button>
           )}
           <Button
@@ -464,6 +466,36 @@ export default function NotificationsPage() {
           ))
         )}
       </div>
+
+      {/* Clear All Confirmation Dialog */}
+      <Dialog
+        isOpen={showClearConfirm}
+        onClose={() => setShowClearConfirm(false)}
+        title="Clear All Notifications"
+      >
+        <div className="space-y-4 pt-2">
+          <p className="text-xs text-slate-300 leading-relaxed">
+            Are you sure you want to permanently clear all <strong>{notifications.length}</strong> notifications from your inbox? This action cannot be reversed.
+          </p>
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#1f2937]">
+            <Button variant="ghost" size="sm" onClick={() => setShowClearConfirm(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => {
+                setNotifications([]);
+                setShowClearConfirm(false);
+                setReadBanner("All notifications have been cleared.");
+                setTimeout(() => setReadBanner(null), 3000);
+              }}
+            >
+              Clear All Notifications
+            </Button>
+          </div>
+        </div>
+      </Dialog>
     </div>
   );
 }
