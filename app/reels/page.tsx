@@ -84,8 +84,20 @@ export default function ReelsPage() {
   const [soundBadge, setSoundBadge] = useState<"muted" | "unmuted" | null>(null);
   const [isPlaying, setIsPlaying] = useState(true);
   const [isAutoplay, setIsAutoplay] = useState(true);
+  const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
   const [heartAnim, setHeartAnim] = useState<{ id: number; x: number; y: number } | null>(null);
   const lastClickTimeRef = useRef<number>(0);
+
+  const cyclePlaybackSpeed = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const speeds = [0.5, 1, 1.25, 1.5, 2];
+    const nextIndex = (speeds.indexOf(playbackSpeed) + 1) % speeds.length;
+    const nextSpeed = speeds[nextIndex];
+    setPlaybackSpeed(nextSpeed);
+    if (videoRef.current) {
+      videoRef.current.playbackRate = nextSpeed;
+    }
+  };
 
   const toggleSound = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -108,6 +120,12 @@ export default function ReelsPage() {
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const currentReel = reels[activeReelIndex] || reels[0];
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.playbackRate = playbackSpeed;
+    }
+  }, [playbackSpeed, activeReelIndex]);
 
   const handleVideoClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const now = Date.now();
@@ -474,6 +492,14 @@ export default function ReelsPage() {
                 <span className="text-[11px] font-mono font-bold bg-black/50 px-2.5 py-1 rounded-full text-slate-300">
                   {activeReelIndex + 1} / {reels.length}
                 </span>
+                <button
+                  type="button"
+                  onClick={cyclePlaybackSpeed}
+                  className="px-2.5 py-1 rounded-full text-[11px] font-mono font-bold transition cursor-pointer backdrop-blur-md bg-black/50 text-slate-200 hover:text-white hover:bg-black/75 border border-white/10"
+                  title="Cycle Playback Speed (0.5x, 1x, 1.25x, 1.5x, 2x)"
+                >
+                  {playbackSpeed}x
+                </button>
                 <button
                   type="button"
                   onClick={toggleSound}
