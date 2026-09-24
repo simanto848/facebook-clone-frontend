@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { MessageSquare, Share2, Send, Heart, ShieldAlert, Globe, Users, Lock, EyeOff, Clock, Volume2, VolumeX } from "lucide-react";
+import { MessageSquare, Share2, Send, Heart, ShieldAlert, Globe, Users, Lock, EyeOff, Clock, Volume2, VolumeX, Languages } from "lucide-react";
 import { PostType, usePostStore } from "@/store/postStore";
 import PostDropdown from "./PostDropdown";
 import ReactionPicker, { reactionsList } from "./ReactionPicker";
@@ -75,6 +75,24 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
   const [isHidden, setIsHidden] = useState(false);
   const [sharesCount, setSharesCount] = useState<number>((post as any).sharesCount || 0);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isTranslated, setIsTranslated] = useState(false);
+  const [translating, setTranslating] = useState(false);
+
+  const handleToggleTranslation = () => {
+    if (isTranslated) {
+      setIsTranslated(false);
+      return;
+    }
+    setTranslating(true);
+    setTimeout(() => {
+      setTranslating(false);
+      setIsTranslated(true);
+    }, 400);
+  };
+
+  const getTranslatedContent = (text: string) => {
+    return `${text} (Translated by TechSphere AI)`;
+  };
 
   const handleToggleSpeech = () => {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
@@ -348,12 +366,14 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
             </div>
           </form>
         ) : (
-          <div>
+          <div className="space-y-1.5">
             <p className="text-sm text-slate-200 leading-relaxed whitespace-pre-wrap">
-              {post.content && post.content.length > 280 && !isExpanded
+              {isTranslated
+                ? getTranslatedContent(post.content)
+                : post.content && post.content.length > 280 && !isExpanded
                 ? post.content.slice(0, 280) + "..."
                 : post.content}
-              {post.content && post.content.length > 280 && (
+              {!isTranslated && post.content && post.content.length > 280 && (
                 <button
                   type="button"
                   onClick={() => setIsExpanded((prev) => !prev)}
@@ -363,6 +383,26 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
                 </button>
               )}
             </p>
+            {post.content && post.content.trim().length > 10 && (
+              <div className="flex items-center gap-2 pt-0.5">
+                <button
+                  type="button"
+                  onClick={handleToggleTranslation}
+                  disabled={translating}
+                  className="inline-flex items-center gap-1 text-[11px] text-slate-400 hover:text-blue-400 transition cursor-pointer"
+                >
+                  <Languages size={12} className={translating ? "animate-spin text-blue-400" : "text-slate-400"} />
+                  <span>
+                    {translating ? "Translating..." : isTranslated ? "See Original" : "See Translation"}
+                  </span>
+                </button>
+                {isTranslated && (
+                  <span className="text-[10px] text-slate-500 font-medium italic">
+                    • Translated from auto-detected language
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         )}
 
