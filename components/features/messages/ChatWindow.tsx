@@ -17,6 +17,7 @@ import {
   Trash2,
   MoreVertical,
   ThumbsUp,
+  Reply,
 } from "lucide-react";
 import Image from "next/image";
 import { useState, useEffect, useRef } from "react";
@@ -42,6 +43,7 @@ export default function ChatWindow() {
   const [editingMsgIndex, setEditingMsgIndex] = useState<number | null>(null);
   const [editText, setEditText] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<{ sender: string; text: string } | null>(null);
 
   const handleQuickLike = () => {
     if (!activeConversation) return;
@@ -157,10 +159,14 @@ export default function ChatWindow() {
       });
     }
 
-    const content = attachment ? attachment.url : messageText;
+    let content = attachment ? attachment.url : messageText;
+    if (replyingTo && !attachment) {
+      content = `[Replying to ${replyingTo.sender}: "${replyingTo.text.slice(0, 50)}${replyingTo.text.length > 50 ? "..." : ""}"]\n${content}`;
+    }
     sendDirectMessage(activeConversation.id, content);
     setMessageText("");
     setAttachment(null);
+    setReplyingTo(null);
   };
 
   if (!activeConversation) {
@@ -466,7 +472,21 @@ export default function ChatWindow() {
                               : "rounded-bl-none bg-[#1f2937]"
                           }`}
                         >
-                          {highlightChatMatch(msg.text, inChatSearchQuery)}
+                          {(() => {
+                            const replyMatch = msg.text.match(/^\[Replying to ([^:]+): "([^"]*)"\]\n([\s\S]*)$/);
+                            if (replyMatch) {
+                              return (
+                                <div>
+                                  <div className="mb-1.5 px-2.5 py-1 rounded-lg bg-black/25 border-l-2 border-white/70 text-[11px] text-slate-200">
+                                    <span className="font-semibold text-white">{replyMatch[1]}: </span>
+                                    <span className="italic">{replyMatch[2]}</span>
+                                  </div>
+                                  <p>{highlightChatMatch(replyMatch[3], inChatSearchQuery)}</p>
+                                </div>
+                              );
+                            }
+                            return highlightChatMatch(msg.text, inChatSearchQuery);
+                          })()}
                         </div>
                       )}
 
@@ -489,6 +509,23 @@ export default function ChatWindow() {
                       <div className={`flex items-center gap-1 px-1 text-[10px] text-slate-500 ${isMe ? "justify-end" : "justify-start"}`}>
                         <span>{msg.time}</span>
                         {msg.isEdited && <span className="text-slate-400 font-medium">(edited)</span>}
+
+                        {/* Reply Action Trigger */}
+                        {isHovered && !msg.isDeleted && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setReplyingTo({
+                                sender: isMe ? "You" : activeConversation.name,
+                                text: msg.text,
+                              })
+                            }
+                            className="p-0.5 text-slate-400 hover:text-blue-400 transition cursor-pointer"
+                            title="Reply to message"
+                          >
+                            <Reply size={12} />
+                          </button>
+                        )}
 
                         {/* Edit & Delete Action Triggers for Sent Messages */}
                         {isMe && !msg.isDeleted && isHovered && (
@@ -543,6 +580,27 @@ export default function ChatWindow() {
 
           {/* INPUT */}
           <div className="border-t border-[#1f2937] p-4 shrink-0 bg-[#111827]">
+            {/* Replying To Banner */}
+            {replyingTo && (
+              <div className="mb-2 px-3 py-1.5 rounded-xl bg-[#162032] border border-blue-500/40 flex items-center justify-between animate-in fade-in duration-150">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Reply size={13} className="text-blue-400 shrink-0" />
+                  <div className="min-w-0 text-xs">
+                    <span className="font-semibold text-blue-400">Replying to {replyingTo.sender}: </span>
+                    <span className="text-slate-300 italic truncate max-w-xs inline-block align-bottom">{replyingTo.text}</span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setReplyingTo(null)}
+                  className="p-1 text-slate-400 hover:text-white rounded-md transition cursor-pointer"
+                  title="Cancel reply"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            )}
+
             {/* Attachment Preview Banner */}
             {attachment && (
               <div className="mb-3 flex items-center justify-between p-2 rounded-xl bg-[#1f2937] border border-blue-500/30">
