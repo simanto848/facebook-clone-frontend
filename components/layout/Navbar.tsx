@@ -17,6 +17,8 @@ import {
   Palette,
   Trash2,
   X,
+  Sun,
+  Moon,
 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
@@ -207,6 +209,11 @@ export default function Navbar() {
     setActiveDropdown(null);
   };
 
+  const toggleQuickTheme = () => {
+    const nextTheme = currentTheme === "light" ? "dark" : "light";
+    changeTheme(nextTheme);
+  };
+
   const toggleDropdown = (type: "profile" | "notifications" | "messages" | "theme") => {
     setActiveDropdown((prev) => (prev === type ? null : type));
   };
@@ -350,6 +357,20 @@ export default function Navbar() {
 
         {/* Actions Dropdown Group */}
         <div className="flex items-center gap-3" ref={containerRef}>
+          {/* Quick Dark/Light Theme Toggle */}
+          <button
+            type="button"
+            onClick={toggleQuickTheme}
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1f2937] text-slate-300 hover:bg-[#2a3447] transition cursor-pointer"
+            title={currentTheme === "light" ? "Switch to Dark Mode" : "Switch to Light Mode"}
+          >
+            {currentTheme === "light" ? (
+              <Moon size={18} className="text-blue-400" />
+            ) : (
+              <Sun size={18} className="text-amber-400" />
+            )}
+          </button>
+
           {/* Theme Dropdown */}
           <div className="relative">
             <button
