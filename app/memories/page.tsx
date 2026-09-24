@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
-import { Sparkles, Calendar, Share2, Check, Users, Heart, Search, X, Download, Copy } from "lucide-react";
+import { Sparkles, Calendar, Share2, Check, Users, Heart, Search, X, Download, Copy, Star } from "lucide-react";
 import Image from "next/image";
 import { memoryService } from "@/services/memoryService";
 import { postService } from "@/services/postService";
@@ -79,7 +79,40 @@ export default function MemoriesPage() {
   const [customCaption, setCustomCaption] = useState("");
   const [isSharing, setIsSharing] = useState(false);
   const [copiedSummary, setCopiedSummary] = useState(false);
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const { createPost } = usePostStore();
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("favorite_memories");
+      if (stored) {
+        setFavoriteIds(new Set(JSON.parse(stored)));
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const toggleFavorite = (memoryId: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setFavoriteIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(memoryId)) {
+        next.delete(memoryId);
+        setToastMessage("Removed memory from favorites.");
+      } else {
+        next.add(memoryId);
+        setToastMessage("Starred memory added to favorites!");
+      }
+      try {
+        localStorage.setItem("favorite_memories", JSON.stringify(Array.from(next)));
+      } catch {
+        // ignore
+      }
+      setTimeout(() => setToastMessage(null), 2500);
+      return next;
+    });
+  };
 
   const handleExportMemories = () => {
     if (memories.length === 0) return;
@@ -223,6 +256,7 @@ export default function MemoriesPage() {
 
   const memoryTabs = [
     { id: "all", label: "All Memories" },
+    { id: "favorites", label: `Starred (${favoriteIds.size})` },
     { id: "1yr", label: "1 Year Ago" },
     { id: "2yr", label: "2 Years Ago" },
     { id: "3yr_plus", label: "3+ Years Ago" },
@@ -246,6 +280,7 @@ export default function MemoriesPage() {
       const actualYear = isNaN(memYear) ? new Date().getFullYear() - m.yearsAgo : memYear;
       if (String(actualYear) !== selectedYear) return false;
     }
+    if (activeFilter === "favorites") return favoriteIds.has(m.id);
     if (activeFilter === "1yr") return m.yearsAgo === 1;
     if (activeFilter === "2yr") return m.yearsAgo === 2;
     if (activeFilter === "3yr_plus") return m.yearsAgo >= 3;
@@ -401,14 +436,28 @@ export default function MemoriesPage() {
                             </Badge>
                           )}
                         </div>
-                        <Button
-                          variant={sharedMap[m.id] ? "success" : "secondary"}
-                          size="sm"
-                          leftIcon={sharedMap[m.id] ? <Check size={13} /> : <Share2 size={13} />}
-                          onClick={() => setActiveShareMemory(m)}
-                        >
-                          {sharedMap[m.id] ? "Shared to Feed!" : "Share Memory"}
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={(e) => toggleFavorite(m.id, e)}
+                            className={`p-1.5 rounded-lg border transition cursor-pointer ${
+                              favoriteIds.has(m.id)
+                                ? "bg-amber-500/20 border-amber-500/40 text-amber-400 hover:bg-amber-500/30"
+                                : "bg-slate-800/80 border-slate-700/60 text-slate-400 hover:text-amber-300 hover:bg-slate-700"
+                            }`}
+                            title={favoriteIds.has(m.id) ? "Unstar memory" : "Star memory as favorite"}
+                          >
+                            <Star size={14} className={favoriteIds.has(m.id) ? "fill-amber-400" : ""} />
+                          </button>
+                          <Button
+                            variant={sharedMap[m.id] ? "success" : "secondary"}
+                            size="sm"
+                            leftIcon={sharedMap[m.id] ? <Check size={13} /> : <Share2 size={13} />}
+                            onClick={() => setActiveShareMemory(m)}
+                          >
+                            {sharedMap[m.id] ? "Shared to Feed!" : "Share Memory"}
+                          </Button>
+                        </div>
                       </div>
 
                       {m.type === "friendship" ? (
