@@ -24,6 +24,7 @@ export default function CreatePost() {
   const [images, setImages] = useState<string[]>([]);
   const [imageUrlInput, setImageUrlInput] = useState("");
   const [imageError, setImageError] = useState<string | null>(null);
+  const [imageFilter, setImageFilter] = useState("normal");
   const [videoUrl, setVideoUrl] = useState("");
   const [pollQuestion, setPollQuestion] = useState("");
   const [pollOptions, setPollOptions] = useState<string[]>(["", ""]);
@@ -103,6 +104,7 @@ export default function CreatePost() {
     setType("text");
     setFeeling(null);
     setImages([]);
+    setImageFilter("normal");
     setVideoUrl("");
     setPollQuestion("");
     setPollOptions(["", ""]);
@@ -229,20 +231,62 @@ export default function CreatePost() {
 
                 {/* Attached Images Grid */}
                 {images.length > 0 && (
-                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 pt-1">
-                    {images.map((img, idx) => (
-                      <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border border-slate-700 group bg-slate-900">
-                        <img src={img} alt="" className="h-full w-full object-cover" />
+                  <div className="space-y-2 pt-1">
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+                      <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mr-1">Filter:</span>
+                      {[
+                        { id: "normal", label: "Normal" },
+                        { id: "noir", label: "Noir" },
+                        { id: "vintage", label: "Vintage" },
+                        { id: "vivid", label: "Vivid" },
+                        { id: "warm", label: "Warm" },
+                        { id: "cool", label: "Cool" },
+                      ].map((preset) => (
                         <button
+                          key={preset.id}
                           type="button"
-                          onClick={() => removeImage(idx)}
-                          className="absolute top-1 right-1 p-1 rounded-full bg-black/75 hover:bg-rose-600 text-white transition cursor-pointer shadow-md"
-                          title="Remove image"
+                          onClick={() => setImageFilter(preset.id)}
+                          className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold transition cursor-pointer ${
+                            imageFilter === preset.id
+                              ? "bg-blue-600 text-white shadow-xs"
+                              : "bg-[#111827] text-slate-400 border border-[#1f2937] hover:text-white"
+                          }`}
                         >
-                          <X size={12} />
+                          {preset.label}
                         </button>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
+
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                      {images.map((img, idx) => {
+                        const filterCss: Record<string, string> = {
+                          normal: "none",
+                          noir: "grayscale(100%) contrast(120%)",
+                          vintage: "sepia(70%) contrast(90%) brightness(95%)",
+                          vivid: "saturate(160%) contrast(115%)",
+                          warm: "sepia(35%) saturate(135%) brightness(105%)",
+                          cool: "hue-rotate(180deg) saturate(120%)",
+                        };
+                        return (
+                          <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border border-slate-700 group bg-slate-900">
+                            <img
+                              src={img}
+                              alt=""
+                              style={{ filter: filterCss[imageFilter] || "none" }}
+                              className="h-full w-full object-cover transition-all duration-300"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeImage(idx)}
+                              className="absolute top-1 right-1 p-1 rounded-full bg-black/75 hover:bg-rose-600 text-white transition cursor-pointer shadow-md"
+                              title="Remove image"
+                            >
+                              <X size={12} />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </div>
