@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { MessageSquare, Share2, Send, Heart, ShieldAlert, Globe, Users, Lock, EyeOff, Clock, Volume2, VolumeX, Languages, Copy, Check } from "lucide-react";
+import { MessageSquare, Share2, Send, Heart, ShieldAlert, Globe, Users, Lock, EyeOff, Eye, Clock, Volume2, VolumeX, Languages, Copy, Check } from "lucide-react";
 import { PostType, usePostStore } from "@/store/postStore";
 import PostDropdown from "./PostDropdown";
 import ReactionPicker, { reactionsList } from "./ReactionPicker";
@@ -299,6 +299,19 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
               <div className="flex items-center gap-1">
                 {getVisibilityIcon(post.visibility)}
               </div>
+              <span>•</span>
+              <span
+                className="text-[10px] px-1.5 py-0.5 rounded-md bg-slate-800 text-slate-400 border border-slate-700/60 inline-flex items-center gap-1"
+                title={`${((post as any).views || ((post.reactions ? Object.values(post.reactions).reduce((a, b) => a + b, 0) : 0) * 12 + 42)).toLocaleString()} views`}
+              >
+                <Eye size={10} className="text-slate-400" />
+                <span>
+                  {(() => {
+                    const views = (post as any).views || ((post.reactions ? Object.values(post.reactions).reduce((a, b) => a + b, 0) : 0) * 12 + 42);
+                    return views >= 1000 ? `${(views / 1000).toFixed(1)}k` : views;
+                  })()}
+                </span>
+              </span>
               {wordCount >= 50 && (
                 <>
                   <span>•</span>
