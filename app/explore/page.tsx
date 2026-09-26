@@ -35,6 +35,7 @@ export default function ExplorePage() {
   const [postSort, setPostSort] = useState<"newest" | "popular">("newest");
   const [formatFilter, setFormatFilter] = useState<"all" | "media" | "text">("all");
   const [postLayout, setPostLayout] = useState<"list" | "grid">("list");
+  const [entityLayout, setEntityLayout] = useState<"list" | "grid">("list");
   const [popularTags, setPopularTags] = useState<string[]>(defaultPopularTags);
   const [searching, setSearching] = useState(false);
   const [matchedUsers, setMatchedUsers] = useState<any[]>([]);
@@ -453,42 +454,117 @@ export default function ExplorePage() {
                     description={searchQuery ? "No community members match your search criteria." : "Type a name or handle above to find people."}
                   />
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {matchedUsers.map((u) => {
-                      const name = `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.username || "Member";
-                      const avatar = u.profilePicture || u.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100";
-                      const isFollowing = followedUserIds.has(u.id);
-                      return (
-                        <Card key={u.id} hover className="p-4 flex items-center justify-between gap-3">
-                          <Link href={`/profile/${u.username || u.id}`} className="flex items-center gap-3 min-w-0 cursor-pointer">
-                            <Avatar src={avatar} name={name} size="md" />
-                            <div className="min-w-0">
-                              <h4 className="text-xs font-bold text-white truncate hover:underline">{name}</h4>
-                              <p className="text-[11px] text-slate-400 truncate">@{u.username || "user"}</p>
-                            </div>
-                          </Link>
-                          <div className="flex gap-1.5 shrink-0 items-center">
-                            <Button
-                              size="sm"
-                              variant={isFollowing ? "secondary" : "primary"}
-                              loading={actionLoading === `follow-${u.id}`}
-                              leftIcon={isFollowing ? <Check size={12} /> : <UserPlus size={12} />}
-                              onClick={() => handleToggleFollow(u.id)}
-                            >
-                              {isFollowing ? "Following" : "Follow"}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => openChat({ id: u.id, name, avatar })}
-                              className="text-slate-300 hover:text-white"
-                            >
-                              <MessageSquare size={13} />
-                            </Button>
-                          </div>
-                        </Card>
-                      );
-                    })}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between pb-1">
+                      <span className="text-xs text-slate-400">
+                        Found <strong className="text-blue-400">{matchedUsers.length}</strong> community {matchedUsers.length === 1 ? "member" : "members"}
+                      </span>
+                      <div className="flex items-center rounded-lg bg-[#111827] p-0.5 border border-[#1f2937]">
+                        <button
+                          type="button"
+                          onClick={() => setEntityLayout("list")}
+                          className={`p-1 rounded-md transition cursor-pointer ${
+                            entityLayout === "list" ? "bg-blue-600 text-white shadow-xs" : "text-slate-400 hover:text-slate-200"
+                          }`}
+                          title="Compact List View"
+                        >
+                          <List size={13} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEntityLayout("grid")}
+                          className={`p-1 rounded-md transition cursor-pointer ${
+                            entityLayout === "grid" ? "bg-blue-600 text-white shadow-xs" : "text-slate-400 hover:text-slate-200"
+                          }`}
+                          title="Expanded Grid Cards View"
+                        >
+                          <LayoutGrid size={13} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {entityLayout === "grid" ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                        {matchedUsers.map((u) => {
+                          const name = `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.username || "Member";
+                          const avatar = u.profilePicture || u.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100";
+                          const isFollowing = followedUserIds.has(u.id);
+                          return (
+                            <Card key={u.id} hover className="overflow-hidden flex flex-col text-center border-[#1f2937]">
+                              <div className="h-16 bg-gradient-to-r from-blue-600/30 via-indigo-600/30 to-purple-600/30 relative" />
+                              <div className="px-4 pb-4 pt-0 -mt-8 flex flex-col items-center flex-1 justify-between">
+                                <Link href={`/profile/${u.username || u.id}`} className="group flex flex-col items-center">
+                                  <div className="p-1 rounded-full bg-[#111827] ring-2 ring-[#1f2937] group-hover:ring-blue-500 transition">
+                                    <Avatar src={avatar} name={name} size="lg" />
+                                  </div>
+                                  <h4 className="text-xs font-bold text-white mt-2 group-hover:text-blue-400 transition truncate max-w-[160px]">{name}</h4>
+                                  <p className="text-[11px] text-slate-400 truncate max-w-[140px]">@{u.username || "user"}</p>
+                                </Link>
+                                <div className="flex gap-2 w-full mt-4 pt-3 border-t border-[#1f2937]/60">
+                                  <Button
+                                    size="sm"
+                                    variant={isFollowing ? "secondary" : "primary"}
+                                    loading={actionLoading === `follow-${u.id}`}
+                                    leftIcon={isFollowing ? <Check size={12} /> : <UserPlus size={12} />}
+                                    onClick={() => handleToggleFollow(u.id)}
+                                    className="flex-1 text-xs"
+                                  >
+                                    {isFollowing ? "Following" : "Follow"}
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => openChat({ id: u.id, name, avatar })}
+                                    className="text-slate-300 hover:text-white px-2.5 border border-[#1f2937]"
+                                    title="Send Message"
+                                  >
+                                    <MessageSquare size={13} />
+                                  </Button>
+                                </div>
+                              </div>
+                            </Card>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {matchedUsers.map((u) => {
+                          const name = `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.username || "Member";
+                          const avatar = u.profilePicture || u.avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100";
+                          const isFollowing = followedUserIds.has(u.id);
+                          return (
+                            <Card key={u.id} hover className="p-4 flex items-center justify-between gap-3">
+                              <Link href={`/profile/${u.username || u.id}`} className="flex items-center gap-3 min-w-0 cursor-pointer">
+                                <Avatar src={avatar} name={name} size="md" />
+                                <div className="min-w-0">
+                                  <h4 className="text-xs font-bold text-white truncate hover:underline">{name}</h4>
+                                  <p className="text-[11px] text-slate-400 truncate">@{u.username || "user"}</p>
+                                </div>
+                              </Link>
+                              <div className="flex gap-1.5 shrink-0 items-center">
+                                <Button
+                                  size="sm"
+                                  variant={isFollowing ? "secondary" : "primary"}
+                                  loading={actionLoading === `follow-${u.id}`}
+                                  leftIcon={isFollowing ? <Check size={12} /> : <UserPlus size={12} />}
+                                  onClick={() => handleToggleFollow(u.id)}
+                                >
+                                  {isFollowing ? "Following" : "Follow"}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => openChat({ id: u.id, name, avatar })}
+                                  className="text-slate-300 hover:text-white"
+                                >
+                                  <MessageSquare size={13} />
+                                </Button>
+                              </div>
+                            </Card>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 )
               ) : activeCategory === "groups" ? (
@@ -500,37 +576,106 @@ export default function ExplorePage() {
                       description={`No groups matched your search for "${searchQuery}".`}
                     />
                   ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {matchedGroups.map((g) => {
-                        const isJoined = joinedGroupIds.has(g.id);
-                        return (
-                          <Card key={g.id} hover className="p-4 flex items-center justify-between gap-3">
-                            <Link href={`/groups/${g.id}`} className="flex items-center gap-3 min-w-0 cursor-pointer">
-                              <Avatar src={g.coverImage || g.avatar} name={g.name} size="md" />
-                              <div className="min-w-0">
-                                <h4 className="text-xs font-bold text-white truncate hover:underline">{g.name}</h4>
-                                <p className="text-[11px] text-slate-400 truncate">{g.category || "Community"}</p>
-                              </div>
-                            </Link>
-                            <div className="flex gap-1.5 shrink-0 items-center">
-                              <Button
-                                size="sm"
-                                variant={isJoined ? "secondary" : "primary"}
-                                loading={actionLoading === `group-${g.id}`}
-                                leftIcon={isJoined ? <Check size={12} /> : <Users size={12} />}
-                                onClick={() => handleToggleGroupJoin(g.id)}
-                              >
-                                {isJoined ? "Joined" : "Join"}
-                              </Button>
-                              <Link href={`/groups/${g.id}`}>
-                                <Button size="sm" variant="ghost">
-                                  View
-                                </Button>
-                              </Link>
-                            </div>
-                          </Card>
-                        );
-                      })}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between pb-1">
+                        <span className="text-xs text-slate-400">
+                          Found <strong className="text-blue-400">{matchedGroups.length}</strong> matching {matchedGroups.length === 1 ? "group" : "groups"}
+                        </span>
+                        <div className="flex items-center rounded-lg bg-[#111827] p-0.5 border border-[#1f2937]">
+                          <button
+                            type="button"
+                            onClick={() => setEntityLayout("list")}
+                            className={`p-1 rounded-md transition cursor-pointer ${
+                              entityLayout === "list" ? "bg-blue-600 text-white shadow-xs" : "text-slate-400 hover:text-slate-200"
+                            }`}
+                            title="Compact List View"
+                          >
+                            <List size={13} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEntityLayout("grid")}
+                            className={`p-1 rounded-md transition cursor-pointer ${
+                              entityLayout === "grid" ? "bg-blue-600 text-white shadow-xs" : "text-slate-400 hover:text-slate-200"
+                            }`}
+                            title="Expanded Grid Cards View"
+                          >
+                            <LayoutGrid size={13} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {entityLayout === "grid" ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                          {matchedGroups.map((g) => {
+                            const isJoined = joinedGroupIds.has(g.id);
+                            return (
+                              <Card key={g.id} hover className="overflow-hidden flex flex-col text-center border-[#1f2937]">
+                                <div className="h-16 bg-gradient-to-r from-emerald-600/30 via-teal-600/30 to-blue-600/30 relative" />
+                                <div className="px-4 pb-4 pt-0 -mt-8 flex flex-col items-center flex-1 justify-between">
+                                  <Link href={`/groups/${g.id}`} className="group flex flex-col items-center">
+                                    <div className="p-1 rounded-2xl bg-[#111827] ring-2 ring-[#1f2937] group-hover:ring-emerald-500 transition">
+                                      <Avatar src={g.coverImage || g.avatar} name={g.name} size="lg" />
+                                    </div>
+                                    <h4 className="text-xs font-bold text-white mt-2 group-hover:text-emerald-400 transition truncate max-w-[160px]">{g.name}</h4>
+                                    <p className="text-[11px] text-slate-400 truncate max-w-[140px]">{g.category || "Community"}</p>
+                                  </Link>
+                                  <div className="flex gap-2 w-full mt-4 pt-3 border-t border-[#1f2937]/60">
+                                    <Button
+                                      size="sm"
+                                      variant={isJoined ? "secondary" : "primary"}
+                                      loading={actionLoading === `group-${g.id}`}
+                                      leftIcon={isJoined ? <Check size={12} /> : <Users size={12} />}
+                                      onClick={() => handleToggleGroupJoin(g.id)}
+                                      className="flex-1 text-xs"
+                                    >
+                                      {isJoined ? "Joined" : "Join"}
+                                    </Button>
+                                    <Link href={`/groups/${g.id}`}>
+                                      <Button size="sm" variant="ghost" className="px-3 border border-[#1f2937] text-xs">
+                                        View
+                                      </Button>
+                                    </Link>
+                                  </div>
+                                </div>
+                              </Card>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {matchedGroups.map((g) => {
+                            const isJoined = joinedGroupIds.has(g.id);
+                            return (
+                              <Card key={g.id} hover className="p-4 flex items-center justify-between gap-3">
+                                <Link href={`/groups/${g.id}`} className="flex items-center gap-3 min-w-0 cursor-pointer">
+                                  <Avatar src={g.coverImage || g.avatar} name={g.name} size="md" />
+                                  <div className="min-w-0">
+                                    <h4 className="text-xs font-bold text-white truncate hover:underline">{g.name}</h4>
+                                    <p className="text-[11px] text-slate-400 truncate">{g.category || "Community"}</p>
+                                  </div>
+                                </Link>
+                                <div className="flex gap-1.5 shrink-0 items-center">
+                                  <Button
+                                    size="sm"
+                                    variant={isJoined ? "secondary" : "primary"}
+                                    loading={actionLoading === `group-${g.id}`}
+                                    leftIcon={isJoined ? <Check size={12} /> : <Users size={12} />}
+                                    onClick={() => handleToggleGroupJoin(g.id)}
+                                  >
+                                    {isJoined ? "Joined" : "Join"}
+                                  </Button>
+                                  <Link href={`/groups/${g.id}`}>
+                                    <Button size="sm" variant="ghost">
+                                      View
+                                    </Button>
+                                  </Link>
+                                </div>
+                              </Card>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   )
                 ) : (
