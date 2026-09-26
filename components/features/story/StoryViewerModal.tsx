@@ -40,7 +40,25 @@ export function StoryViewerModal({
   const [progress, setProgress] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
+  const [floatingReactions, setFloatingReactions] = useState<{ id: number; emoji: string }[]>([]);
+  const [reactionToast, setReactionToast] = useState<string | null>(null);
   const currentStory = stories[currentIndex];
+
+  const handleQuickReaction = (emoji: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const id = Date.now();
+    setFloatingReactions((prev) => [...prev, { id, emoji }]);
+    setReactionToast(`Sent ${emoji} to ${currentStory.author.name}`);
+    if (emoji === "❤️" && onLike) {
+      onLike(currentStory.id);
+    }
+    setTimeout(() => {
+      setFloatingReactions((prev) => prev.filter((r) => r.id !== id));
+    }, 1400);
+    setTimeout(() => {
+      setReactionToast(null);
+    }, 2200);
+  };
 
   useEffect(() => {
     if (!isOpen || !currentStory) return;
@@ -226,25 +244,58 @@ export function StoryViewerModal({
           )}
         </div>
 
-        {/* Footer Actions */}
+        {/* Floating animated reactions */}
+        {floatingReactions.map((r) => (
+          <div
+            key={r.id}
+            className="absolute bottom-28 right-8 z-40 text-4xl pointer-events-none animate-bounce"
+          >
+            {r.emoji}
+          </div>
+        ))}
+
+        {reactionToast && (
+          <div className="absolute top-14 left-1/2 -translate-x-1/2 z-30 px-3.5 py-1.5 rounded-full bg-black/80 backdrop-blur-md border border-white/20 text-white text-xs font-medium shadow-xl pointer-events-none animate-in fade-in duration-200">
+            {reactionToast}
+          </div>
+        )}
+
+        {/* Footer Quick Reactions & Actions */}
         <div
-          className="flex items-center justify-between z-20 border-t border-white/10 pt-3"
+          className="z-20 border-t border-white/10 pt-2 space-y-2"
           onMouseDown={(e) => e.stopPropagation()}
           onTouchStart={(e) => e.stopPropagation()}
         >
-          <div className="flex items-center gap-2 text-xs text-slate-300">
-            <Eye size={14} />
-            <span>{currentStory.views || 12} views</span>
+          {/* Quick Reaction Emoji Bar */}
+          <div className="flex items-center justify-center gap-2">
+            {["❤️", "🔥", "😂", "😮", "😢", "👏"].map((emoji) => (
+              <button
+                key={emoji}
+                type="button"
+                onClick={(e) => handleQuickReaction(emoji, e)}
+                className="text-lg p-1.5 rounded-full bg-black/40 hover:bg-white/25 hover:scale-125 active:scale-95 transition-all cursor-pointer shadow-md"
+                title={`React with ${emoji}`}
+              >
+                {emoji}
+              </button>
+            ))}
           </div>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            leftIcon={<Heart size={16} className={currentStory.hasLiked ? "fill-red-500 text-red-500" : "text-white"} />}
-            onClick={() => onLike?.(currentStory.id)}
-          >
-            {currentStory.likes || 0}
-          </Button>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs text-slate-300">
+              <Eye size={14} />
+              <span>{currentStory.views || 12} views</span>
+            </div>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              leftIcon={<Heart size={16} className={currentStory.hasLiked ? "fill-red-500 text-red-500" : "text-white"} />}
+              onClick={() => onLike?.(currentStory.id)}
+            >
+              {currentStory.likes || 0}
+            </Button>
+          </div>
         </div>
       </div>
     </Dialog>
