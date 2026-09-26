@@ -106,6 +106,24 @@ export default function EventsPage() {
     }
   };
 
+  const handleAddToGoogleCalendar = (e: TechEvent) => {
+    const title = encodeURIComponent(e.title || "Event");
+    const details = encodeURIComponent(e.description || "");
+    const location = encodeURIComponent(e.location || "");
+    let start = new Date();
+    if (e.date) {
+      const parsed = new Date(e.date);
+      if (!isNaN(parsed.getTime())) start = parsed;
+    }
+    const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
+    const formatGCalDate = (date: Date) => date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+    const dates = `${formatGCalDate(start)}/${formatGCalDate(end)}`;
+    const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&location=${location}&dates=${dates}`;
+    if (typeof window !== "undefined") {
+      window.open(gcalUrl, "_blank", "noopener,noreferrer");
+    }
+  };
+
   const handleExportIcs = () => {
     const targetEvents = events.filter((e) => rsvps[e.id] === "going" || rsvps[e.id] === "interested");
     const listToExport = targetEvents.length > 0 ? targetEvents : filteredEvents;
@@ -627,6 +645,15 @@ export default function EventsPage() {
                             title={reminders[event.id] ? "Reminder active (click to remove)" : "Set event notification reminder"}
                           >
                             {reminders[event.id] ? <BellRing size={14} className="text-amber-400" /> : <Bell size={14} />}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="px-2.5 text-slate-400 hover:text-blue-400"
+                            onClick={() => handleAddToGoogleCalendar(event)}
+                            title="Add to Google Calendar"
+                          >
+                            <Calendar size={14} />
                           </Button>
                           <Link
                             href={`/events/${event.id}`}

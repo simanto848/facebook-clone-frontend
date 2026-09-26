@@ -327,13 +327,50 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
     const title = encodeURIComponent(event.title || "Event");
     const details = encodeURIComponent(event.description || "");
     const location = encodeURIComponent(event.location || "");
-    const start = event.startTime ? new Date(event.startTime) : new Date();
-    const end = event.endTime ? new Date(event.endTime) : new Date(start.getTime() + 2 * 60 * 60 * 1000);
+    let start = new Date();
+    if (event.startTime) {
+      const parsed = new Date(event.startTime);
+      if (!isNaN(parsed.getTime())) start = parsed;
+    } else if (event.startDate) {
+      const parsed = new Date(event.startDate);
+      if (!isNaN(parsed.getTime())) start = parsed;
+    }
+    let end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
+    if (event.endTime) {
+      const parsed = new Date(event.endTime);
+      if (!isNaN(parsed.getTime())) end = parsed;
+    }
     const formatGCalDate = (date: Date) => date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
     const dates = `${formatGCalDate(start)}/${formatGCalDate(end)}`;
     const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&location=${location}&dates=${dates}`;
     if (typeof window !== "undefined") {
       window.open(gcalUrl, "_blank", "noopener,noreferrer");
+    }
+  };
+
+  const handleAddToOutlookCalendar = () => {
+    if (!event) return;
+    const title = encodeURIComponent(event.title || "Event");
+    const details = encodeURIComponent(event.description || "");
+    const location = encodeURIComponent(event.location || "");
+    let start = new Date();
+    if (event.startTime) {
+      const parsed = new Date(event.startTime);
+      if (!isNaN(parsed.getTime())) start = parsed;
+    } else if (event.startDate) {
+      const parsed = new Date(event.startDate);
+      if (!isNaN(parsed.getTime())) start = parsed;
+    }
+    let end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
+    if (event.endTime) {
+      const parsed = new Date(event.endTime);
+      if (!isNaN(parsed.getTime())) end = parsed;
+    }
+    const startISO = encodeURIComponent(start.toISOString());
+    const endISO = encodeURIComponent(end.toISOString());
+    const outlookUrl = `https://outlook.live.com/calendar/0/deeplink/compose?subject=${title}&body=${details}&location=${location}&startdt=${startISO}&enddt=${endISO}`;
+    if (typeof window !== "undefined") {
+      window.open(outlookUrl, "_blank", "noopener,noreferrer");
     }
   };
 
@@ -657,6 +694,16 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
                         className="flex-1 sm:flex-none border border-slate-700/60 text-slate-300 hover:text-white"
                       >
                         {reminderSet ? "Reminder On" : "Remind Me"}
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="md"
+                        leftIcon={<Calendar size={16} className="text-blue-400" />}
+                        onClick={handleAddToGoogleCalendar}
+                        className="flex-1 sm:flex-none border border-slate-700/60 text-slate-300 hover:text-white"
+                        title="Add event to Google Calendar"
+                      >
+                        Add to Google Cal
                       </Button>
                     </div>
                   </CardContent>
