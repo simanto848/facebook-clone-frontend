@@ -38,6 +38,7 @@ export default function ChatWindow() {
   const [attachment, setAttachment] = useState<{ url: string; type: "image" | "video" | "file" } | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [inChatSearchQuery, setInChatSearchQuery] = useState("");
+  const [inChatSearchSender, setInChatSearchSender] = useState<"all" | "me" | "them">("all");
 
   const [hoveredMsgIndex, setHoveredMsgIndex] = useState<number | null>(null);
   const [editingMsgIndex, setEditingMsgIndex] = useState<number | null>(null);
@@ -98,10 +99,16 @@ export default function ChatWindow() {
     (c) => c.id === activeConversationId
   );
 
-  const displayedMessages = (activeConversation?.messages || []).filter((m) => {
-    if (!inChatSearchQuery.trim()) return true;
-    return m.text?.toLowerCase().includes(inChatSearchQuery.toLowerCase().trim());
-  });
+  const displayedMessages = (activeConversation?.messages || [])
+    .map((msg, originalIndex) => ({ ...msg, originalIndex }))
+    .filter((m) => {
+      if (inChatSearchSender !== "all") {
+        if (inChatSearchSender === "me" && m.sender !== "me") return false;
+        if (inChatSearchSender === "them" && m.sender === "me") return false;
+      }
+      if (!inChatSearchQuery.trim()) return true;
+      return m.text?.toLowerCase().includes(inChatSearchQuery.toLowerCase().trim());
+    });
 
   const highlightChatMatch = (text: string, query: string) => {
     if (!query.trim()) return text;
@@ -230,9 +237,12 @@ export default function ChatWindow() {
                 onClick={() => {
                   const nextState = !isSearchOpen;
                   setIsSearchOpen(nextState);
-                  if (!nextState) setInChatSearchQuery("");
+                  if (!nextState) {
+                    setInChatSearchQuery("");
+                    setInChatSearchSender("all");
+                  }
                 }}
-                className={`hidden sm:flex h-10 w-10 items-center justify-center rounded-xl transition cursor-pointer ${
+                className={`flex h-10 w-10 items-center justify-center rounded-xl transition cursor-pointer ${
                   isSearchOpen
                     ? "bg-blue-600/30 text-blue-400 border border-blue-500/40"
                     : "bg-[#1f2937] text-slate-400 hover:bg-[#263247] hover:text-white"
@@ -293,38 +303,68 @@ export default function ChatWindow() {
 
           {/* IN-CONVERSATION SEARCH BAR */}
           {isSearchOpen && (
-            <div className="px-4 py-2.5 bg-[#162032] border-b border-[#1f2937] flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-150">
-              <Search size={15} className="text-slate-400 shrink-0" />
-              <input
-                type="text"
-                autoFocus
-                placeholder="Search messages in this conversation..."
-                value={inChatSearchQuery}
-                onChange={(e) => setInChatSearchQuery(e.target.value)}
-                className="flex-1 bg-transparent text-xs text-white placeholder:text-slate-500 outline-none"
-              />
-              {inChatSearchQuery && (
-                <div className="flex items-center gap-2 text-[11px] text-slate-400 shrink-0">
-                  <span className="font-medium text-slate-300">
-                    {displayedMessages.length} match{displayedMessages.length === 1 ? "" : "es"}
-                  </span>
+            <div className="px-4 py-2.5 bg-[#162032] border-b border-[#1f2937] flex flex-col sm:flex-row sm:items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-150">
+              <div className="flex-1 flex items-center gap-2">
+                <Search size={15} className="text-slate-400 shrink-0" />
+                <input
+                  type="text"
+                  autoFocus
+                  placeholder="Search messages in this conversation..."
+                  value={inChatSearchQuery}
+                  onChange={(e) => setInChatSearchQuery(e.target.value)}
+                  className="flex-1 bg-transparent text-xs text-white placeholder:text-slate-500 outline-none"
+                />
+                {inChatSearchQuery && (
                   <button
                     onClick={() => setInChatSearchQuery("")}
-                    className="p-1 hover:text-white"
+                    className="p-1 text-slate-400 hover:text-white cursor-pointer"
+                    title="Clear search query"
                   >
                     <X size={13} />
                   </button>
+                )}
+              </div>
+
+              {/* Sender filter chips & match count */}
+              <div className="flex items-center gap-2 text-[11px] self-end sm:self-auto flex-wrap">
+                <div className="flex items-center gap-1 rounded-lg bg-[#0f172a] p-0.5 border border-[#1f2937]">
+                  {(
+                    [
+                      { id: "all", label: "All" },
+                      { id: "me", label: "Me" },
+                      { id: "them", label: "Them" },
+                    ] as const
+                  ).map((f) => (
+                    <button
+                      key={f.id}
+                      type="button"
+                      onClick={() => setInChatSearchSender(f.id)}
+                      className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition cursor-pointer ${
+                        inChatSearchSender === f.id
+                          ? "bg-blue-600 text-white"
+                          : "text-slate-400 hover:text-slate-200"
+                      }`}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
                 </div>
-              )}
-              <button
-                onClick={() => {
-                  setIsSearchOpen(false);
-                  setInChatSearchQuery("");
-                }}
-                className="px-2.5 py-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 text-xs font-medium cursor-pointer"
-              >
-                Close
-              </button>
+
+                <span className="font-medium text-slate-300">
+                  {displayedMessages.length} match{displayedMessages.length === 1 ? "" : "es"}
+                </span>
+
+                <button
+                  onClick={() => {
+                    setIsSearchOpen(false);
+                    setInChatSearchQuery("");
+                    setInChatSearchSender("all");
+                  }}
+                  className="px-2.5 py-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 text-xs font-medium cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           )}
 
@@ -362,13 +402,13 @@ export default function ChatWindow() {
                   );
                 }
 
-                const isHovered = hoveredMsgIndex === index;
-                const isEditingThis = editingMsgIndex === index;
+                const isHovered = hoveredMsgIndex === msg.originalIndex;
+                const isEditingThis = editingMsgIndex === msg.originalIndex;
 
                 return (
                   <div
-                    key={index}
-                    onMouseEnter={() => setHoveredMsgIndex(index)}
+                    key={msg.originalIndex ?? index}
+                    onMouseEnter={() => setHoveredMsgIndex(msg.originalIndex)}
                     onMouseLeave={() => setHoveredMsgIndex(null)}
                     className={`group relative flex items-end gap-3 ${isMe ? "justify-end" : ""}`}
                   >
@@ -393,11 +433,11 @@ export default function ChatWindow() {
                           <button
                             key={emoji}
                             onClick={() => {
-                              addReaction(activeConversation.id, index, emoji);
+                              addReaction(activeConversation.id, msg.originalIndex, emoji);
                               if (socket) {
                                 socket.emit("message_reaction", {
                                   conversationId: activeConversation.id,
-                                  msgIndex: index,
+                                  msgIndex: msg.originalIndex,
                                   emoji,
                                 });
                               }
@@ -424,7 +464,7 @@ export default function ChatWindow() {
                             onKeyDown={(e) => {
                               if (e.key === "Enter") {
                                 if (editText.trim()) {
-                                  editMessage(activeConversation.id, index, editText.trim());
+                                  editMessage(activeConversation.id, msg.originalIndex, editText.trim());
                                 }
                                 setEditingMsgIndex(null);
                               } else if (e.key === "Escape") {
@@ -435,7 +475,7 @@ export default function ChatWindow() {
                           <button
                             onClick={() => {
                               if (editText.trim()) {
-                                editMessage(activeConversation.id, index, editText.trim());
+                                editMessage(activeConversation.id, msg.originalIndex, editText.trim());
                               }
                               setEditingMsgIndex(null);
                             }}
@@ -532,7 +572,7 @@ export default function ChatWindow() {
                           <div className="flex items-center gap-1 ml-1">
                             <button
                               onClick={() => {
-                                setEditingMsgIndex(index);
+                                setEditingMsgIndex(msg.originalIndex);
                                 setEditText(msg.text);
                               }}
                               className="p-0.5 text-slate-400 hover:text-blue-400 transition cursor-pointer"
@@ -541,7 +581,7 @@ export default function ChatWindow() {
                               <Pencil size={12} />
                             </button>
                             <button
-                              onClick={() => deleteMessage(activeConversation.id, index)}
+                              onClick={() => deleteMessage(activeConversation.id, msg.originalIndex)}
                               className="p-0.5 text-slate-400 hover:text-red-400 transition cursor-pointer"
                               title="Delete message"
                             >
