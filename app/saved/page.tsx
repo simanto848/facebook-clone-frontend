@@ -5,7 +5,7 @@ import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
 import Link from "next/link";
-import { Bookmark, BookmarkX, Search, X, Tag, Download, Check, Image as ImageIcon, Video, FileText, BarChart2, AlignLeft, Trash2, AlertTriangle, ArrowUpDown, LayoutGrid, List, FileSpreadsheet } from "lucide-react";
+import { Bookmark, BookmarkX, Search, X, Tag, Download, Check, Image as ImageIcon, Video, FileText, BarChart2, AlignLeft, Trash2, AlertTriangle, ArrowUpDown, LayoutGrid, List, FileSpreadsheet, Users } from "lucide-react";
 import { bookmarkService } from "@/services/bookmarkService";
 import { mapBackendPostToPostType, PostType, usePostStore } from "@/store/postStore";
 import { PageHeader, Badge, EmptyState, Loader } from "@/components/ui";
@@ -18,6 +18,7 @@ export default function SavedPostsPage() {
   const [isClearing, setIsClearing] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedType, setSelectedType] = useState("all");
+  const [selectedAuthor, setSelectedAuthor] = useState("all");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "popular">("newest");
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [searchQuery, setSearchQuery] = useState("");
@@ -188,8 +189,20 @@ export default function SavedPostsPage() {
     }
   };
 
+  const uniqueAuthors = Array.from(
+    new Set(
+      savedPosts
+        .map((p) => p.author?.name || p.author?.username)
+        .filter((name): name is string => Boolean(name))
+    )
+  );
+
   const filteredPosts = searchedPosts.filter((post) => {
     if (selectedCategory !== "all" && post.category !== selectedCategory) return false;
+    if (selectedAuthor !== "all") {
+      const authorName = post.author?.name || post.author?.username;
+      if (authorName !== selectedAuthor) return false;
+    }
     if (selectedType !== "all") {
       if (selectedType === "media" && post.type !== "image" && (!post.images || post.images.length === 0)) return false;
       if (selectedType === "video" && post.type !== "video" && !post.video) return false;
@@ -322,6 +335,36 @@ export default function SavedPostsPage() {
               )}
             </div>
 
+            {(selectedAuthor !== "all" || searchQuery) && (
+              <div className="flex items-center gap-2 flex-wrap text-xs">
+                {selectedAuthor !== "all" && (
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-600/20 border border-blue-500/40 text-blue-300">
+                    <Users size={12} />
+                    <span>Author: <strong>{selectedAuthor}</strong></span>
+                    <button
+                      onClick={() => setSelectedAuthor("all")}
+                      className="text-slate-400 hover:text-white ml-0.5 cursor-pointer"
+                      title="Clear author filter"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                )}
+                {searchQuery && (
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-600/20 border border-purple-500/40 text-purple-300">
+                    <span>Query: &quot;{searchQuery}&quot;</span>
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="text-slate-400 hover:text-white ml-0.5 cursor-pointer"
+                      title="Clear search"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* CATEGORY FILTER TABS */}
             <div className="flex items-center gap-2 overflow-x-auto pb-1">
               {categories.map((cat) => {
@@ -375,8 +418,27 @@ export default function SavedPostsPage() {
                 })}
               </div>
 
-              {/* Sort selector & View Mode Switcher */}
-              <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+              {/* Sort selector, Author filter & View Mode Switcher */}
+              <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto flex-wrap">
+                {uniqueAuthors.length > 0 && (
+                  <div className="flex items-center gap-1.5">
+                    <Users size={12} className="text-slate-400" />
+                    <span className="text-[11px] text-slate-500 font-medium">Author:</span>
+                    <select
+                      value={selectedAuthor}
+                      onChange={(e) => setSelectedAuthor(e.target.value)}
+                      className="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg px-2 py-1 outline-none cursor-pointer focus:border-blue-500 max-w-[130px] truncate"
+                    >
+                      <option value="all">All Authors</option>
+                      {uniqueAuthors.map((author) => (
+                        <option key={author} value={author}>
+                          {author}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 <div className="flex items-center gap-1.5">
                   <ArrowUpDown size={12} className="text-slate-400" />
                   <span className="text-[11px] text-slate-500 font-medium">Sort:</span>
