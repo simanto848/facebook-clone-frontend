@@ -1,9 +1,10 @@
 "use client";
 
-import { X, Bell, BellOff, Download, Trash2, Copy, Check, ExternalLink } from "lucide-react";
+import { X, Bell, BellOff, Download, Trash2, Copy, Check, ExternalLink, AlertTriangle } from "lucide-react";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { useChatStore } from "@/store/chatStore";
+import { Dialog, Button } from "@/components/ui";
 
 type Props = {
   onClose: () => void;
@@ -13,6 +14,7 @@ export default function ChatInfoPanel({ onClose }: Props) {
   const [activeTab, setActiveTab] = useState("images");
   const [isMuted, setIsMuted] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [clearedToast, setClearedToast] = useState(false);
   const [copiedPinnedIndex, setCopiedPinnedIndex] = useState<number | null>(null);
   const [pinnedNotes, setPinnedNotes] = useState<string[]>([]);
   const [newPinText, setNewPinText] = useState("");
@@ -111,6 +113,8 @@ export default function ChatInfoPanel({ onClose }: Props) {
     if (!activeConversationId) return;
     clearConversationMessages(activeConversationId);
     setShowClearConfirm(false);
+    setClearedToast(true);
+    setTimeout(() => setClearedToast(false), 3000);
   };
 
   const tabs = ["images", "videos", "links", "pinned"];
@@ -315,36 +319,59 @@ export default function ChatInfoPanel({ onClose }: Props) {
           <span>Export Chat History</span>
         </button>
 
-        {showClearConfirm ? (
-          <div className="p-3 rounded-xl bg-rose-950/40 border border-rose-500/30 space-y-2">
-            <p className="text-[11px] text-rose-300 font-medium">
-              Clear all messages in this conversation?
-            </p>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowClearConfirm(false)}
-                className="flex-1 py-1 rounded-lg text-xs bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleClearChat}
-                className="flex-1 py-1 rounded-lg text-xs bg-rose-600 hover:bg-rose-500 text-white font-semibold transition cursor-pointer"
-              >
-                Clear
-              </button>
+        {clearedToast && (
+          <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold flex items-center gap-2 animate-in fade-in">
+            <Check size={14} />
+            <span>Chat history cleared successfully</span>
+          </div>
+        )}
+
+        <button
+          onClick={() => setShowClearConfirm(true)}
+          className="w-full flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-rose-500/10 text-xs text-rose-400 hover:text-rose-300 transition cursor-pointer"
+        >
+          <Trash2 size={15} />
+          <span>Clear Chat History</span>
+        </button>
+      </div>
+
+      {/* Clear Chat Confirmation Modal Dialog */}
+      <Dialog
+        isOpen={showClearConfirm}
+        onClose={() => setShowClearConfirm(false)}
+        title="Clear Conversation History"
+        description={`Are you sure you want to permanently clear all messages with ${activeConversation.name}?`}
+      >
+        <div className="space-y-4 pt-2">
+          <div className="flex items-start gap-3 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs">
+            <AlertTriangle size={18} className="text-rose-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-rose-200">Irreversible Action</p>
+              <p className="mt-1 text-slate-300 leading-relaxed">
+                All sent and received text, voice notes, attachments, and reactions in this conversation thread will be permanently erased.
+              </p>
             </div>
           </div>
-        ) : (
-          <button
-            onClick={() => setShowClearConfirm(true)}
-            className="w-full flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-rose-500/10 text-xs text-rose-400 hover:text-rose-300 transition cursor-pointer"
-          >
-            <Trash2 size={15} />
-            <span>Clear Chat Messages</span>
-          </button>
-        )}
-      </div>
+
+          <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-[#1f2937]">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowClearConfirm(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
+              leftIcon={<Trash2 size={14} />}
+              onClick={handleClearChat}
+            >
+              Confirm & Clear Messages
+            </Button>
+          </div>
+        </div>
+      </Dialog>
     </aside>
   );
 }
