@@ -605,6 +605,7 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
             isSaved={!!post.saved}
             onClick={handleToggleSave}
             showText={true}
+            postId={post.id}
           />
         </div>
 
