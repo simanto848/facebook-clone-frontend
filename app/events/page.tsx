@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
-import { Calendar, MapPin, Users, Ticket, Check, Plus, Image as ImageIcon, Search, Share2, ExternalLink, Flame, ArrowUpDown, Download } from "lucide-react";
+import { Calendar, MapPin, Users, Ticket, Check, Plus, Image as ImageIcon, Search, Share2, ExternalLink, Flame, ArrowUpDown, Download, Bell, BellRing } from "lucide-react";
 import Image from "next/image";
 import { eventService } from "@/services/eventService";
 import {
@@ -71,7 +71,31 @@ export default function EventsPage() {
   const [sortBy, setSortBy] = useState<"popular" | "date" | "name">("popular");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [copiedEventId, setCopiedEventId] = useState<string | null>(null);
+  const [reminders, setReminders] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("event_reminders");
+      if (stored) {
+        setReminders(JSON.parse(stored));
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const handleToggleReminder = (eventId: string) => {
+    setReminders((prev) => {
+      const updated = { ...prev, [eventId]: !prev[eventId] };
+      try {
+        localStorage.setItem("event_reminders", JSON.stringify(updated));
+      } catch {
+        // ignore
+      }
+      return updated;
+    });
+  };
 
   const handleShareEvent = (e: TechEvent) => {
     if (typeof window !== "undefined") {
@@ -531,13 +555,19 @@ export default function EventsPage() {
                         <div className="absolute top-3 left-3">
                           <Badge variant="glass">{event.category}</Badge>
                         </div>
-                        {rsvpStatus && (
-                          <div className="absolute top-3 right-3">
+                        <div className="absolute top-3 right-3 flex items-center gap-1.5">
+                          {reminders[event.id] && (
+                            <Badge variant="warning" size="sm" className="bg-amber-500/90 text-black font-semibold flex items-center gap-1 shadow-sm backdrop-blur-sm">
+                              <BellRing size={10} className="animate-pulse" />
+                              <span>Remind</span>
+                            </Badge>
+                          )}
+                          {rsvpStatus && (
                             <Badge variant={rsvpStatus === "going" ? "success" : "primary"} size="sm">
                               {rsvpStatus === "going" ? "Going" : "Interested"}
                             </Badge>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </Link>
 
                       {/* Event Details */}
@@ -584,6 +614,19 @@ export default function EventsPage() {
                             onClick={() => handleRsvp(event.id, "interested")}
                           >
                             {rsvpStatus === "interested" ? "Interested" : "Mark Interested"}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={`px-2.5 transition ${
+                              reminders[event.id]
+                                ? "text-amber-400 bg-amber-500/10 hover:bg-amber-500/20"
+                                : "text-slate-400 hover:text-white"
+                            }`}
+                            onClick={() => handleToggleReminder(event.id)}
+                            title={reminders[event.id] ? "Reminder active (click to remove)" : "Set event notification reminder"}
+                          >
+                            {reminders[event.id] ? <BellRing size={14} className="text-amber-400" /> : <Bell size={14} />}
                           </Button>
                           <Link
                             href={`/events/${event.id}`}
