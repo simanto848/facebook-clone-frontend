@@ -16,6 +16,10 @@ import {
   X,
   ThumbsUp,
   ThumbsDown,
+  Clock,
+  AlertCircle,
+  CheckCircle2,
+  Tag,
 } from "lucide-react";
 import {
   PageHeader,
@@ -30,13 +34,51 @@ import {
   EmptyState,
 } from "@/components/ui";
 
+interface SupportTicket {
+  id: string;
+  ticketNumber: string;
+  category: string;
+  subject: string;
+  message: string;
+  priority: "low" | "medium" | "high" | "urgent";
+  status: "open" | "in_review" | "resolved";
+  createdAt: string;
+}
+
+const initialTickets: SupportTicket[] = [
+  {
+    id: "t1",
+    ticketNumber: "TK-8492",
+    category: "account",
+    subject: "2FA authentication key backup inquiry",
+    message: "Requested backup recovery codes for secondary hardware key.",
+    priority: "medium",
+    status: "in_review",
+    createdAt: "2026-09-24T10:15:00.000Z",
+  },
+  {
+    id: "t2",
+    ticketNumber: "TK-7310",
+    category: "bug",
+    subject: "WebGL canvas rendering flicker in Safari",
+    message: "Minor canvas texture flicker on Retina display when toggling dark mode.",
+    priority: "low",
+    status: "resolved",
+    createdAt: "2026-09-20T14:30:00.000Z",
+  },
+];
+
 export default function HelpSupportPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [activeSupportTab, setActiveSupportTab] = useState<"knowledgebase" | "tickets">("knowledgebase");
   const [openFaqIds, setOpenFaqIds] = useState<Record<string, boolean>>({ f1: true });
   const [ticketSubmitted, setTicketSubmitted] = useState(false);
+  const [tickets, setTickets] = useState<SupportTicket[]>(initialTickets);
+  const [ticketStatusFilter, setTicketStatusFilter] = useState<"all" | "open" | "in_review" | "resolved">("all");
   const [ticketData, setTicketData] = useState({
     category: "general",
+    priority: "medium" as "low" | "medium" | "high" | "urgent",
     subject: "",
     message: "",
   });
@@ -47,6 +89,10 @@ export default function HelpSupportPage() {
       const stored = localStorage.getItem("faq_feedback_ratings");
       if (stored) {
         setFaqFeedback(JSON.parse(stored));
+      }
+      const storedTickets = localStorage.getItem("support_tickets_list");
+      if (storedTickets) {
+        setTickets(JSON.parse(storedTickets));
       }
     } catch {
       // ignore
@@ -162,11 +208,49 @@ export default function HelpSupportPage() {
     e.preventDefault();
     if (!ticketData.subject || !ticketData.message) return;
 
+    const newTicket: SupportTicket = {
+      id: "t_" + Date.now(),
+      ticketNumber: `TK-${Math.floor(1000 + Math.random() * 9000)}`,
+      category: ticketData.category,
+      subject: ticketData.subject.trim(),
+      message: ticketData.message.trim(),
+      priority: ticketData.priority,
+      status: "open",
+      createdAt: new Date().toISOString(),
+    };
+
+    setTickets((prev) => {
+      const updated = [newTicket, ...prev];
+      try {
+        localStorage.setItem("support_tickets_list", JSON.stringify(updated));
+      } catch {
+        // ignore
+      }
+      return updated;
+    });
+
     setTicketSubmitted(true);
     setTimeout(() => {
       setTicketSubmitted(false);
-      setTicketData({ category: "general", subject: "", message: "" });
+      setTicketData({ category: "general", priority: "medium", subject: "", message: "" });
     }, 3000);
+  };
+
+  const handleToggleTicketStatus = (ticketId: string) => {
+    setTickets((prev) => {
+      const updated = prev.map((t) => {
+        if (t.id !== ticketId) return t;
+        const nextStatus: "open" | "in_review" | "resolved" =
+          t.status === "resolved" ? "open" : "resolved";
+        return { ...t, status: nextStatus };
+      });
+      try {
+        localStorage.setItem("support_tickets_list", JSON.stringify(updated));
+      } catch {
+        // ignore
+      }
+      return updated;
+    });
   };
 
   return (
@@ -188,19 +272,199 @@ export default function HelpSupportPage() {
           />
         </PageHeader>
 
-        {/* Resources Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Card hover className="cursor-pointer" onClick={() => setSelectedCategory("general")}>
-            <CardContent className="flex items-center gap-4 p-4">
-              <div className="h-10 w-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0">
-                <BookOpen size={18} />
+        {/* Navigation Tabs */}
+        <div className="flex items-center gap-2 border-b border-[#1f2937] pb-3">
+          <button
+            onClick={() => setActiveSupportTab("knowledgebase")}
+            className={`px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition cursor-pointer ${
+              activeSupportTab === "knowledgebase"
+                ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
+                : "bg-[#111827] text-slate-400 hover:text-white border border-[#1f2937]"
+            }`}
+          >
+            <BookOpen size={14} />
+            <span>Help Center & FAQ</span>
+          </button>
+          <button
+            onClick={() => setActiveSupportTab("tickets")}
+            className={`px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition cursor-pointer ${
+              activeSupportTab === "tickets"
+                ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
+                : "bg-[#111827] text-slate-400 hover:text-white border border-[#1f2937]"
+            }`}
+          >
+            <MessageSquare size={14} />
+            <span>My Support Tickets</span>
+            <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-white/20 text-white font-bold">
+              {tickets.filter((t) => t.status !== "resolved").length} Active
+            </span>
+          </button>
+        </div>
+
+        {activeSupportTab === "tickets" ? (
+          /* Live Ticket Priority and Status Tracker */
+          <div className="space-y-6 animate-in fade-in">
+            {/* Tracker Header & Filter Chips */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-[#111827] border border-[#1f2937]">
+              <div className="space-y-1">
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <MessageSquare size={16} className="text-blue-400" />
+                  Live Support Tickets & Incident Status
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Track your submitted inquiries, ticket response priorities, and engineering status.
+                </p>
               </div>
-              <div>
-                <h4 className="text-xs font-bold text-white">Guides & Tutorials</h4>
-                <p className="text-[11px] text-slate-400 mt-0.5">Learn using step-by-step guides.</p>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setActiveSupportTab("knowledgebase")}
+                leftIcon={<Send size={13} />}
+                className="shrink-0 text-xs"
+              >
+                New Request
+              </Button>
+            </div>
+
+            {/* Status Filter Pills */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1">
+              {[
+                { id: "all", label: "All Tickets", count: tickets.length },
+                { id: "open", label: "Open", count: tickets.filter((t) => t.status === "open").length },
+                { id: "in_review", label: "In Review", count: tickets.filter((t) => t.status === "in_review").length },
+                { id: "resolved", label: "Resolved", count: tickets.filter((t) => t.status === "resolved").length },
+              ].map((pill) => (
+                <button
+                  key={pill.id}
+                  onClick={() => setTicketStatusFilter(pill.id as any)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap flex items-center gap-1.5 transition cursor-pointer ${
+                    ticketStatusFilter === pill.id
+                      ? "bg-blue-600 text-white shadow-sm"
+                      : "bg-[#111827] text-slate-400 hover:text-white border border-[#1f2937]"
+                  }`}
+                >
+                  <span>{pill.label}</span>
+                  <span
+                    className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                      ticketStatusFilter === pill.id ? "bg-white/20 text-white" : "bg-slate-800 text-slate-400"
+                    }`}
+                  >
+                    {pill.count}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {/* Ticket Cards List */}
+            {tickets.filter((t) => ticketStatusFilter === "all" || t.status === ticketStatusFilter).length === 0 ? (
+              <EmptyState
+                icon={<MessageSquare size={36} className="text-slate-400" />}
+                title="No support tickets in this view"
+                description={
+                  ticketStatusFilter === "all"
+                    ? "You haven't submitted any support requests yet. Click 'New Request' to get started."
+                    : `No tickets currently match the "${ticketStatusFilter.replace('_', ' ')}" status.`
+                }
+              />
+            ) : (
+              <div className="space-y-4">
+                {tickets
+                  .filter((t) => ticketStatusFilter === "all" || t.status === ticketStatusFilter)
+                  .map((t) => (
+                    <Card key={t.id} hover className="border-[#1f2937] bg-[#111827]/70">
+                      <CardContent className="p-5 space-y-3">
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-xs font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-md border border-blue-500/20">
+                              {t.ticketNumber}
+                            </span>
+                            <span className="text-xs text-slate-500 flex items-center gap-1">
+                              <Clock size={12} />
+                              {new Date(t.createdAt).toLocaleDateString(undefined, {
+                                month: "short",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {/* Priority Badge */}
+                            <Badge
+                              variant={
+                                t.priority === "urgent"
+                                  ? "danger"
+                                  : t.priority === "high"
+                                  ? "warning"
+                                  : t.priority === "medium"
+                                  ? "primary"
+                                  : "secondary"
+                              }
+                              size="sm"
+                              className="capitalize"
+                            >
+                              {t.priority} Priority
+                            </Badge>
+                            {/* Status Badge */}
+                            <Badge
+                              variant={
+                                t.status === "resolved"
+                                  ? "success"
+                                  : t.status === "in_review"
+                                  ? "warning"
+                                  : "primary"
+                              }
+                              size="sm"
+                              className="flex items-center gap-1.5"
+                            >
+                              {t.status === "open" && <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />}
+                              {t.status === "in_review" && <Clock size={10} />}
+                              {t.status === "resolved" && <CheckCircle2 size={10} />}
+                              <span className="capitalize">{t.status.replace("_", " ")}</span>
+                            </Badge>
+                          </div>
+                        </div>
+
+                        <div>
+                          <h3 className="text-sm font-bold text-white">{t.subject}</h3>
+                          <p className="text-xs text-slate-300 mt-1 leading-relaxed">{t.message}</p>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-2 border-t border-[#1f2937]/70 text-xs">
+                          <div className="flex items-center gap-1.5 text-slate-400 text-[11px]">
+                            <Tag size={12} className="text-slate-500" />
+                            <span className="capitalize">Category: {t.category}</span>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant={t.status === "resolved" ? "secondary" : "ghost"}
+                            onClick={() => handleToggleTicketStatus(t.id)}
+                            className={t.status === "resolved" ? "text-slate-300 text-xs" : "text-emerald-400 hover:text-emerald-300 text-xs"}
+                          >
+                            {t.status === "resolved" ? "Reopen Ticket" : "Mark as Resolved"}
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
               </div>
-            </CardContent>
-          </Card>
+            )}
+          </div>
+        ) : (
+          <>
+            {/* Resources Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Card hover className="cursor-pointer" onClick={() => setSelectedCategory("general")}>
+                <CardContent className="flex items-center gap-4 p-4">
+                  <div className="h-10 w-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0">
+                    <BookOpen size={18} />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-white">Guides & Tutorials</h4>
+                    <p className="text-[11px] text-slate-400 mt-0.5">Learn using step-by-step guides.</p>
+                  </div>
+                </CardContent>
+              </Card>
 
           <Link href="/privacy" className="block">
             <Card hover className="h-full">
@@ -362,6 +626,18 @@ export default function HelpSupportPage() {
                     ]}
                   />
 
+                  <Select
+                    label="Priority Level"
+                    value={ticketData.priority}
+                    onChange={(e) => setTicketData({ ...ticketData, priority: e.target.value as any })}
+                    options={[
+                      { label: "Low Priority", value: "low" },
+                      { label: "Medium Priority", value: "medium" },
+                      { label: "High Priority", value: "high" },
+                      { label: "Urgent Priority", value: "urgent" },
+                    ]}
+                  />
+
                   <Input
                     label="Subject"
                     placeholder="Brief summary of the issue"
@@ -383,9 +659,20 @@ export default function HelpSupportPage() {
                   </div>
 
                   {ticketSubmitted && (
-                    <div className="flex items-center gap-2 text-green-400 text-xs font-bold py-1">
-                      <Check size={16} />
-                      <span>Your ticket has been sent successfully!</span>
+                    <div className="flex flex-col gap-2 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold">
+                      <div className="flex items-center gap-2">
+                        <Check size={16} />
+                        <span>Your ticket has been sent and queued!</span>
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => setActiveSupportTab("tickets")}
+                        className="text-[11px] self-start"
+                      >
+                        View in Live Ticket Tracker ({tickets.length})
+                      </Button>
                     </div>
                   )}
 
@@ -402,6 +689,8 @@ export default function HelpSupportPage() {
             </Card>
           </div>
         </div>
+          </>
+        )}
       </div>
     </div>
   );
