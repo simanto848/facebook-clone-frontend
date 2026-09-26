@@ -79,8 +79,25 @@ export default function MemoriesPage() {
   const [customCaption, setCustomCaption] = useState("");
   const [isSharing, setIsSharing] = useState(false);
   const [copiedSummary, setCopiedSummary] = useState(false);
+  const [copiedMemoryId, setCopiedMemoryId] = useState<string | null>(null);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const { createPost } = usePostStore();
+
+  const handleCopyMemoryText = async (m: MemoryItem, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    const formatted = `📅 ${m.dateStr} (${m.yearsAgo} year${m.yearsAgo > 1 ? "s" : ""} ago today):\n"${m.content}"`;
+    try {
+      await navigator.clipboard.writeText(formatted);
+      setCopiedMemoryId(m.id);
+      setToastMessage("Memory text copied to clipboard!");
+      setTimeout(() => {
+        setCopiedMemoryId(null);
+        setToastMessage(null);
+      }, 2500);
+    } catch {
+      // ignore
+    }
+  };
 
   useEffect(() => {
     try {
@@ -437,6 +454,18 @@ export default function MemoriesPage() {
                           )}
                         </div>
                         <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={(e) => handleCopyMemoryText(m, e)}
+                            className={`p-1.5 rounded-lg border transition cursor-pointer ${
+                              copiedMemoryId === m.id
+                                ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-400"
+                                : "bg-slate-800/80 border-slate-700/60 text-slate-400 hover:text-white hover:bg-slate-700"
+                            }`}
+                            title={copiedMemoryId === m.id ? "Memory text copied!" : "Copy memory text"}
+                          >
+                            {copiedMemoryId === m.id ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
+                          </button>
                           <button
                             type="button"
                             onClick={(e) => toggleFavorite(m.id, e)}
