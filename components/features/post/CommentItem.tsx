@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import Link from "next/link";
-import { Heart, MessageSquare, Check, CornerDownRight, Trash2, Edit2, Copy } from "lucide-react";
+import { Heart, MessageSquare, Check, CornerDownRight, Trash2, Edit2, Copy, Link2 } from "lucide-react";
 import { CommentType } from "@/store/postStore";
 import { useAuthStore } from "@/store/authStore";
 import { Avatar, Button, Input } from "@/components/ui";
@@ -20,12 +20,24 @@ export default function CommentItem({ comment, onLike, onReply, onEdit, onDelete
   const [replyText, setReplyText] = useState("");
   const [editText, setEditText] = useState(comment.content);
   const [copied, setCopied] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   const handleCopyComment = async () => {
     try {
       await navigator.clipboard.writeText(comment.content);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // fallback
+    }
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      const url = typeof window !== "undefined" ? `${window.location.origin}${window.location.pathname}#comment-${comment.id}` : "";
+      if (url) await navigator.clipboard.writeText(url);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
     } catch {
       // fallback
     }
@@ -120,6 +132,18 @@ export default function CommentItem({ comment, onLike, onReply, onEdit, onDelete
               {copied ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
               <span className={copied ? "text-emerald-400 font-medium" : ""}>
                 {copied ? "Copied" : "Copy"}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleCopyLink}
+              className="flex items-center gap-1 hover:text-slate-200 transition"
+              title="Copy comment direct link"
+            >
+              {copiedLink ? <Check size={11} className="text-blue-400" /> : <Link2 size={11} />}
+              <span className={copiedLink ? "text-blue-400 font-medium" : ""}>
+                {copiedLink ? "Link Copied" : "Link"}
               </span>
             </button>
 
