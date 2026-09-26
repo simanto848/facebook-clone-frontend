@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, Heart, Eye, Trash2, Play, Pause, Volume2, VolumeX } from "lucide-react";
+import { ChevronLeft, ChevronRight, Heart, Eye, Trash2, Play, Pause, Volume2, VolumeX, Send } from "lucide-react";
 import { Dialog, Avatar, Button, Badge } from "@/components/ui";
 
 export interface StoryItem {
@@ -42,7 +42,19 @@ export function StoryViewerModal({
   const [isMuted, setIsMuted] = useState(true);
   const [floatingReactions, setFloatingReactions] = useState<{ id: number; emoji: string }[]>([]);
   const [reactionToast, setReactionToast] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
   const currentStory = stories[currentIndex];
+
+  const handleSendReply = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!replyText.trim()) return;
+    setReactionToast(`Reply sent to ${currentStory.author.name}!`);
+    setReplyText("");
+    setIsPaused(false);
+    setTimeout(() => {
+      setReactionToast(null);
+    }, 2200);
+  };
 
   const handleQuickReaction = (emoji: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -296,6 +308,33 @@ export function StoryViewerModal({
               {currentStory.likes || 0}
             </Button>
           </div>
+
+          {/* Quick Reply Form */}
+          <form
+            onSubmit={handleSendReply}
+            className="flex items-center gap-2 pt-1"
+          >
+            <input
+              type="text"
+              placeholder={`Reply to ${currentStory.author.name}...`}
+              value={replyText}
+              onFocus={() => setIsPaused(true)}
+              onBlur={() => {
+                if (!replyText.trim()) setIsPaused(false);
+              }}
+              onChange={(e) => setReplyText(e.target.value)}
+              className="flex-1 rounded-full bg-white/15 border border-white/20 px-3.5 py-1.5 text-xs text-white placeholder-white/60 outline-none focus:border-blue-400 focus:bg-white/20 transition"
+            />
+            {replyText.trim() && (
+              <button
+                type="submit"
+                className="h-7 w-7 rounded-full bg-blue-600 hover:bg-blue-500 flex items-center justify-center text-white transition shrink-0 cursor-pointer shadow-md"
+                title="Send reply"
+              >
+                <Send size={12} />
+              </button>
+            )}
+          </form>
         </div>
       </div>
     </Dialog>
