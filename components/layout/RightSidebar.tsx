@@ -144,6 +144,18 @@ const RightSidebar = () => {
     fetchFriends();
   }, []);
 
+  const filteredFriends = friendsList.filter((f) => {
+    if (showOnlineOnly && !f.isOnline) return false;
+    if (searchFriendQuery.trim()) {
+      const q = searchFriendQuery.toLowerCase();
+      return (
+        f.name.toLowerCase().includes(q) ||
+        (f.username && f.username.toLowerCase().includes(q))
+      );
+    }
+    return true;
+  });
+
   return (
     <aside className="w-72 min-h-screen bg-[#111827] border-l border-[#1f2937] px-5 py-6">
       {/* Header */}
@@ -274,28 +286,45 @@ const RightSidebar = () => {
               type="button"
               onClick={() => setSearchFriendQuery("")}
               className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+              title="Clear search query"
             >
               <X size={12} />
             </button>
           )}
         </div>
 
+        {/* Clear Search and Match Count Bar */}
+        {searchFriendQuery.trim() && (
+          <div className="flex items-center justify-between text-[11px] pt-1.5 px-0.5 text-slate-400">
+            <span>
+              Found <strong className="text-blue-400">{filteredFriends.length}</strong> {filteredFriends.length === 1 ? "contact" : "contacts"}
+            </span>
+            <button
+              type="button"
+              onClick={() => setSearchFriendQuery("")}
+              className="text-blue-400 hover:text-blue-300 hover:underline font-medium text-[11px] transition cursor-pointer"
+            >
+              Clear search
+            </button>
+          </div>
+        )}
+
         <div className="my-3 h-px bg-[#232d42]" />
 
-        <div className="space-y-2">
-          {friendsList
-            .filter((f) => {
-              if (showOnlineOnly && !f.isOnline) return false;
-              if (searchFriendQuery.trim()) {
-                const q = searchFriendQuery.toLowerCase();
-                return (
-                  f.name.toLowerCase().includes(q) ||
-                  (f.username && f.username.toLowerCase().includes(q))
-                );
-              }
-              return true;
-            })
-            .map((friend) => (
+        {filteredFriends.length === 0 ? (
+          <div className="py-6 text-center text-xs text-slate-400 space-y-2">
+            <p>No contacts found matching &ldquo;{searchFriendQuery}&rdquo;</p>
+            <button
+              type="button"
+              onClick={() => setSearchFriendQuery("")}
+              className="px-3 py-1 rounded-lg bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 text-xs font-semibold transition cursor-pointer"
+            >
+              Clear Search
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {filteredFriends.map((friend) => (
             <div
               key={friend.name}
               className="flex items-center justify-between gap-3 rounded-xl p-2 transition-all duration-200 hover:bg-[#1a2233] group"
@@ -344,7 +373,8 @@ const RightSidebar = () => {
               </button>
             </div>
           ))}
-        </div>
+          </div>
+        )}
       </div>
     </aside>
   );
