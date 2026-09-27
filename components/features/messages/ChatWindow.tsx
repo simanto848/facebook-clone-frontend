@@ -18,6 +18,7 @@ import {
   MoreVertical,
   ThumbsUp,
   Reply,
+  ChevronDown,
 } from "lucide-react";
 import Image from "next/image";
 import { useState, useEffect, useRef } from "react";
@@ -45,6 +46,13 @@ export default function ChatWindow() {
   const [editText, setEditText] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [replyingTo, setReplyingTo] = useState<{ sender: string; text: string } | null>(null);
+  const [showScrollBottom, setShowScrollBottom] = useState(false);
+
+  const handleMessagesScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    const isUp = scrollHeight - scrollTop - clientHeight > 150;
+    setShowScrollBottom(isUp);
+  };
 
   const handleQuickLike = () => {
     if (!activeConversation) return;
@@ -195,7 +203,7 @@ export default function ChatWindow() {
   return (
     <>
       <div className="flex h-full bg-[#111827]">
-        <div className="flex flex-1 flex-col h-full overflow-hidden">
+        <div className="flex flex-1 flex-col h-full overflow-hidden relative">
           {/* HEADER */}
           <div className="flex items-center justify-between border-b border-[#1f2937] px-4 md:px-6 py-4 shrink-0">
             <div className="flex items-center gap-3 md:gap-4">
@@ -369,7 +377,7 @@ export default function ChatWindow() {
           )}
 
           {/* MESSAGES */}
-          <div className="flex-1 overflow-y-auto px-4 md:px-6 py-6 space-y-4">
+          <div className="flex-1 overflow-y-auto px-4 md:px-6 py-6 space-y-4" onScroll={handleMessagesScroll}>
             {/* Date separator */}
             <div className="mb-6 flex justify-center">
               <span className="rounded-full bg-[#1f2937]/50 border border-[#374151]/30 px-4 py-1 text-xs text-slate-400">
@@ -617,6 +625,18 @@ export default function ChatWindow() {
               <div ref={messagesEndRef} />
             </div>
           </div>
+
+          {/* Floating Scroll to Bottom Button */}
+          {showScrollBottom && (
+            <button
+              type="button"
+              onClick={() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })}
+              className="absolute bottom-24 right-6 z-30 p-2.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center cursor-pointer border border-blue-400/40 animate-in fade-in slide-in-from-bottom-2"
+              title="Scroll to latest messages"
+            >
+              <ChevronDown size={18} />
+            </button>
+          )}
 
           {/* INPUT */}
           <div className="border-t border-[#1f2937] p-4 shrink-0 bg-[#111827]">
