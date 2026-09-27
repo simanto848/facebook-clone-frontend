@@ -3,7 +3,7 @@
 import React, { useState, useCallback } from "react";
 import Image from "next/image";
 import { useDropzone } from "react-dropzone";
-import { UploadCloud, X, Image as ImageIcon, Video, Loader2, Globe, Lock, Users, Hash, Sparkles } from "lucide-react";
+import { UploadCloud, X, Image as ImageIcon, Video, Loader2, Globe, Lock, Users, Hash, Sparkles, Trash2 } from "lucide-react";
 import { Dialog, Button } from "@/components/ui";
 import { compressImageFile, createMediaPreview, revokeMediaPreview, type MediaPreview } from "@/lib/mediaUpload";
 import { postService } from "@/services/postService";
@@ -34,6 +34,13 @@ export function CreatePostModal({ isOpen, onClose, initialType = "gallery" }: Cr
       }
     }
   }, []);
+
+  const handleClearDraft = () => {
+    setContent("");
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("post_composer_draft");
+    }
+  };
 
   const handleAddHashtag = (tag: string) => {
     const next = content ? `${content} ${tag} ` : `${tag} `;
@@ -278,9 +285,22 @@ export function CreatePostModal({ isOpen, onClose, initialType = "gallery" }: Cr
               </button>
             ))}
           </div>
-          <span className="text-[10px] text-slate-500 font-mono">
-            {content.length} chars
-          </span>
+          <div className="flex items-center gap-2">
+            {content.length > 0 && (
+              <button
+                type="button"
+                onClick={handleClearDraft}
+                className="text-[10px] text-rose-400 hover:text-rose-300 transition cursor-pointer flex items-center gap-1"
+                title="Clear saved draft"
+              >
+                <Trash2 size={11} />
+                Clear draft
+              </button>
+            )}
+            <span className="text-[10px] text-slate-500 font-mono">
+              {content.length} chars
+            </span>
+          </div>
         </div>
 
         {/* Drag & Drop Dropzone */}
