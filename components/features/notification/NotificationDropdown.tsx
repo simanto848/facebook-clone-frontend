@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Bell, CheckCheck, Trash2, Heart, MessageSquare, UserPlus, ExternalLink } from "lucide-react";
+import { Bell, CheckCheck, Trash2, Heart, MessageSquare, UserPlus, ExternalLink, Search, X } from "lucide-react";
 import { Avatar, Badge, Button, Tabs, EmptyState } from "@/components/ui";
 import { notificationService } from "@/services/notificationService";
 
@@ -54,6 +54,7 @@ interface NotificationDropdownProps {
 export function NotificationDropdown({ isOpen, onClose }: NotificationDropdownProps) {
   const [notifications, setNotifications] = useState<NotificationItem[]>(fallbackNotifications);
   const [activeTab, setActiveTab] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
 
   const fetchNotifications = async () => {
@@ -107,7 +108,12 @@ export function NotificationDropdown({ isOpen, onClose }: NotificationDropdownPr
   if (!isOpen) return null;
 
   const unreadCount = notifications.filter((n) => n.unread).length;
-  const filteredList = activeTab === "unread" ? notifications.filter((n) => n.unread) : notifications;
+  const filteredList = notifications.filter((n) => {
+    if (activeTab === "unread" && !n.unread) return false;
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase().trim();
+    return n.sender.toLowerCase().includes(q) || n.text.toLowerCase().includes(q);
+  });
 
   const handleItemClick = async (item: NotificationItem) => {
     if (!item.unread) return;
@@ -155,11 +161,36 @@ export function NotificationDropdown({ isOpen, onClose }: NotificationDropdownPr
           variant="pills"
         />
 
+        {/* Quick Search Bar */}
+        <div className="relative">
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Filter notifications..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full h-8 pl-8 pr-7 rounded-xl bg-[#1f2937] border border-[#374151] text-xs text-white placeholder-slate-400 outline-none focus:border-blue-500 transition"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white cursor-pointer"
+            >
+              <X size={12} />
+            </button>
+          )}
+        </div>
+
         <div className="max-h-80 overflow-y-auto space-y-2 custom-scrollbar pr-1">
           {filteredList.length === 0 ? (
             <EmptyState
-              title="No notifications"
-              description="You're all caught up with your network activity."
+              title={searchQuery ? "No matching notifications" : "No notifications"}
+              description={
+                searchQuery
+                  ? "No activity matches your search filter."
+                  : "You're all caught up with your network activity."
+              }
             />
           ) : (
             filteredList.map((item) => (
