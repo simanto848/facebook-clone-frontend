@@ -7,7 +7,7 @@ import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
 import { usePostStore, mapBackendPostToPostType, PostType } from "@/store/postStore";
 import { useChatStore } from "@/store/chatStore";
-import { Search, Hash, Compass, User, Users, UserPlus, MessageSquare, Loader2, ArrowRight, History, Check, X, Filter, ArrowUpDown, LayoutGrid, List } from "lucide-react";
+import { Search, Hash, Compass, User, Users, UserPlus, MessageSquare, Loader2, ArrowRight, History, Check, X, Filter, ArrowUpDown, LayoutGrid, List, Clock, Flame } from "lucide-react";
 import { searchService } from "@/services/searchService";
 import { hashtagService } from "@/services/hashtagService";
 import { followService } from "@/services/followService";
@@ -34,6 +34,8 @@ export default function ExplorePage() {
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [postSort, setPostSort] = useState<"newest" | "popular">("newest");
   const [formatFilter, setFormatFilter] = useState<"all" | "media" | "text">("all");
+  const [timeframeFilter, setTimeframeFilter] = useState<"all" | "today" | "week" | "month">("all");
+  const [minEngagement, setMinEngagement] = useState<number>(0);
   const [postLayout, setPostLayout] = useState<"list" | "grid">("list");
   const [entityLayout, setEntityLayout] = useState<"list" | "grid">("list");
   const [popularTags, setPopularTags] = useState<string[]>(defaultPopularTags);
@@ -247,6 +249,32 @@ export default function ExplorePage() {
       list = list.filter((p) => p.type === "image" || p.type === "video" || (p.images && p.images.length > 0) || p.video);
     } else if (formatFilter === "text") {
       list = list.filter((p) => p.type === "text" || (!p.images?.length && !p.video));
+    }
+
+    if (timeframeFilter !== "all") {
+      const now = Date.now();
+      const oneDay = 24 * 60 * 60 * 1000;
+      const threshold =
+        timeframeFilter === "today"
+          ? now - oneDay
+          : timeframeFilter === "week"
+          ? now - 7 * oneDay
+          : now - 30 * oneDay;
+
+      list = list.filter((p) => {
+        const postTime = new Date(p.createdAt).getTime();
+        return isNaN(postTime) ? true : postTime >= threshold;
+      });
+    }
+
+    if (minEngagement > 0) {
+      list = list.filter((p) => {
+        const reactionsTotal = Object.values(p.reactions || {}).reduce(
+          (acc: number, v: any) => acc + (typeof v === "number" ? v : 0),
+          0
+        );
+        return reactionsTotal >= minEngagement;
+      });
     }
 
     if (postSort === "popular") {
@@ -799,55 +827,96 @@ export default function ExplorePage() {
               ) : activeCategory === "posts" ? (
                 <div className="space-y-4">
                   {/* Filter and Sort Bar */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2 rounded-xl bg-[#111827] border border-[#1f2937] text-xs">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[11px] text-slate-500 font-medium">Filter:</span>
-                      {(["all", "media", "text"] as const).map((fmt) => (
-                        <button
-                          key={fmt}
-                          type="button"
-                          onClick={() => setFormatFilter(fmt)}
-                          className={`px-2.5 py-1 rounded-lg capitalize font-medium transition cursor-pointer ${
-                            formatFilter === fmt
-                              ? "bg-blue-600 text-white shadow-sm"
-                              : "text-slate-400 hover:text-white hover:bg-slate-800"
-                          }`}
-                        >
-                          {fmt === "all" ? "All Posts" : fmt === "media" ? "Photos & Videos" : "Text Only"}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
-                      <div className="flex items-center gap-1.5">
-                        <ArrowUpDown size={12} className="text-slate-400" />
-                        <span className="text-[11px] text-slate-500 font-medium">Sort:</span>
-                        <select
-                          value={postSort}
-                          onChange={(e) => setPostSort(e.target.value as any)}
-                          className="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg px-2 py-1 outline-none cursor-pointer"
-                        >
-                          <option value="newest">Newest First</option>
-                          <option value="popular">Most Popular</option>
-                        </select>
+                  <div className="flex flex-col gap-2 p-2.5 rounded-xl bg-[#111827] border border-[#1f2937] text-xs">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[11px] text-slate-500 font-medium">Type:</span>
+                        {(["all", "media", "text"] as const).map((fmt) => (
+                          <button
+                            key={fmt}
+                            type="button"
+                            onClick={() => setFormatFilter(fmt)}
+                            className={`px-2.5 py-1 rounded-lg capitalize font-medium transition cursor-pointer ${
+                              formatFilter === fmt
+                                ? "bg-blue-600 text-white shadow-sm"
+                                : "text-slate-400 hover:text-white hover:bg-slate-800"
+                            }`}
+                          >
+                            {fmt === "all" ? "All Posts" : fmt === "media" ? "Photos & Videos" : "Text Only"}
+                          </button>
+                        ))}
                       </div>
 
-                      <div className="flex items-center gap-1 bg-slate-800/80 p-0.5 rounded-lg border border-slate-700/60">
-                        <button
-                          type="button"
-                          onClick={() => setPostLayout("list")}
-                          className={`p-1 rounded-md transition cursor-pointer ${postLayout === "list" ? "bg-blue-600 text-white shadow-xs" : "text-slate-400 hover:text-slate-200"}`}
-                          title="List View"
-                        >
-                          <List size={13} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setPostLayout("grid")}
-                          className={`p-1 rounded-md transition cursor-pointer ${postLayout === "grid" ? "bg-blue-600 text-white shadow-xs" : "text-slate-400 hover:text-slate-200"}`}
-                          title="Grid View"
-                        >
-                          <LayoutGrid size={13} />
-                        </button>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {/* Timeframe */}
+                        <div className="flex items-center gap-1">
+                          <Clock size={12} className="text-slate-400" />
+                          <span className="text-[11px] text-slate-500 font-medium">Time:</span>
+                          <select
+                            value={timeframeFilter}
+                            onChange={(e) => setTimeframeFilter(e.target.value as any)}
+                            className="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg px-2 py-1 outline-none cursor-pointer"
+                          >
+                            <option value="all">Anytime</option>
+                            <option value="today">Past 24 Hours</option>
+                            <option value="week">Past Week</option>
+                            <option value="month">Past Month</option>
+                          </select>
+                        </div>
+
+                        {/* Min Likes / Engagement */}
+                        <div className="flex items-center gap-1">
+                          <Flame size={12} className={minEngagement > 0 ? "text-amber-400" : "text-slate-400"} />
+                          <span className="text-[11px] text-slate-500 font-medium">Min Likes:</span>
+                          <select
+                            value={minEngagement}
+                            onChange={(e) => setMinEngagement(Number(e.target.value))}
+                            className={`border text-xs rounded-lg px-2 py-1 outline-none cursor-pointer transition ${
+                              minEngagement > 0
+                                ? "bg-amber-500/10 border-amber-500/30 text-amber-300 font-medium"
+                                : "bg-slate-800 border-slate-700 text-slate-200"
+                            }`}
+                          >
+                            <option value={0}>Any</option>
+                            <option value={5}>5+ Likes</option>
+                            <option value={10}>10+ Likes</option>
+                            <option value={25}>25+ Likes</option>
+                          </select>
+                        </div>
+
+                        {/* Sort */}
+                        <div className="flex items-center gap-1">
+                          <ArrowUpDown size={12} className="text-slate-400" />
+                          <span className="text-[11px] text-slate-500 font-medium">Sort:</span>
+                          <select
+                            value={postSort}
+                            onChange={(e) => setPostSort(e.target.value as any)}
+                            className="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg px-2 py-1 outline-none cursor-pointer"
+                          >
+                            <option value="newest">Newest First</option>
+                            <option value="popular">Most Popular</option>
+                          </select>
+                        </div>
+
+                        {/* Layout Toggle */}
+                        <div className="flex items-center gap-1 bg-slate-800/80 p-0.5 rounded-lg border border-slate-700/60">
+                          <button
+                            type="button"
+                            onClick={() => setPostLayout("list")}
+                            className={`p-1 rounded-md transition cursor-pointer ${postLayout === "list" ? "bg-blue-600 text-white shadow-xs" : "text-slate-400 hover:text-slate-200"}`}
+                            title="List View"
+                          >
+                            <List size={13} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setPostLayout("grid")}
+                            className={`p-1 rounded-md transition cursor-pointer ${postLayout === "grid" ? "bg-blue-600 text-white shadow-xs" : "text-slate-400 hover:text-slate-200"}`}
+                            title="Grid View"
+                          >
+                            <LayoutGrid size={13} />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
