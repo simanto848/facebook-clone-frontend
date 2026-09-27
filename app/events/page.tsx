@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
-import { Calendar, MapPin, Users, Ticket, Check, Plus, Image as ImageIcon, Search, Share2, ExternalLink, Flame, ArrowUpDown, Download, Bell, BellRing } from "lucide-react";
+import { Calendar, MapPin, Users, Ticket, Check, Plus, Image as ImageIcon, Search, Share2, ExternalLink, Flame, ArrowUpDown, Download, Bell, BellRing, History, Sparkles } from "lucide-react";
 import Image from "next/image";
 import { eventService } from "@/services/eventService";
 import {
@@ -68,11 +68,27 @@ export default function EventsPage() {
   const [events, setEvents] = useState<TechEvent[]>(initialEvents);
   const [rsvps, setRsvps] = useState<Record<string, "going" | "interested" | null>>({ e1: "interested" });
   const [activeFilter, setActiveFilter] = useState<string>("all");
+  const [timeframe, setTimeframe] = useState<"all" | "upcoming" | "past">("all");
   const [sortBy, setSortBy] = useState<"popular" | "date" | "name">("popular");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [copiedEventId, setCopiedEventId] = useState<string | null>(null);
   const [reminders, setReminders] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
+
+  const isEventPast = (dateStr: string): boolean => {
+    if (!dateStr) return false;
+    const rangeMatch = dateStr.match(/^([A-Za-z]+)\s+(\d+)-(\d+),\s*(\d{4})/);
+    let parsed: Date;
+    if (rangeMatch) {
+      parsed = new Date(`${rangeMatch[1]} ${rangeMatch[3]}, ${rangeMatch[4]}`);
+    } else {
+      parsed = new Date(dateStr);
+    }
+    if (isNaN(parsed.getTime())) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return parsed < today;
+  };
 
   useEffect(() => {
     try {
@@ -324,6 +340,12 @@ export default function EventsPage() {
   const getFilteredEvents = () => {
     let list = events;
 
+    if (timeframe === "upcoming") {
+      list = list.filter((e) => !isEventPast(e.date));
+    } else if (timeframe === "past") {
+      list = list.filter((e) => isEventPast(e.date));
+    }
+
     if (activeFilter === "conference") {
       list = list.filter((e) => e.category.toLowerCase().includes("conference"));
     } else if (activeFilter === "hackathon") {
@@ -461,6 +483,60 @@ export default function EventsPage() {
               </div>
             </div>
 
+            {/* Timeframe Filter Tabs (All / Upcoming / Past) */}
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-1.5 p-1 bg-[#111827] rounded-xl border border-[#1f2937]">
+                <button
+                  onClick={() => setTimeframe("all")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                    timeframe === "all"
+                      ? "bg-blue-600 text-white shadow-xs"
+                      : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  <Calendar size={13} />
+                  <span>All Events</span>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/20 text-slate-300">
+                    {events.length}
+                  </span>
+                </button>
+                <button
+                  onClick={() => setTimeframe("upcoming")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                    timeframe === "upcoming"
+                      ? "bg-blue-600 text-white shadow-xs"
+                      : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  <Sparkles size={13} className="text-amber-400" />
+                  <span>Upcoming</span>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/20 text-slate-300">
+                    {events.filter((e) => !isEventPast(e.date)).length}
+                  </span>
+                </button>
+                <button
+                  onClick={() => setTimeframe("past")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                    timeframe === "past"
+                      ? "bg-blue-600 text-white shadow-xs"
+                      : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  <History size={13} />
+                  <span>Past Events</span>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/20 text-slate-300">
+                    {events.filter((e) => isEventPast(e.date)).length}
+                  </span>
+                </button>
+              </div>
+
+              <div className="text-[11px] text-slate-400 hidden sm:block">
+                {timeframe === "upcoming" && "Showing future tech conferences & hackathons"}
+                {timeframe === "past" && "Showing concluded events & historical meetups"}
+                {timeframe === "all" && "All scheduled events across the tech community"}
+              </div>
+            </div>
+
             {/* Category Filter Pills */}
             <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
               {[
@@ -555,6 +631,7 @@ export default function EventsPage() {
               ) : (
                 filteredEvents.map((event) => {
                   const rsvpStatus = rsvps[event.id];
+                  const isPast = isEventPast(event.date);
 
                   return (
                     <Card key={event.id} hover className="flex flex-col md:flex-row group overflow-hidden">
@@ -570,8 +647,14 @@ export default function EventsPage() {
                           className="object-cover transition-transform duration-300 group-hover:scale-105"
                           alt={event.title}
                         />
-                        <div className="absolute top-3 left-3">
+                        <div className="absolute top-3 left-3 flex items-center gap-1.5">
                           <Badge variant="glass">{event.category}</Badge>
+                          {isPast && (
+                            <Badge variant="glass" className="bg-slate-900/90 text-amber-300 border-amber-500/40 text-[10px] flex items-center gap-1">
+                              <History size={10} />
+                              <span>Past</span>
+                            </Badge>
+                          )}
                         </div>
                         <div className="absolute top-3 right-3 flex items-center gap-1.5">
                           {reminders[event.id] && (
@@ -615,24 +698,41 @@ export default function EventsPage() {
 
                         {/* Actions */}
                         <div className="flex items-center gap-2 pt-2 border-t border-[#1f2937]/60">
-                          <Button
-                            variant={rsvpStatus === "going" ? "success" : "primary"}
-                            size="sm"
-                            className="flex-1"
-                            leftIcon={rsvpStatus === "going" ? <Check size={14} /> : <Ticket size={14} />}
-                            onClick={() => handleRsvp(event.id, "going")}
-                          >
-                            {rsvpStatus === "going" ? "Going" : "RSVP Going"}
-                          </Button>
-                          <Button
-                            variant={rsvpStatus === "interested" ? "secondary" : "ghost"}
-                            size="sm"
-                            className="flex-1"
-                            leftIcon={rsvpStatus === "interested" ? <Check size={14} /> : undefined}
-                            onClick={() => handleRsvp(event.id, "interested")}
-                          >
-                            {rsvpStatus === "interested" ? "Interested" : "Mark Interested"}
-                          </Button>
+                          {isPast ? (
+                            <div className="flex-1 flex items-center justify-between text-xs py-1.5 px-3 rounded-xl bg-[#0f172a] border border-[#1f2937]">
+                              <span className="flex items-center gap-1.5 text-slate-400">
+                                <History size={13} className="text-amber-400" />
+                                <span>Event Concluded</span>
+                              </span>
+                              <Link
+                                href={`/events/${event.id}`}
+                                className="text-blue-400 hover:text-blue-300 text-xs font-semibold"
+                              >
+                                View Recap →
+                              </Link>
+                            </div>
+                          ) : (
+                            <>
+                              <Button
+                                variant={rsvpStatus === "going" ? "success" : "primary"}
+                                size="sm"
+                                className="flex-1"
+                                leftIcon={rsvpStatus === "going" ? <Check size={14} /> : <Ticket size={14} />}
+                                onClick={() => handleRsvp(event.id, "going")}
+                              >
+                                {rsvpStatus === "going" ? "Going" : "RSVP Going"}
+                              </Button>
+                              <Button
+                                variant={rsvpStatus === "interested" ? "secondary" : "ghost"}
+                                size="sm"
+                                className="flex-1"
+                                leftIcon={rsvpStatus === "interested" ? <Check size={14} /> : undefined}
+                                onClick={() => handleRsvp(event.id, "interested")}
+                              >
+                                {rsvpStatus === "interested" ? "Interested" : "Mark Interested"}
+                              </Button>
+                            </>
+                          )}
                           <Button
                             variant="ghost"
                             size="sm"
