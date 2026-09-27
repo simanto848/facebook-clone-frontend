@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Users, Shield, ShieldAlert, LogOut, UserMinus, X, Edit3, Check, UserPlus, Search } from "lucide-react";
+import { Users, Shield, ShieldAlert, LogOut, UserMinus, X, Edit3, Check, UserPlus, Search, Link as LinkIcon } from "lucide-react";
 import { Dialog, Button, Avatar, Badge, Input } from "@/components/ui";
 import { useAuthStore } from "@/store/authStore";
 import { useChatStore } from "@/store/chatStore";
@@ -36,6 +36,7 @@ export function GroupInfoModal({
   const [groupTitle, setGroupTitle] = useState(initialTitle);
   const [participants, setParticipants] = useState<GroupParticipant[]>(initialParticipants);
   const [memberSearch, setMemberSearch] = useState("");
+  const [copiedLink, setCopiedLink] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState(initialTitle);
   const [isLeaving, setIsLeaving] = useState(false);
@@ -129,6 +130,15 @@ export function GroupInfoModal({
     }
   };
 
+  const handleCopyGroupLink = () => {
+    if (typeof window !== "undefined") {
+      const inviteUrl = `${window.location.origin}/messages?group=${encodeURIComponent(groupId)}`;
+      navigator.clipboard.writeText(inviteUrl);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+    }
+  };
+
   const handleLeaveGroup = async () => {
     setIsLeaving(true);
     try {
@@ -184,7 +194,21 @@ export function GroupInfoModal({
                   )}
                 </div>
               )}
-              <p className="text-xs text-slate-400">{participants.length} Members</p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <p className="text-xs text-slate-400">{participants.length} Members</p>
+                <span className="text-slate-600">•</span>
+                <button
+                  type="button"
+                  onClick={handleCopyGroupLink}
+                  className="flex items-center gap-1 text-[11px] text-blue-400 hover:text-blue-300 transition cursor-pointer"
+                  title="Copy invite link to this group"
+                >
+                  {copiedLink ? <Check size={11} className="text-emerald-400" /> : <LinkIcon size={11} />}
+                  <span className={copiedLink ? "text-emerald-400 font-semibold" : ""}>
+                    {copiedLink ? "Link Copied!" : "Copy Link"}
+                  </span>
+                </button>
+              </div>
             </div>
           </div>
 
