@@ -12,7 +12,19 @@ export function AudioPlayer({ src, isMe = false }: AudioPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [playbackRate, setPlaybackRate] = useState<number>(1);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const cyclePlaybackRate = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const rates = [1, 1.5, 2];
+    const nextIndex = (rates.indexOf(playbackRate) + 1) % rates.length;
+    const nextRate = rates[nextIndex];
+    setPlaybackRate(nextRate);
+    if (audioRef.current) {
+      audioRef.current.playbackRate = nextRate;
+    }
+  };
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -121,7 +133,21 @@ export function AudioPlayer({ src, isMe = false }: AudioPlayerProps) {
         </div>
       </div>
 
-      <Volume2 size={14} className="opacity-60 shrink-0" />
+      <div className="flex items-center gap-1.5 shrink-0">
+        <button
+          type="button"
+          onClick={cyclePlaybackRate}
+          className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold font-mono transition cursor-pointer shadow-xs ${
+            isMe
+              ? "bg-white/20 hover:bg-white/30 text-white"
+              : "bg-[#374151]/60 hover:bg-[#374151] text-blue-400"
+          }`}
+          title="Cycle playback speed (1x, 1.5x, 2x)"
+        >
+          {playbackRate}x
+        </button>
+        <Volume2 size={14} className="opacity-60" />
+      </div>
     </div>
   );
 }
