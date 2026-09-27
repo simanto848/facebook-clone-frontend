@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Dialog, Tabs, Avatar, Button, EmptyState } from "@/components/ui";
-import { UserPlus, UserCheck } from "lucide-react";
+import { UserPlus, UserCheck, Search, X } from "lucide-react";
 import Link from "next/link";
 
 interface UserItem {
@@ -29,6 +29,7 @@ export function FollowersModal({
   initialTab = "followers",
 }: FollowersModalProps) {
   const [activeTab, setActiveTab] = useState<string>(initialTab);
+  const [searchQuery, setSearchQuery] = useState("");
   const [followingMap, setFollowingMap] = useState<Record<string, boolean>>({});
 
   const tabItems = [
@@ -42,6 +43,12 @@ export function FollowersModal({
 
   const activeList = activeTab === "followers" ? followers : following;
 
+  const filteredList = activeList.filter((user) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase().trim();
+    return user.name.toLowerCase().includes(q) || user.username.toLowerCase().includes(q);
+  });
+
   return (
     <Dialog isOpen={isOpen} onClose={onClose} title="Network Connections" size="md">
       <div className="space-y-4">
@@ -52,14 +59,40 @@ export function FollowersModal({
           variant="pills"
         />
 
+        {activeList.length > 2 && (
+          <div className="relative flex items-center">
+            <Search size={13} className="absolute left-3 text-slate-500" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={`Search ${activeTab}...`}
+              className="w-full h-8 pl-8 pr-7 rounded-xl bg-slate-900 border border-slate-700/80 text-xs text-white placeholder:text-slate-500 outline-none focus:border-blue-500 transition"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2.5 text-slate-400 hover:text-white text-xs cursor-pointer"
+              >
+                <X size={12} />
+              </button>
+            )}
+          </div>
+        )}
+
         <div className="max-h-96 overflow-y-auto space-y-3 custom-scrollbar pr-1">
           {activeList.length === 0 ? (
             <EmptyState
               title={activeTab === "followers" ? "No followers yet" : "Not following anyone"}
               description="Connect with developers to build your network."
             />
+          ) : filteredList.length === 0 ? (
+            <div className="py-8 text-center text-slate-400 text-xs">
+              No users found matching &ldquo;{searchQuery}&rdquo;.
+            </div>
           ) : (
-            activeList.map((user) => {
+            filteredList.map((user) => {
               const isFollowing = followingMap[user.id] ?? user.isFollowing;
               return (
                 <div
