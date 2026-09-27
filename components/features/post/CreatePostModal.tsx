@@ -3,7 +3,7 @@
 import React, { useState, useCallback } from "react";
 import Image from "next/image";
 import { useDropzone } from "react-dropzone";
-import { UploadCloud, X, Image as ImageIcon, Video, Loader2, Globe, Lock, Users, Hash, Sparkles, Trash2 } from "lucide-react";
+import { UploadCloud, X, Image as ImageIcon, Video, Loader2, Globe, Lock, Users, Hash, Sparkles, Trash2, Smile } from "lucide-react";
 import { Dialog, Button } from "@/components/ui";
 import { compressImageFile, createMediaPreview, revokeMediaPreview, type MediaPreview } from "@/lib/mediaUpload";
 import { postService } from "@/services/postService";
@@ -20,6 +20,8 @@ interface CreatePostModalProps {
 export function CreatePostModal({ isOpen, onClose, initialType = "gallery" }: CreatePostModalProps) {
   const [content, setContent] = useState("");
   const [privacy, setPrivacy] = useState<"PUBLIC" | "FRIENDS" | "ONLY_ME">("PUBLIC");
+  const [feeling, setFeeling] = useState<{ emoji: string; label: string } | null>(null);
+  const [showFeelingPicker, setShowFeelingPicker] = useState(false);
   const [previews, setPreviews] = useState<MediaPreview[]>([]);
   const [compressing, setCompressing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -153,9 +155,12 @@ export function CreatePostModal({ isOpen, onClose, initialType = "gallery" }: Cr
 
     try {
       const mediaUrls = previews.map((p) => p.previewUrl);
+      const finalContent = feeling
+        ? `${content.trim() ? `${content.trim()}\n\n` : ""}— feeling ${feeling.label} ${feeling.emoji}`
+        : content;
 
       await postService.createPost({
-        content,
+        content: finalContent,
         mediaUrls,
         privacy,
       });
@@ -168,7 +173,7 @@ export function CreatePostModal({ isOpen, onClose, initialType = "gallery" }: Cr
         },
         visibility: privacy === "PUBLIC" ? "public" : privacy === "FRIENDS" ? "friends" : "private",
         type: previews.length > 0 && previews[0].type === "video" ? "video" : mediaUrls.length > 0 ? "image" : "text",
-        content,
+        content: finalContent,
         images: mediaUrls,
       });
 
@@ -176,6 +181,8 @@ export function CreatePostModal({ isOpen, onClose, initialType = "gallery" }: Cr
       previews.forEach(revokeMediaPreview);
       setPreviews([]);
       setContent("");
+      setFeeling(null);
+      setShowFeelingPicker(false);
       if (typeof window !== "undefined") {
         localStorage.removeItem("post_composer_draft");
       }
@@ -210,9 +217,24 @@ export function CreatePostModal({ isOpen, onClose, initialType = "gallery" }: Cr
               </div>
             )}
           </div>
-          <div>
-            <h4 className="font-bold text-xs text-white">{user?.displayName || user?.username || "You"}</h4>
-            <div className="flex items-center gap-1 mt-0.5">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <h4 className="font-bold text-xs text-white">{user?.displayName || user?.username || "You"}</h4>
+              {feeling && (
+                <span className="inline-flex items-center gap-1 text-[11px] text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2 py-0.5 rounded-full">
+                  <span>{feeling.emoji}</span>
+                  <span>is feeling {feeling.label}</span>
+                  <button
+                    type="button"
+                    onClick={() => setFeeling(null)}
+                    className="hover:text-white ml-0.5 cursor-pointer"
+                  >
+                    <X size={10} />
+                  </button>
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5 mt-0.5">
               <select
                 value={privacy}
                 onChange={(e) => setPrivacy(e.target.value as any)}
@@ -222,9 +244,68 @@ export function CreatePostModal({ isOpen, onClose, initialType = "gallery" }: Cr
                 <option value="FRIENDS">👥 Friends</option>
                 <option value="ONLY_ME">🔒 Only Me</option>
               </select>
+
+              <button
+                type="button"
+                onClick={() => setShowFeelingPicker((prev) => !prev)}
+                className={`flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[10px] font-semibold transition cursor-pointer ${
+                  showFeelingPicker || feeling
+                    ? "bg-amber-500/20 border-amber-500/40 text-amber-300"
+                    : "bg-[#0f172a] border-[#374151] text-slate-300 hover:text-white"
+                }`}
+                title="Add feeling or activity"
+              >
+                <Smile size={11} className="text-amber-400" />
+                <span>{feeling ? `${feeling.emoji} ${feeling.label}` : "Feeling"}</span>
+              </button>
             </div>
           </div>
         </div>
+
+        {/* Feeling / Activity Drawer */}
+        {showFeelingPicker && (
+          <div className="p-3 rounded-xl border border-slate-700 bg-slate-900/90 shadow-xl space-y-2 animate-in fade-in duration-150">
+            <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+              <span>How are you feeling right now?</span>
+              <button
+                type="button"
+                onClick={() => setShowFeelingPicker(false)}
+                className="text-slate-400 hover:text-white"
+              >
+                <X size={12} />
+              </button>
+            </div>
+            <div className="grid grid-cols-4 gap-1.5">
+              {[
+                { emoji: "😊", label: "Happy" },
+                { emoji: "🔥", label: "Motivated" },
+                { emoji: "💻", label: "Coding" },
+                { emoji: "🚀", label: "Launching" },
+                { emoji: "🎉", label: "Celebrating" },
+                { emoji: "☕", label: "Caffeinated" },
+                { emoji: "📚", label: "Learning" },
+                { emoji: "🎧", label: "Listening" },
+              ].map((item) => (
+                <button
+                  key={item.label}
+                  type="button"
+                  onClick={() => {
+                    setFeeling(item);
+                    setShowFeelingPicker(false);
+                  }}
+                  className={`flex items-center gap-1.5 p-1.5 rounded-lg border transition text-left cursor-pointer ${
+                    feeling?.label === item.label
+                      ? "bg-amber-500/20 border-amber-400/50 text-amber-300 font-bold"
+                      : "bg-slate-800/80 border-slate-700/60 hover:bg-slate-800 text-slate-200"
+                  }`}
+                >
+                  <span className="text-sm">{item.emoji}</span>
+                  <span className="text-[10px] truncate">{item.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Content Textarea with Mention Autocomplete */}
         <div className="relative">
