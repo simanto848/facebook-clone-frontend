@@ -12,6 +12,7 @@ import LanguageSection from "@/components/features/settings/sections/LanguageSec
 import FeedSection from "@/components/features/settings/sections/FeedSection";
 import ActivityLogSection from "@/components/features/settings/sections/ActivityLogSection";
 import BlockedUsersSection from "@/components/features/settings/sections/BlockedUsersSection";
+import DataExportSection from "@/components/features/settings/sections/DataExportSection";
 import { Loader } from "@/components/ui";
 
 function SettingsContent() {
@@ -42,6 +43,8 @@ function SettingsContent() {
         return <AccountSection />;
       case "activity_log":
         return <ActivityLogSection />;
+      case "data_export":
+        return <DataExportSection />;
       case "notifications":
         return <NotificationsSection />;
       case "privacy":

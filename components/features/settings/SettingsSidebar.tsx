@@ -1,4 +1,4 @@
-import { Bell, Lock, Palette, Shield, User, Globe, Rss, History, UserX } from "lucide-react";
+import { Bell, Lock, Palette, Shield, User, Globe, Rss, History, UserX, Download } from "lucide-react";
 
 export const menuItems = [
   {
@@ -10,6 +10,11 @@ export const menuItems = [
     icon: History,
     label: "Activity Log",
     id: "activity_log",
+  },
+  {
+    icon: Download,
+    label: "Download Information",
+    id: "data_export",
   },
   {
     icon: Bell,
