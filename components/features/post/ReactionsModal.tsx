@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { Dialog, Button } from "@/components/ui";
 import { reactionService, ReactionType } from "@/services/reactionService";
-import { Heart, ThumbsUp, Smile, Sparkles } from "lucide-react";
+import { Heart, ThumbsUp, Smile, Sparkles, Search, X } from "lucide-react";
 
 interface ReactionUser {
   id: string;
@@ -37,6 +37,7 @@ export default function ReactionsModal({
   targetType = "POST",
 }: ReactionsModalProps) {
   const [activeTab, setActiveTab] = useState<"ALL" | ReactionType>("ALL");
+  const [searchQuery, setSearchQuery] = useState("");
   const [reactions, setReactions] = useState<ReactionUser[]>([]);
   const [stats, setStats] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
@@ -117,6 +118,15 @@ export default function ReactionsModal({
       ? reactions
       : reactions.filter((r) => r.type === activeTab);
 
+  const searchedReactions = filteredReactions.filter((r) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      r.name.toLowerCase().includes(q) ||
+      Boolean(r.username && r.username.toLowerCase().includes(q))
+    );
+  });
+
   const totalCount = reactions.length;
 
   return (
@@ -155,6 +165,27 @@ export default function ReactionsModal({
           })}
         </div>
 
+        {/* Search input */}
+        <div className="relative">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search reacting users..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-8 pr-8 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-white placeholder:text-slate-500 outline-none focus:border-blue-500 transition"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+            >
+              <X size={13} />
+            </button>
+          )}
+        </div>
+
         {/* Reaction User List */}
         <div className="max-h-72 overflow-y-auto space-y-2 pr-1">
           {loading ? (
@@ -169,12 +200,12 @@ export default function ReactionsModal({
                 </div>
               ))}
             </div>
-          ) : filteredReactions.length === 0 ? (
+          ) : searchedReactions.length === 0 ? (
             <div className="text-center py-8 text-slate-400 text-sm">
-              No reactions found in this category.
+              {searchQuery ? `No reactors match "${searchQuery}"` : "No reactions found in this category."}
             </div>
           ) : (
-            filteredReactions.map((user) => {
+            searchedReactions.map((user) => {
               const config = REACTION_CONFIG[user.type] || REACTION_CONFIG.LIKE;
               return (
                 <div
