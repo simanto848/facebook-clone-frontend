@@ -16,6 +16,7 @@ import {
   UserPlus,
   UserCheck,
   Copy,
+  Code,
 } from "lucide-react";
 
 interface Props {
@@ -56,6 +57,7 @@ export default function PostDropdown({
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [copiedText, setCopiedText] = useState(false);
+  const [copiedEmbed, setCopiedEmbed] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
 
   const handleCopyLink = (e: React.MouseEvent) => {
@@ -76,6 +78,17 @@ export default function PostDropdown({
     setCopiedText(true);
     setTimeout(() => {
       setCopiedText(false);
+      setIsOpen(false);
+    }, 1500);
+  };
+
+  const handleCopyEmbedCode = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const embedSnippet = `<iframe src="${window.location.origin}/post/${postId}?embed=true" width="500" height="380" frameborder="0" scrolling="no" allowtransparency="true"></iframe>`;
+    navigator.clipboard.writeText(embedSnippet);
+    setCopiedEmbed(true);
+    setTimeout(() => {
+      setCopiedEmbed(false);
       setIsOpen(false);
     }, 1500);
   };
@@ -210,6 +223,23 @@ export default function PostDropdown({
                 )}
               </button>
             )}
+
+            <button
+              onClick={handleCopyEmbedCode}
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-slate-300 transition hover:bg-[#1f2937] hover:text-white"
+            >
+              {copiedEmbed ? (
+                <>
+                  <Check size={16} className="text-green-500" />
+                  <span className="text-green-500">Embed Code Copied!</span>
+                </>
+              ) : (
+                <>
+                  <Code size={16} />
+                  <span>Copy Embed Code</span>
+                </>
+              )}
+            </button>
 
             <button
               onClick={() => {
