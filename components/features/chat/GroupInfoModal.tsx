@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Users, Shield, ShieldAlert, LogOut, UserMinus, X, Edit3, Check, UserPlus } from "lucide-react";
+import { Users, Shield, ShieldAlert, LogOut, UserMinus, X, Edit3, Check, UserPlus, Search } from "lucide-react";
 import { Dialog, Button, Avatar, Badge, Input } from "@/components/ui";
 import { useAuthStore } from "@/store/authStore";
 import { useChatStore } from "@/store/chatStore";
@@ -35,6 +35,7 @@ export function GroupInfoModal({
 
   const [groupTitle, setGroupTitle] = useState(initialTitle);
   const [participants, setParticipants] = useState<GroupParticipant[]>(initialParticipants);
+  const [memberSearch, setMemberSearch] = useState("");
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState(initialTitle);
   const [isLeaving, setIsLeaving] = useState(false);
@@ -198,7 +199,12 @@ export function GroupInfoModal({
         {/* Member List */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider">Group Members</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider">Group Members</h3>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-800 text-slate-400 font-mono">
+                {participants.length}
+              </span>
+            </div>
             {isCurrentUserAdmin && (
               <Button
                 variant="ghost"
@@ -211,6 +217,29 @@ export function GroupInfoModal({
               </Button>
             )}
           </div>
+
+          {/* Member Search Bar */}
+          {participants.length > 2 && (
+            <div className="relative flex items-center">
+              <Search size={13} className="absolute left-2.5 text-slate-500" />
+              <input
+                type="text"
+                value={memberSearch}
+                onChange={(e) => setMemberSearch(e.target.value)}
+                placeholder="Search group members..."
+                className="w-full h-8 pl-8 pr-7 rounded-xl bg-slate-900 border border-slate-700/80 text-xs text-white placeholder:text-slate-500 outline-none focus:border-blue-500 transition"
+              />
+              {memberSearch && (
+                <button
+                  type="button"
+                  onClick={() => setMemberSearch("")}
+                  className="absolute right-2 text-slate-400 hover:text-white text-xs"
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Add Member Panel */}
           {isAddOpen && (
@@ -292,67 +321,85 @@ export function GroupInfoModal({
               )}
             </div>
           )}
-          <div className="max-h-60 overflow-y-auto space-y-1.5 custom-scrollbar pr-1">
-            {participants.map((member) => {
-              const isSelf = member.id === currentUser?.id;
-              return (
-                <div
-                  key={member.id}
-                  className="flex items-center justify-between p-3 rounded-2xl bg-[#1f2937]/50 border border-[#1f2937] hover:border-slate-700 transition"
-                >
-                  <div className="flex items-center gap-3">
-                    <Avatar src={member.avatar} name={member.name} size="sm" />
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="text-xs font-bold text-white">{member.name}</p>
-                        {isSelf && <span className="text-[10px] text-blue-400 font-semibold">(You)</span>}
-                      </div>
-                      <span className="text-[10px] text-slate-400">Joined Group</span>
-                    </div>
-                  </div>
+          {(() => {
+            const filteredMembers = participants.filter((p) => {
+              if (!memberSearch.trim()) return true;
+              const q = memberSearch.toLowerCase().trim();
+              return p.name.toLowerCase().includes(q) || p.role.toLowerCase().includes(q);
+            });
 
-                  <div className="flex items-center gap-2">
-                    {isCurrentUserAdmin && !isSelf ? (
-                      <button
-                        type="button"
-                        onClick={() => handleToggleRole(member.id, member.role)}
-                        className="cursor-pointer transition hover:opacity-80"
-                        title={`Click to ${member.role === "ADMIN" ? "demote to Member" : "promote to Admin"}`}
-                      >
-                        {member.role === "ADMIN" ? (
+            if (filteredMembers.length === 0) {
+              return (
+                <div className="py-6 text-center text-slate-400 text-xs bg-slate-900/40 rounded-xl border border-slate-800">
+                  No members match &ldquo;{memberSearch}&rdquo;.
+                </div>
+              );
+            }
+
+            return (
+              <div className="max-h-60 overflow-y-auto space-y-1.5 custom-scrollbar pr-1">
+                {filteredMembers.map((member) => {
+                  const isSelf = member.id === currentUser?.id;
+                  return (
+                    <div
+                      key={member.id}
+                      className="flex items-center justify-between p-3 rounded-2xl bg-[#1f2937]/50 border border-[#1f2937] hover:border-slate-700 transition"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Avatar src={member.avatar} name={member.name} size="sm" />
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="text-xs font-bold text-white">{member.name}</p>
+                            {isSelf && <span className="text-[10px] text-blue-400 font-semibold">(You)</span>}
+                          </div>
+                          <span className="text-[10px] text-slate-400">Joined Group</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {isCurrentUserAdmin && !isSelf ? (
+                          <button
+                            type="button"
+                            onClick={() => handleToggleRole(member.id, member.role)}
+                            className="cursor-pointer transition hover:opacity-80"
+                            title={`Click to ${member.role === "ADMIN" ? "demote to Member" : "promote to Admin"}`}
+                          >
+                            {member.role === "ADMIN" ? (
+                              <Badge variant="primary" className="flex items-center gap-1 bg-blue-600/20 text-blue-400 border border-blue-500/30">
+                                <Shield size={10} />
+                                <span>Admin</span>
+                              </Badge>
+                            ) : (
+                              <Badge variant="secondary" className="hover:bg-slate-700">
+                                Member
+                              </Badge>
+                            )}
+                          </button>
+                        ) : member.role === "ADMIN" ? (
                           <Badge variant="primary" className="flex items-center gap-1 bg-blue-600/20 text-blue-400 border border-blue-500/30">
                             <Shield size={10} />
                             <span>Admin</span>
                           </Badge>
                         ) : (
-                          <Badge variant="secondary" className="hover:bg-slate-700">
-                            Member
-                          </Badge>
+                          <Badge variant="secondary">Member</Badge>
                         )}
-                      </button>
-                    ) : member.role === "ADMIN" ? (
-                      <Badge variant="primary" className="flex items-center gap-1 bg-blue-600/20 text-blue-400 border border-blue-500/30">
-                        <Shield size={10} />
-                        <span>Admin</span>
-                      </Badge>
-                    ) : (
-                      <Badge variant="secondary">Member</Badge>
-                    )}
-                    {isCurrentUserAdmin && !isSelf && (
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveParticipant(member.id)}
-                        className="p-1 text-slate-400 hover:text-rose-400 hover:bg-white/5 rounded-lg transition"
-                        title="Remove member"
-                      >
-                        <UserMinus size={13} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                        {isCurrentUserAdmin && !isSelf && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveParticipant(member.id)}
+                            className="p-1 text-slate-400 hover:text-rose-400 hover:bg-white/5 rounded-lg transition"
+                            title="Remove member"
+                          >
+                            <UserMinus size={13} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
         </div>
 
         {/* Footer Actions */}
