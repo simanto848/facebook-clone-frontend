@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, Heart, Eye, Trash2, Play, Pause, Volume2, VolumeX, Send, Share2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Heart, Eye, Trash2, Play, Pause, Volume2, VolumeX, Send, Share2, Download } from "lucide-react";
 import { Dialog, Avatar, Button, Badge } from "@/components/ui";
 
 export interface StoryItem {
@@ -55,6 +55,20 @@ export function StoryViewerModal({
         setReactionToast(null);
       }, 2200);
     }
+  };
+
+  const handleDownloadMedia = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!currentStory || currentStory.type === "text") return;
+    const a = document.createElement("a");
+    a.href = currentStory.content;
+    a.download = `story_${currentStory.author.name.toLowerCase().replace(/\s+/g, "_")}_${currentStory.id}.${currentStory.type === "video" ? "mp4" : "jpg"}`;
+    a.target = "_blank";
+    a.click();
+    setReactionToast("Story media download started!");
+    setTimeout(() => {
+      setReactionToast(null);
+    }, 2200);
   };
 
   const handleSendReply = (e: React.FormEvent) => {
@@ -170,7 +184,7 @@ export function StoryViewerModal({
             <Avatar src={currentStory.author.avatar} name={currentStory.author.name} size="sm" />
             <div>
               <p className="text-xs font-bold text-white leading-tight">{currentStory.author.name}</p>
-              <span className="text-[10px] text-slate-300">Just now</span>
+              <span className="text-[10px] text-slate-300">Just now • {currentIndex + 1} of {stories.length}</span>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -197,6 +211,17 @@ export function StoryViewerModal({
                 title={isMuted ? "Unmute" : "Mute"}
               >
                 {isMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
+              </button>
+            )}
+
+            {currentStory.type !== "text" && (
+              <button
+                type="button"
+                onClick={handleDownloadMedia}
+                className="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition"
+                title="Download Story Media"
+              >
+                <Download size={15} />
               </button>
             )}
 
