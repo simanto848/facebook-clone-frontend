@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Share2, Send, Link as LinkIcon, Check, Globe, MessageCircle, ExternalLink, Mail, MessageSquare } from "lucide-react";
+import { Share2, Send, Link as LinkIcon, Check, Globe, MessageCircle, ExternalLink, Mail, MessageSquare, Search, X } from "lucide-react";
 import { shareService } from "@/services/shareService";
 import { Dialog, Button } from "@/components/ui";
 import { useChatStore } from "@/store/chatStore";
@@ -18,6 +18,7 @@ export default function ShareModal({ isOpen, onClose, postId, post, onShareSucce
   const [sharing, setSharing] = useState(false);
   const [shared, setShared] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [dmSearch, setDmSearch] = useState("");
   const { conversations, sendDirectMessage } = useChatStore();
 
   const targetPostId = postId || post?.id || "";
@@ -220,20 +221,67 @@ export default function ShareModal({ isOpen, onClose, postId, post, onShareSucce
           </div>
 
           {conversations.length > 0 && (
-            <div className="space-y-1.5 pt-2 border-t border-[#1f2937]">
-              <label className="text-slate-300 font-semibold block">Send in Direct Message</label>
-              <div className="flex gap-2 overflow-x-auto pb-1 custom-scrollbar">
-                {conversations.slice(0, 5).map((conv) => (
-                  <button
-                    key={conv.id}
-                    onClick={() => handleSendToChat(conv.id)}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#0f172a] border border-[#1f2937] hover:border-blue-500 text-xs text-white shrink-0 cursor-pointer transition"
-                  >
-                    <span>{conv.name}</span>
-                    <Send size={12} className="text-blue-400" />
-                  </button>
-                ))}
+            <div className="space-y-2 pt-2 border-t border-[#1f2937]">
+              <div className="flex items-center justify-between">
+                <label className="text-slate-300 font-semibold block">Send in Direct Message</label>
+                {conversations.length > 3 && (
+                  <span className="text-[10px] text-slate-500 font-mono">
+                    {conversations.length} available
+                  </span>
+                )}
               </div>
+
+              {conversations.length > 3 && (
+                <div className="relative flex items-center">
+                  <Search size={12} className="absolute left-2.5 text-slate-500" />
+                  <input
+                    type="text"
+                    value={dmSearch}
+                    onChange={(e) => setDmSearch(e.target.value)}
+                    placeholder="Search chat or friend..."
+                    className="w-full h-7 pl-7 pr-6 rounded-lg bg-[#0f172a] border border-[#1f2937] text-[11px] text-white placeholder:text-slate-500 outline-none focus:border-blue-500 transition"
+                  />
+                  {dmSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setDmSearch("")}
+                      className="absolute right-2 text-slate-400 hover:text-white"
+                    >
+                      <X size={11} />
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {(() => {
+                const filtered = conversations.filter((c) =>
+                  !dmSearch.trim() || c.name.toLowerCase().includes(dmSearch.toLowerCase().trim())
+                );
+
+                if (filtered.length === 0) {
+                  return (
+                    <p className="text-[11px] text-slate-500 py-1 italic">
+                      No chats match &ldquo;{dmSearch}&rdquo;
+                    </p>
+                  );
+                }
+
+                return (
+                  <div className="flex gap-2 overflow-x-auto pb-1 custom-scrollbar">
+                    {filtered.slice(0, 8).map((conv) => (
+                      <button
+                        key={conv.id}
+                        type="button"
+                        onClick={() => handleSendToChat(conv.id)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#0f172a] border border-[#1f2937] hover:border-blue-500 text-xs text-white shrink-0 cursor-pointer transition"
+                      >
+                        <span className="truncate max-w-[120px]">{conv.name}</span>
+                        <Send size={11} className="text-blue-400" />
+                      </button>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
           )}
 
