@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { MessageSquare, Share2, Send, Heart, ShieldAlert, Globe, Users, Lock, EyeOff, Eye, Clock, Volume2, VolumeX, Languages, Copy, Check, Type } from "lucide-react";
+import { MessageSquare, Share2, Send, Heart, ShieldAlert, Globe, Users, Lock, EyeOff, Eye, Clock, Volume2, VolumeX, Languages, Copy, Check, Type, BookOpen, Sparkles } from "lucide-react";
 import { PostType, usePostStore } from "@/store/postStore";
 import PostDropdown from "./PostDropdown";
 import ReactionPicker, { reactionsList } from "./ReactionPicker";
@@ -79,6 +79,19 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
   const [translating, setTranslating] = useState(false);
   const [copiedText, setCopiedText] = useState(false);
   const [textSize, setTextSize] = useState<"sm" | "base" | "lg">("sm");
+  const [showTldr, setShowTldr] = useState(false);
+
+  const getTldrPoints = (text: string) => {
+    if (!text) return [];
+    const sentences = text
+      .split(/(?<=[.!?])\s+/)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 10);
+    if (sentences.length <= 2) {
+      return [text.slice(0, 140) + (text.length > 140 ? "..." : "")];
+    }
+    return sentences.slice(0, 3);
+  };
 
   const cycleTextSize = () => {
     setTextSize((prev) => (prev === "sm" ? "base" : prev === "base" ? "lg" : "sm"));
@@ -317,11 +330,15 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
                   })()}
                 </span>
               </span>
-              {wordCount >= 50 && (
+              {wordCount > 10 && (
                 <>
                   <span>•</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-slate-800 text-slate-400 border border-slate-700/60 inline-flex items-center gap-1">
-                    <Clock size={10} /> {readingTimeMin} min read
+                  <span
+                    className="text-[10px] px-1.5 py-0.5 rounded-md bg-slate-800 text-slate-400 border border-slate-700/60 inline-flex items-center gap-1 cursor-default"
+                    title={`${wordCount} words • ~${readingTimeMin} min read`}
+                  >
+                    <BookOpen size={10} className="text-blue-400" />
+                    <span>{wordCount < 40 ? "< 1 min read" : `${readingTimeMin} min read`}</span>
                   </span>
                 </>
               )}
@@ -456,6 +473,42 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
                     • Translated from auto-detected language
                   </span>
                 )}
+                {wordCount >= 25 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowTldr((prev) => !prev)}
+                    className={`inline-flex items-center gap-1 text-[11px] font-medium transition cursor-pointer ${
+                      showTldr
+                        ? "text-purple-300 font-semibold"
+                        : "text-slate-400 hover:text-purple-400"
+                    }`}
+                  >
+                    <Sparkles size={11} className={showTldr ? "text-purple-400" : "text-slate-400"} />
+                    <span>{showTldr ? "Hide Takeaways" : "Quick Takeaways"}</span>
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* AI Quick Takeaways / TL;DR Box */}
+            {showTldr && (
+              <div className="p-3 rounded-xl bg-purple-950/20 border border-purple-500/30 space-y-1.5 animate-in fade-in duration-150">
+                <div className="flex items-center justify-between text-[11px] font-bold text-purple-300">
+                  <span className="flex items-center gap-1">
+                    <Sparkles size={12} />
+                    <span>Key Takeaways</span>
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-normal">
+                    {wordCount} words • ~{readingTimeMin} min read
+                  </span>
+                </div>
+                <ul className="space-y-1 text-xs text-slate-300 list-disc list-inside">
+                  {getTldrPoints(post.content).map((point, idx) => (
+                    <li key={idx} className="leading-relaxed">
+                      {point}
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
           </div>
