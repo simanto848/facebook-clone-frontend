@@ -1,19 +1,33 @@
 interface Props {
   title: string;
   description: string;
+  checked?: boolean;
+  onChange?: (checked: boolean) => void;
+  defaultChecked?: boolean;
 }
 
-export default function SettingToggle({ title, description }: Props) {
+export default function SettingToggle({
+  title,
+  description,
+  checked,
+  onChange,
+  defaultChecked = true,
+}: Props) {
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between py-1">
       <div>
-        <h4 className="text-white">{title}</h4>
-
-        <p className="text-sm text-slate-400">{description}</p>
+        <h4 className="text-white text-xs font-semibold">{title}</h4>
+        <p className="text-xs text-slate-400">{description}</p>
       </div>
 
-      <label className="relative inline-flex cursor-pointer items-center">
-        <input type="checkbox" className="peer sr-only" defaultChecked />
+      <label className="relative inline-flex cursor-pointer items-center shrink-0 ml-4">
+        <input
+          type="checkbox"
+          className="peer sr-only"
+          checked={checked}
+          defaultChecked={checked === undefined ? defaultChecked : undefined}
+          onChange={(e) => onChange?.(e.target.checked)}
+        />
 
         <div
           className="
