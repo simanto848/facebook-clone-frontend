@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Mic, Square, Trash2, Send, Play, Pause } from "lucide-react";
+import { Mic, Square, Trash2, Send, Play, Pause, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui";
 
 interface VoiceRecorderProps {
@@ -94,6 +94,17 @@ export function VoiceRecorder({ onSendVoiceNote, onCancel }: VoiceRecorderProps)
     }
   };
 
+  const handleReRecord = () => {
+    if (previewAudioRef.current) {
+      previewAudioRef.current.pause();
+      previewAudioRef.current = null;
+    }
+    setIsPlayingPreview(false);
+    setAudioUrl(null);
+    setRecordingTime(0);
+    startRecording();
+  };
+
   const handleSend = () => {
     if (audioUrl) {
       onSendVoiceNote(audioUrl);
@@ -146,18 +157,32 @@ export function VoiceRecorder({ onSendVoiceNote, onCancel }: VoiceRecorderProps)
           </Button>
         )}
 
-        {/* Preview Playback */}
+        {/* Preview Playback & Re-record */}
         {!isRecording && audioUrl && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={togglePreviewPlay}
-            className="h-8 w-8 p-0 rounded-full text-blue-400 hover:bg-blue-400/10 cursor-pointer"
-            title="Preview voice note"
-          >
-            {isPlayingPreview ? <Pause size={15} /> : <Play size={15} />}
-          </Button>
+          <>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={togglePreviewPlay}
+              className="h-8 w-8 p-0 rounded-full text-blue-400 hover:bg-blue-400/10 cursor-pointer"
+              title="Preview voice note"
+            >
+              {isPlayingPreview ? <Pause size={15} /> : <Play size={15} />}
+            </Button>
+
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleReRecord}
+              className="h-8 px-2 text-xs text-amber-400 hover:bg-amber-400/10 cursor-pointer"
+              title="Discard and record again"
+            >
+              <RotateCcw size={13} className="mr-1" />
+              Redo
+            </Button>
+          </>
         )}
 
         {/* Delete / Cancel */}
