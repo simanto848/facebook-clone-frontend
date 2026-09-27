@@ -4,7 +4,7 @@ import React, { useState, useEffect, use } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Users, Shield, Plus, Check, UserPlus, Crown, MessageSquare, Info, ShieldCheck, Share2, Flag, Search, X, Clock, Flame, Filter, Pin, Megaphone, Pencil, Link as LinkIcon, Copy } from "lucide-react";
+import { ArrowLeft, Users, Shield, Plus, Check, UserPlus, Crown, MessageSquare, Info, ShieldCheck, Share2, Flag, Search, X, Clock, Flame, Filter, Pin, Megaphone, Pencil, Link as LinkIcon, Copy, Image as ImageIcon } from "lucide-react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
@@ -43,7 +43,8 @@ export default function GroupDetailPage({ params }: PageProps) {
   const [loading, setLoading] = useState(true);
 
   // Tabs, members, and feed filters
-  const [activeTab, setActiveTab] = useState<"feed" | "members" | "about">("feed");
+  const [activeTab, setActiveTab] = useState<"feed" | "media" | "members" | "about">("feed");
+  const [selectedPreviewMedia, setSelectedPreviewMedia] = useState<string | null>(null);
   const [members, setMembers] = useState<any[]>([]);
   const [isMembersLoading, setIsMembersLoading] = useState(false);
   const [memberSearchQuery, setMemberSearchQuery] = useState("");
@@ -406,30 +407,36 @@ export default function GroupDetailPage({ params }: PageProps) {
                 </div>
 
                 {/* Navigation Tabs */}
-                <div className="flex items-center gap-2 border-b border-[#1f2937] pb-1">
-                  {[
-                    { key: "feed", label: "Group Feed", icon: Users },
-                    { key: "members", label: `Members (${memberCount})`, icon: ShieldCheck },
-                    { key: "about", label: "About", icon: Info },
-                  ].map((tab) => {
-                    const Icon = tab.icon;
-                    const isActive = activeTab === tab.key;
-                    return (
-                      <button
-                        key={tab.key}
-                        onClick={() => setActiveTab(tab.key as any)}
-                        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                          isActive
-                            ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20"
-                            : "text-slate-400 hover:text-white hover:bg-slate-800/60"
-                        }`}
-                      >
-                        <Icon size={14} />
-                        {tab.label}
-                      </button>
-                    );
-                  })}
-                </div>
+                {(() => {
+                  const allMediaUrls = groupPosts.flatMap((p) => p.images || []).filter(Boolean);
+                  return (
+                    <div className="flex items-center gap-2 border-b border-[#1f2937] pb-1 overflow-x-auto no-scrollbar">
+                      {[
+                        { key: "feed", label: "Group Feed", icon: Users },
+                        { key: "media", label: `Media (${allMediaUrls.length})`, icon: ImageIcon },
+                        { key: "members", label: `Members (${memberCount})`, icon: ShieldCheck },
+                        { key: "about", label: "About", icon: Info },
+                      ].map((tab) => {
+                        const Icon = tab.icon;
+                        const isActive = activeTab === tab.key;
+                        return (
+                          <button
+                            key={tab.key}
+                            onClick={() => setActiveTab(tab.key as any)}
+                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                              isActive
+                                ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20"
+                                : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+                            }`}
+                          >
+                            <Icon size={14} />
+                            {tab.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
 
                 {/* Tab: Feed */}
                 {activeTab === "feed" && (
@@ -804,6 +811,64 @@ export default function GroupDetailPage({ params }: PageProps) {
                       );
                     })()}
                   </div>
+                )}
+
+                {/* Tab: Media Gallery */}
+                {activeTab === "media" && (() => {
+                  const allMediaUrls = groupPosts.flatMap((p) => p.images || []).filter(Boolean);
+                  return (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-bold text-sm text-white">Group Media Gallery</h3>
+                        <Badge variant="glass">{allMediaUrls.length} items</Badge>
+                      </div>
+
+                      {allMediaUrls.length === 0 ? (
+                        <EmptyState
+                          icon={<ImageIcon size={36} className="text-slate-500" />}
+                          title="No media in this group yet"
+                          description="Photos and media attached to group posts will appear here for all members."
+                        />
+                      ) : (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                          {allMediaUrls.map((url, idx) => (
+                            <div
+                              key={idx}
+                              onClick={() => setSelectedPreviewMedia(url)}
+                              className="relative aspect-square rounded-xl overflow-hidden bg-slate-900 border border-[#1f2937] hover:border-blue-500 group cursor-pointer transition"
+                            >
+                              <img
+                                src={url}
+                                alt="Group media"
+                                className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                              />
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <span className="text-xs text-white font-semibold">View</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* Media Preview Dialog */}
+                {selectedPreviewMedia && (
+                  <Dialog
+                    isOpen={Boolean(selectedPreviewMedia)}
+                    onClose={() => setSelectedPreviewMedia(null)}
+                    size="lg"
+                    title="Group Media Preview"
+                  >
+                    <div className="relative h-96 w-full bg-black rounded-xl overflow-hidden flex items-center justify-center">
+                      <img
+                        src={selectedPreviewMedia}
+                        alt="Group media"
+                        className="max-h-full max-w-full object-contain"
+                      />
+                    </div>
+                  </Dialog>
                 )}
 
                 {/* Tab: About */}
