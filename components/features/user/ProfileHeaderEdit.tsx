@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Camera, Upload, Check } from "lucide-react";
+import { Camera, Upload, Check, Trash2, X } from "lucide-react";
 import { Dialog, Button, Input, Avatar } from "@/components/ui";
 import { userService } from "@/services/userService";
 
@@ -94,11 +94,25 @@ export function ProfileHeaderEdit({
         />
 
         <div className="space-y-1">
-          <label className="text-xs font-semibold text-slate-300 block">Bio</label>
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-semibold text-slate-300 block">Bio</label>
+            <span
+              className={`text-[10px] font-mono ${
+                bio.length > 150
+                  ? "text-red-400 font-bold"
+                  : bio.length > 130
+                  ? "text-amber-400 font-semibold"
+                  : "text-slate-400"
+              }`}
+            >
+              {bio.length}/160
+            </span>
+          </div>
           <textarea
             value={bio}
-            onChange={(e) => setBio(e.target.value)}
+            onChange={(e) => setBio(e.target.value.slice(0, 160))}
             placeholder="Tell the community about yourself..."
+            maxLength={160}
             className="w-full h-16 rounded-xl border border-[#374151] bg-[#1f2937] p-2.5 text-xs text-white outline-none resize-none focus:border-blue-500"
           />
         </div>
@@ -129,7 +143,19 @@ export function ProfileHeaderEdit({
 
         {/* Cover Preset Selector */}
         <div className="space-y-1.5">
-          <label className="text-xs font-semibold text-slate-300 block">Choose Cover Banner Preset</label>
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-semibold text-slate-300 block">Choose Cover Banner Preset</label>
+            {coverPhoto && (
+              <button
+                type="button"
+                onClick={() => setCoverPhoto("")}
+                className="text-[10px] text-slate-400 hover:text-rose-400 transition cursor-pointer flex items-center gap-1"
+              >
+                <Trash2 size={10} />
+                <span>Remove Cover</span>
+              </button>
+            )}
+          </div>
           <div className="grid grid-cols-4 gap-2">
             {COVER_PRESETS.map((preset, idx) => (
               <button
