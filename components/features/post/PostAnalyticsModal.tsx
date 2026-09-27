@@ -118,6 +118,44 @@ export function PostAnalyticsModal({
           </Card>
         </div>
 
+        {/* Reach & Impression Activity Sparkline Chart */}
+        <Card>
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                <BarChart3 size={14} className="text-blue-400" />
+                <span>Daily Reach Activity</span>
+              </span>
+              <span className="text-[10px] text-slate-400 font-medium">Peak: 8:00 PM</span>
+            </div>
+
+            <div className="flex items-end justify-between gap-2 h-20 pt-2 px-1">
+              {[
+                { day: "Mon", val: 45, count: Math.round(views * 0.1) },
+                { day: "Tue", val: 70, count: Math.round(views * 0.16) },
+                { day: "Wed", val: 55, count: Math.round(views * 0.12) },
+                { day: "Thu", val: 90, count: Math.round(views * 0.22) },
+                { day: "Fri", val: 100, count: Math.round(views * 0.25) },
+                { day: "Sat", val: 65, count: Math.round(views * 0.15) },
+                { day: "Sun", val: 40, count: Math.round(views * 0.08) },
+              ].map((bar) => (
+                <div key={bar.day} className="flex-1 flex flex-col items-center gap-1.5 group relative">
+                  <div className="absolute -top-7 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 text-white text-[9px] px-1.5 py-0.5 rounded pointer-events-none whitespace-nowrap z-10 border border-slate-700 shadow-md">
+                    {bar.count.toLocaleString()} views
+                  </div>
+                  <div className="w-full bg-slate-800/80 rounded-t-md overflow-hidden h-14 flex items-end">
+                    <div
+                      className="w-full bg-linear-to-t from-blue-600 to-indigo-500 rounded-t-md transition-all duration-500 group-hover:from-blue-500 group-hover:to-cyan-400"
+                      style={{ height: `${bar.val}%` }}
+                    />
+                  </div>
+                  <span className="text-[10px] text-slate-400 font-medium">{bar.day}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Detailed Breakdown */}
         <Card>
           <CardContent className="space-y-3">
