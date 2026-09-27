@@ -3,13 +3,22 @@
 import React, { useState, useCallback } from "react";
 import Image from "next/image";
 import { useDropzone } from "react-dropzone";
-import { UploadCloud, X, Image as ImageIcon, Video, Loader2, Globe, Lock, Users, Hash, Sparkles, Trash2, Smile } from "lucide-react";
+import { UploadCloud, X, Image as ImageIcon, Video, Loader2, Globe, Lock, Users, Hash, Sparkles, Trash2, Smile, Palette } from "lucide-react";
 import { Dialog, Button } from "@/components/ui";
 import { compressImageFile, createMediaPreview, revokeMediaPreview, type MediaPreview } from "@/lib/mediaUpload";
 import { postService } from "@/services/postService";
 import { mentionService } from "@/services/mentionService";
 import { usePostStore } from "@/store/postStore";
 import { useAuthStore } from "@/store/authStore";
+
+const BG_THEMES = [
+  { id: "none", label: "Default", class: "bg-[#0f172a] border border-[#374151]" },
+  { id: "sunset", label: "Sunset", class: "bg-linear-to-r from-orange-500 via-rose-500 to-purple-600 border-none" },
+  { id: "ocean", label: "Ocean", class: "bg-linear-to-r from-blue-600 via-cyan-500 to-teal-400 border-none" },
+  { id: "neon", label: "Neon", class: "bg-linear-to-r from-emerald-500 to-teal-600 border-none" },
+  { id: "fire", label: "Fire", class: "bg-linear-to-r from-red-600 via-orange-500 to-amber-400 border-none" },
+  { id: "cosmic", label: "Cosmic", class: "bg-linear-to-r from-purple-800 via-violet-600 to-indigo-900 border-none" },
+];
 
 interface CreatePostModalProps {
   isOpen: boolean;
@@ -22,6 +31,8 @@ export function CreatePostModal({ isOpen, onClose, initialType = "gallery" }: Cr
   const [privacy, setPrivacy] = useState<"PUBLIC" | "FRIENDS" | "ONLY_ME">("PUBLIC");
   const [feeling, setFeeling] = useState<{ emoji: string; label: string } | null>(null);
   const [showFeelingPicker, setShowFeelingPicker] = useState(false);
+  const [selectedBg, setSelectedBg] = useState("none");
+  const [showBgPicker, setShowBgPicker] = useState(false);
   const [previews, setPreviews] = useState<MediaPreview[]>([]);
   const [compressing, setCompressing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -247,7 +258,10 @@ export function CreatePostModal({ isOpen, onClose, initialType = "gallery" }: Cr
 
               <button
                 type="button"
-                onClick={() => setShowFeelingPicker((prev) => !prev)}
+                onClick={() => {
+                  setShowFeelingPicker((prev) => !prev);
+                  setShowBgPicker(false);
+                }}
                 className={`flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[10px] font-semibold transition cursor-pointer ${
                   showFeelingPicker || feeling
                     ? "bg-amber-500/20 border-amber-500/40 text-amber-300"
@@ -258,9 +272,57 @@ export function CreatePostModal({ isOpen, onClose, initialType = "gallery" }: Cr
                 <Smile size={11} className="text-amber-400" />
                 <span>{feeling ? `${feeling.emoji} ${feeling.label}` : "Feeling"}</span>
               </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowBgPicker((prev) => !prev);
+                  setShowFeelingPicker(false);
+                }}
+                className={`flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[10px] font-semibold transition cursor-pointer ${
+                  showBgPicker || selectedBg !== "none"
+                    ? "bg-purple-500/20 border-purple-500/40 text-purple-300"
+                    : "bg-[#0f172a] border-[#374151] text-slate-300 hover:text-white"
+                }`}
+                title="Choose background gradient"
+              >
+                <Palette size={11} className="text-purple-400" />
+                <span>Theme</span>
+              </button>
             </div>
           </div>
         </div>
+
+        {/* Background Theme Swatches */}
+        {showBgPicker && (
+          <div className="p-2.5 rounded-xl border border-slate-700 bg-slate-900/90 shadow-xl space-y-1.5 animate-in fade-in duration-150">
+            <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+              <span>Select post background theme</span>
+              <button
+                type="button"
+                onClick={() => setShowBgPicker(false)}
+                className="text-slate-400 hover:text-white"
+              >
+                <X size={12} />
+              </button>
+            </div>
+            <div className="flex items-center gap-2 overflow-x-auto pb-1">
+              {BG_THEMES.map((theme) => (
+                <button
+                  key={theme.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedBg(theme.id);
+                  }}
+                  className={`w-8 h-8 rounded-lg ${theme.class} shrink-0 transition-transform cursor-pointer ${
+                    selectedBg === theme.id ? "scale-110 ring-2 ring-white ring-offset-2 ring-offset-slate-950" : "opacity-80 hover:opacity-100"
+                  }`}
+                  title={theme.label}
+                />
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Feeling / Activity Drawer */}
         {showFeelingPicker && (
@@ -313,7 +375,11 @@ export function CreatePostModal({ isOpen, onClose, initialType = "gallery" }: Cr
             value={content}
             onChange={handleContentChange}
             placeholder={`What's on your mind, ${user?.displayName?.split(" ")[0] || "Alex"}? (Type @ to mention friends)`}
-            className="w-full h-24 rounded-xl border border-[#374151] bg-[#0f172a] p-3 text-xs text-white outline-none resize-none focus:border-blue-500 transition"
+            className={`w-full rounded-xl p-3 text-white outline-none resize-none transition ${
+              selectedBg !== "none" && previews.length === 0
+                ? `${BG_THEMES.find((t) => t.id === selectedBg)?.class || ""} h-36 text-base font-bold text-center placeholder:text-white/70 shadow-lg flex items-center justify-center`
+                : "h-24 text-xs bg-[#0f172a] border border-[#374151] focus:border-blue-500"
+            }`}
           />
 
           {mentionQuery !== null && mentionSuggestions.length > 0 && (
