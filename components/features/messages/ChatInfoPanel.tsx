@@ -1,6 +1,6 @@
 "use client";
 
-import { X, Bell, BellOff, Download, Trash2, Copy, Check, ExternalLink, AlertTriangle } from "lucide-react";
+import { X, Bell, BellOff, Download, Trash2, Copy, Check, ExternalLink, AlertTriangle, FileText } from "lucide-react";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { useChatStore } from "@/store/chatStore";
@@ -105,6 +105,33 @@ export default function ChatInfoPanel({ onClose }: Props) {
     const a = document.createElement("a");
     a.href = url;
     a.download = `chat-history-${activeConversation.name.toLowerCase().replace(/\s+/g, "_")}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportPlainText = () => {
+    if (!activeConversation) return;
+    const lines = [
+      `========================================`,
+      `TechSphere Chat Transcript`,
+      `Conversation with: ${activeConversation.name}`,
+      `Exported at: ${new Date().toLocaleString()}`,
+      `Total messages: ${activeConversation.messages?.length || 0}`,
+      `========================================\n`,
+    ];
+
+    (activeConversation.messages || []).forEach((m: any) => {
+      const sender = m.sender === "me" ? "You" : activeConversation.name;
+      const time = m.time || "";
+      const text = m.text || "";
+      lines.push(`[${time}] ${sender}: ${text}`);
+    });
+
+    const blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `chat-transcript-${activeConversation.name.toLowerCase().replace(/\s+/g, "_")}.txt`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -313,10 +340,24 @@ export default function ChatInfoPanel({ onClose }: Props) {
 
         <button
           onClick={handleExportChat}
-          className="w-full flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-[#1f2937] text-xs text-slate-300 hover:text-white transition cursor-pointer"
+          className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-[#1f2937] text-xs text-slate-300 hover:text-white transition cursor-pointer"
         >
-          <Download size={15} className="text-slate-400" />
-          <span>Export Chat History</span>
+          <div className="flex items-center gap-2.5">
+            <Download size={15} className="text-blue-400" />
+            <span>Export Chat (JSON)</span>
+          </div>
+          <span className="text-[10px] text-slate-500 font-mono">.json</span>
+        </button>
+
+        <button
+          onClick={handleExportPlainText}
+          className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-[#1f2937] text-xs text-slate-300 hover:text-white transition cursor-pointer"
+        >
+          <div className="flex items-center gap-2.5">
+            <FileText size={15} className="text-emerald-400" />
+            <span>Export Transcript (Text)</span>
+          </div>
+          <span className="text-[10px] text-slate-500 font-mono">.txt</span>
         </button>
 
         {clearedToast && (
