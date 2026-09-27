@@ -19,7 +19,9 @@ import {
   Send,
   Loader2,
   Bookmark,
+  Keyboard,
 } from "lucide-react";
+import { Dialog, Badge, Button } from "@/components/ui";
 import { useRouter } from "next/navigation";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
@@ -86,6 +88,7 @@ export default function ReelsPage() {
   const [isPlaying, setIsPlaying] = useState(true);
   const [isAutoplay, setIsAutoplay] = useState(true);
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
+  const [showShortcutsModal, setShowShortcutsModal] = useState(false);
   const [heartAnim, setHeartAnim] = useState<{ id: number; x: number; y: number } | null>(null);
   const lastClickTimeRef = useRef<number>(0);
 
@@ -268,12 +271,24 @@ export default function ReelsPage() {
       } else if (e.key === "m" || e.key === "M") {
         e.preventDefault();
         toggleSound();
+      } else if (e.key === "l" || e.key === "L") {
+        e.preventDefault();
+        if (currentReel?.id) toggleLike(currentReel.id);
+      } else if (e.key === "s" || e.key === "S") {
+        e.preventDefault();
+        if (currentReel?.id) handleToggleSaveReel(currentReel.id);
+      } else if (e.key === "c" || e.key === "C") {
+        e.preventDefault();
+        handleOpenComments();
+      } else if (e.key === "?") {
+        e.preventDefault();
+        setShowShortcutsModal(true);
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isPlaying, isMuted, reels.length]);
+  }, [isPlaying, isMuted, reels.length, currentReel?.id]);
 
   const [shareToast, setShareToast] = useState<string | null>(null);
   const [followedAuthors, setFollowedAuthors] = useState<Record<string, boolean>>({});
@@ -533,6 +548,14 @@ export default function ReelsPage() {
                   title={isMuted ? "Unmute audio" : "Mute audio"}
                 >
                   {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowShortcutsModal(true)}
+                  className="p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition cursor-pointer"
+                  title="Keyboard Shortcuts (?)"
+                >
+                  <Keyboard size={18} />
                 </button>
               </div>
             </div>
@@ -836,6 +859,51 @@ export default function ReelsPage() {
           <RightSidebar />
         </aside>
       </div>
+
+      {/* Keyboard Shortcuts Cheatsheet Modal */}
+      <Dialog
+        isOpen={showShortcutsModal}
+        onClose={() => setShowShortcutsModal(false)}
+        title="Reels Keyboard Shortcuts"
+        size="sm"
+      >
+        <div className="space-y-3 pt-1">
+          <p className="text-xs text-slate-400">
+            Navigate and interact with reels faster using your keyboard:
+          </p>
+          <div className="space-y-2 text-xs divide-y divide-[#1f2937]">
+            {[
+              { keys: ["↓", "J"], desc: "Next reel" },
+              { keys: ["↑", "K"], desc: "Previous reel" },
+              { keys: ["Space"], desc: "Play / Pause video" },
+              { keys: ["M"], desc: "Mute / Unmute audio" },
+              { keys: ["L"], desc: "Like / React to reel" },
+              { keys: ["S"], desc: "Save / Bookmark reel" },
+              { keys: ["C"], desc: "Open / Close comments" },
+              { keys: ["?"], desc: "Show keyboard cheatsheet" },
+            ].map((shortcut, i) => (
+              <div key={i} className="flex items-center justify-between pt-2">
+                <span className="text-slate-300 font-medium">{shortcut.desc}</span>
+                <div className="flex items-center gap-1">
+                  {shortcut.keys.map((k) => (
+                    <kbd
+                      key={k}
+                      className="px-2 py-0.5 rounded-md bg-[#1f2937] border border-[#374151] text-xs font-mono font-bold text-slate-200 shadow-xs"
+                    >
+                      {k}
+                    </kbd>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="pt-3 border-t border-[#1f2937] flex justify-end">
+            <Button variant="secondary" size="sm" onClick={() => setShowShortcutsModal(false)}>
+              Got it
+            </Button>
+          </div>
+        </div>
+      </Dialog>
     </div>
   );
 }
