@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { MessageSquare, Share2, Send, Heart, ShieldAlert, Globe, Users, Lock, EyeOff, Eye, Clock, Volume2, VolumeX, Languages, Copy, Check } from "lucide-react";
+import { MessageSquare, Share2, Send, Heart, ShieldAlert, Globe, Users, Lock, EyeOff, Eye, Clock, Volume2, VolumeX, Languages, Copy, Check, Type } from "lucide-react";
 import { PostType, usePostStore } from "@/store/postStore";
 import PostDropdown from "./PostDropdown";
 import ReactionPicker, { reactionsList } from "./ReactionPicker";
@@ -78,6 +78,11 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
   const [isTranslated, setIsTranslated] = useState(false);
   const [translating, setTranslating] = useState(false);
   const [copiedText, setCopiedText] = useState(false);
+  const [textSize, setTextSize] = useState<"sm" | "base" | "lg">("sm");
+
+  const cycleTextSize = () => {
+    setTextSize((prev) => (prev === "sm" ? "base" : prev === "base" ? "lg" : "sm"));
+  };
 
   const handleCopyPostText = () => {
     if (!post.content) return;
@@ -355,6 +360,16 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
                       </>
                     )}
                   </button>
+                  <span>•</span>
+                  <button
+                    type="button"
+                    onClick={cycleTextSize}
+                    className="text-[10px] px-1.5 py-0.5 rounded-md border bg-slate-800 text-slate-400 hover:text-slate-200 border-slate-700/60 inline-flex items-center gap-1 transition cursor-pointer"
+                    title={`Font size: ${textSize === "sm" ? "Standard" : textSize === "base" ? "Medium" : "Large"} (Click to cycle)`}
+                  >
+                    <Type size={10} />
+                    <span>{textSize === "sm" ? "A" : textSize === "base" ? "A+" : "A++"}</span>
+                  </button>
                 </>
               )}
             </div>
@@ -407,7 +422,7 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
           </form>
         ) : (
           <div className="space-y-1.5">
-            <p className="text-sm text-slate-200 leading-relaxed whitespace-pre-wrap">
+            <p className={`${textSize === "lg" ? "text-base leading-loose" : textSize === "base" ? "text-[15px] leading-relaxed" : "text-sm leading-relaxed"} text-slate-200 whitespace-pre-wrap transition-all duration-150`}>
               {isTranslated
                 ? getTranslatedContent(post.content)
                 : post.content && post.content.length > 280 && !isExpanded
