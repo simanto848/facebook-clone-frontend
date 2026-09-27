@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
-import { Sparkles, Calendar, Share2, Check, Users, Heart, Search, X, Download, Copy, Star } from "lucide-react";
+import { Sparkles, Calendar, Share2, Check, Users, Heart, Search, X, Download, Copy, Star, Settings, EyeOff, UserX, CalendarX, Plus } from "lucide-react";
 import Image from "next/image";
 import { memoryService } from "@/services/memoryService";
 import { postService } from "@/services/postService";
@@ -82,6 +82,63 @@ export default function MemoriesPage() {
   const [copiedMemoryId, setCopiedMemoryId] = useState<string | null>(null);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const { createPost } = usePostStore();
+
+  // Preferences State (Hide people, dates, notification settings)
+  const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
+  const [hiddenPeople, setHiddenPeople] = useState<string[]>([]);
+  const [hiddenYears, setHiddenYears] = useState<string[]>([]);
+  const [notificationLevel, setNotificationLevel] = useState<"all" | "highlights" | "none">("all");
+  const [newPersonInput, setNewPersonInput] = useState("");
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("memories_preferences");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed.hiddenPeople)) setHiddenPeople(parsed.hiddenPeople);
+        if (Array.isArray(parsed.hiddenYears)) setHiddenYears(parsed.hiddenYears);
+        if (parsed.notificationLevel) setNotificationLevel(parsed.notificationLevel);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const savePreferences = (people: string[], years: string[], notify: "all" | "highlights" | "none") => {
+    setHiddenPeople(people);
+    setHiddenYears(years);
+    setNotificationLevel(notify);
+    try {
+      localStorage.setItem(
+        "memories_preferences",
+        JSON.stringify({ hiddenPeople: people, hiddenYears: years, notificationLevel: notify })
+      );
+      setToastMessage("Memories preferences updated.");
+      setTimeout(() => setToastMessage(null), 2500);
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleAddHiddenPerson = (name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed || hiddenPeople.includes(trimmed)) return;
+    const updated = [...hiddenPeople, trimmed];
+    savePreferences(updated, hiddenYears, notificationLevel);
+    setNewPersonInput("");
+  };
+
+  const handleRemoveHiddenPerson = (name: string) => {
+    const updated = hiddenPeople.filter((p) => p !== name);
+    savePreferences(updated, hiddenYears, notificationLevel);
+  };
+
+  const handleToggleHiddenYear = (year: string) => {
+    const updated = hiddenYears.includes(year)
+      ? hiddenYears.filter((y) => y !== year)
+      : [...hiddenYears, year];
+    savePreferences(hiddenPeople, updated, notificationLevel);
+  };
 
   const handleCopyMemoryText = async (m: MemoryItem, e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -281,6 +338,20 @@ export default function MemoriesPage() {
   ];
 
   const filteredMemories = memories.filter((m) => {
+    // Filter out hidden people
+    if (m.authorName && hiddenPeople.some((p) => m.authorName?.toLowerCase().includes(p.toLowerCase()))) {
+      return false;
+    }
+    if (m.friendName && hiddenPeople.some((p) => m.friendName?.toLowerCase().includes(p.toLowerCase()))) {
+      return false;
+    }
+    // Filter out hidden years
+    const mYear = new Date(m.dateStr).getFullYear();
+    const actualYearStr = String(isNaN(mYear) ? new Date().getFullYear() - m.yearsAgo : mYear);
+    if (hiddenYears.includes(actualYearStr)) {
+      return false;
+    }
+
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const matchContent = m.content.toLowerCase().includes(q);
@@ -325,6 +396,22 @@ export default function MemoriesPage() {
                   <Badge variant="primary">{filteredMemories.length} Memories</Badge>
                   {memories.length > 0 && (
                     <>
+                      <button
+                        type="button"
+                        onClick={() => setIsPreferencesOpen(true)}
+                        className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition cursor-pointer ${
+                          hiddenPeople.length > 0 || hiddenYears.length > 0
+                            ? "bg-purple-600/30 text-purple-300 border-purple-500/50"
+                            : "bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700"
+                        }`}
+                        title="Configure memories & hidden preferences"
+                      >
+                        <Settings size={13} />
+                        <span>Preferences</span>
+                        {(hiddenPeople.length > 0 || hiddenYears.length > 0) && (
+                          <span className="h-1.5 w-1.5 rounded-full bg-purple-400 animate-pulse" />
+                        )}
+                      </button>
                       <button
                         type="button"
                         onClick={handleCopySummary}
@@ -625,6 +712,151 @@ export default function MemoriesPage() {
             </div>
           </form>
         )}
+      </Dialog>
+
+      {/* Memories Preferences / Hide Modal */}
+      <Dialog
+        isOpen={isPreferencesOpen}
+        onClose={() => setIsPreferencesOpen(false)}
+        size="md"
+        title="Memories Preferences"
+        description="Choose who or what dates you don't want to see in your On This Day memories."
+      >
+        <div className="space-y-5">
+          {/* Hide People Section */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <UserX size={16} className="text-purple-400" />
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300">Hide People</h4>
+            </div>
+            <p className="text-[11px] text-slate-400">
+              Memories featuring or created by these people won&apos;t appear in your memories feed.
+            </p>
+
+            {/* Input to add person */}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Type a person's name to hide..."
+                value={newPersonInput}
+                onChange={(e) => setNewPersonInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAddHiddenPerson(newPersonInput);
+                  }
+                }}
+                className="flex-1 bg-[#0f172a] border border-[#1f2937] rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500 outline-none focus:border-purple-500 transition"
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => handleAddHiddenPerson(newPersonInput)}
+                disabled={!newPersonInput.trim()}
+                leftIcon={<Plus size={13} />}
+              >
+                Hide
+              </Button>
+            </div>
+
+            {/* Hidden People List */}
+            {hiddenPeople.length > 0 ? (
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {hiddenPeople.map((person) => (
+                  <span
+                    key={person}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs bg-rose-500/10 text-rose-300 border border-rose-500/20"
+                  >
+                    <span>{person}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveHiddenPerson(person)}
+                      className="hover:text-white transition"
+                    >
+                      <X size={12} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <div className="text-[11px] text-slate-500 italic">No people hidden from memories yet.</div>
+            )}
+          </div>
+
+          {/* Hide Dates / Years Section */}
+          <div className="space-y-3 pt-3 border-t border-[#1f2937]">
+            <div className="flex items-center gap-2">
+              <CalendarX size={16} className="text-purple-400" />
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300">Hide Specific Years</h4>
+            </div>
+            <p className="text-[11px] text-slate-400">
+              Toggle specific years you want to skip or exclude from memories.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {availableYears.map((yr) => {
+                const yrStr = String(yr);
+                const isHidden = hiddenYears.includes(yrStr);
+                return (
+                  <button
+                    key={yrStr}
+                    type="button"
+                    onClick={() => handleToggleHiddenYear(yrStr)}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-semibold border transition ${
+                      isHidden
+                        ? "bg-rose-500/20 text-rose-300 border-rose-500/40"
+                        : "bg-[#0f172a] text-slate-300 hover:text-white border-[#1f2937]"
+                    }`}
+                  >
+                    {isHidden ? <EyeOff size={12} /> : <Calendar size={12} />}
+                    <span>{yrStr}</span>
+                    <span className="text-[10px] text-slate-500">{isHidden ? "(Hidden)" : "(Visible)"}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Notifications Level */}
+          <div className="space-y-3 pt-3 border-t border-[#1f2937]">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300">Memory Notifications</h4>
+            <div className="grid grid-cols-3 gap-2">
+              {(
+                [
+                  { id: "all", label: "All Memories", desc: "Notify daily" },
+                  { id: "highlights", label: "Highlights", desc: "Special only" },
+                  { id: "none", label: "None", desc: "No alerts" },
+                ] as const
+              ).map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => savePreferences(hiddenPeople, hiddenYears, opt.id)}
+                  className={`p-2.5 rounded-xl border text-left transition ${
+                    notificationLevel === opt.id
+                      ? "bg-purple-600/20 border-purple-500/50 text-white"
+                      : "bg-[#0f172a] border-[#1f2937] text-slate-400 hover:text-white"
+                  }`}
+                >
+                  <span className="block text-xs font-semibold text-white">{opt.label}</span>
+                  <span className="text-[10px] text-slate-400">{opt.desc}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-3 border-t border-[#1f2937]">
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              onClick={() => setIsPreferencesOpen(false)}
+              className="bg-purple-600 hover:bg-purple-700"
+            >
+              Done
+            </Button>
+          </div>
+        </div>
       </Dialog>
     </div>
   );
