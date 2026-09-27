@@ -8,7 +8,7 @@ import { Sidebaritem } from "./SidebarItem";
 import { usePostStore } from "@/store/postStore";
 import { useAuthStore } from "@/store/authStore";
 import { callService } from "@/services/callService";
-import { User, LogIn, ChevronDown, ChevronUp, Pin, X, RotateCcw } from "lucide-react";
+import { User, LogIn, ChevronDown, ChevronUp, Pin, X, RotateCcw, Plus } from "lucide-react";
 
 interface ShortcutItem {
   id: string;
@@ -28,6 +28,10 @@ const LeftSidebar = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [shortcuts, setShortcuts] = useState<ShortcutItem[]>(DEFAULT_SHORTCUTS);
   const [isEditingShortcuts, setIsEditingShortcuts] = useState(false);
+  const [isAddingShortcut, setIsAddingShortcut] = useState(false);
+  const [newShortcutName, setNewShortcutName] = useState("");
+  const [newShortcutHref, setNewShortcutHref] = useState("");
+  const [newShortcutEmoji, setNewShortcutEmoji] = useState("📌");
   const connectionRequests = usePostStore((state) => state.connectionRequests);
   const user = useAuthStore((state) => state.user);
 
@@ -44,6 +48,34 @@ const LeftSidebar = () => {
       // ignore
     }
   }, []);
+
+  const handleAddCustomShortcut = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newShortcutName.trim() || !newShortcutHref.trim()) return;
+    const newShortcut: ShortcutItem = {
+      id: `sc-custom-${Date.now()}`,
+      name: newShortcutName.trim(),
+      href: newShortcutHref.startsWith("/") ? newShortcutHref : `/${newShortcutHref}`,
+      emoji: newShortcutEmoji || "📌",
+    };
+    const updated = [...shortcuts, newShortcut];
+    setShortcuts(updated);
+    setNewShortcutName("");
+    setNewShortcutHref("");
+    setNewShortcutEmoji("📌");
+    setIsAddingShortcut(false);
+    try {
+      localStorage.setItem("user_pinned_shortcuts", JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleApplyPreset = (preset: { name: string; href: string; emoji: string }) => {
+    setNewShortcutName(preset.name);
+    setNewShortcutHref(preset.href);
+    setNewShortcutEmoji(preset.emoji);
+  };
 
   const handleRemoveShortcut = (id: string) => {
     const updated = shortcuts.filter((s) => s.id !== id);
@@ -189,14 +221,98 @@ const LeftSidebar = () => {
               ))}
 
               {isEditingShortcuts && (
-                <button
-                  type="button"
-                  onClick={handleResetShortcuts}
-                  className="inline-flex items-center justify-center gap-1 w-full text-center text-[10px] text-slate-500 hover:text-slate-300 pt-1.5 transition cursor-pointer"
-                >
-                  <RotateCcw size={10} />
-                  <span>Reset to Defaults</span>
-                </button>
+                <div className="pt-2 space-y-2">
+                  {!isAddingShortcut ? (
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingShortcut(true)}
+                      className="flex items-center justify-center gap-1.5 w-full py-1.5 px-3 rounded-xl border border-dashed border-blue-500/40 text-blue-400 hover:bg-blue-500/10 text-xs font-semibold transition cursor-pointer"
+                    >
+                      <Plus size={13} />
+                      <span>Add Shortcut</span>
+                    </button>
+                  ) : (
+                    <form onSubmit={handleAddCustomShortcut} className="p-2.5 rounded-xl bg-slate-900 border border-slate-700 space-y-2">
+                      <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase">
+                        <span>New Shortcut</span>
+                        <button type="button" onClick={() => setIsAddingShortcut(false)} className="hover:text-white">
+                          <X size={12} />
+                        </button>
+                      </div>
+
+                      {/* Quick presets */}
+                      <div className="flex flex-wrap gap-1">
+                        {[
+                          { name: "Memories", href: "/memories", emoji: "📅" },
+                          { name: "Events", href: "/events", emoji: "🎟️" },
+                          { name: "Explore", href: "/explore", emoji: "🧭" },
+                          { name: "Settings", href: "/settings", emoji: "⚙️" },
+                        ].map((p) => (
+                          <button
+                            key={p.name}
+                            type="button"
+                            onClick={() => handleApplyPreset(p)}
+                            className="px-1.5 py-0.5 rounded-md bg-slate-800 text-[10px] text-slate-300 hover:text-white hover:bg-slate-700 transition"
+                          >
+                            {p.emoji} {p.name}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="flex gap-1.5">
+                        <input
+                          type="text"
+                          placeholder="Emoji"
+                          value={newShortcutEmoji}
+                          onChange={(e) => setNewShortcutEmoji(e.target.value)}
+                          className="w-12 px-2 py-1 rounded-lg bg-slate-800 border border-slate-700 text-xs text-center text-white outline-none focus:border-blue-500"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Shortcut Name"
+                          value={newShortcutName}
+                          onChange={(e) => setNewShortcutName(e.target.value)}
+                          className="flex-1 px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white outline-none placeholder:text-slate-500 focus:border-blue-500"
+                          required
+                        />
+                      </div>
+
+                      <input
+                        type="text"
+                        placeholder="Path (e.g. /events or /reels)"
+                        value={newShortcutHref}
+                        onChange={(e) => setNewShortcutHref(e.target.value)}
+                        className="w-full px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white outline-none placeholder:text-slate-500 focus:border-blue-500"
+                        required
+                      />
+
+                      <div className="flex justify-end gap-1.5 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setIsAddingShortcut(false)}
+                          className="px-2.5 py-1 rounded-lg text-[10px] text-slate-400 hover:text-white bg-slate-800"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="px-2.5 py-1 rounded-lg text-[10px] font-semibold text-white bg-blue-600 hover:bg-blue-500"
+                        >
+                          Save
+                        </button>
+                      </div>
+                    </form>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={handleResetShortcuts}
+                    className="inline-flex items-center justify-center gap-1 w-full text-center text-[10px] text-slate-500 hover:text-slate-300 pt-1 transition cursor-pointer"
+                  >
+                    <RotateCcw size={10} />
+                    <span>Reset to Defaults</span>
+                  </button>
+                </div>
               )}
             </div>
           </div>
