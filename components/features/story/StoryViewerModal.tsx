@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, Heart, Eye, Trash2, Play, Pause, Volume2, VolumeX, Send, Share2, Download } from "lucide-react";
+import { ChevronLeft, ChevronRight, Heart, Eye, Trash2, Play, Pause, Volume2, VolumeX, Send, Share2, Download, Maximize2, Minimize2 } from "lucide-react";
 import { Dialog, Avatar, Button, Badge } from "@/components/ui";
 
 export interface StoryItem {
@@ -40,6 +40,7 @@ export function StoryViewerModal({
   const [progress, setProgress] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
+  const [fitMode, setFitMode] = useState<"cover" | "contain">("cover");
   const [floatingReactions, setFloatingReactions] = useState<{ id: number; emoji: string }[]>([]);
   const [reactionToast, setReactionToast] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
@@ -130,6 +131,9 @@ export function StoryViewerModal({
       if (e.code === "Space") {
         e.preventDefault();
         setIsPaused((prev) => !prev);
+      } else if (e.code === "KeyM") {
+        e.preventDefault();
+        setIsMuted((prev) => !prev);
       } else if (e.code === "ArrowLeft" && currentIndex > 0) {
         onNavigate(currentIndex - 1);
       } else if (e.code === "ArrowRight" && currentIndex < stories.length - 1) {
@@ -194,7 +198,7 @@ export function StoryViewerModal({
                 e.stopPropagation();
                 setIsPaused((prev) => !prev);
               }}
-              className="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition"
+              className="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition cursor-pointer"
               title={isPaused ? "Play Story (Space)" : "Pause Story (Space)"}
             >
               {isPaused ? <Play size={15} /> : <Pause size={15} />}
@@ -207,28 +211,41 @@ export function StoryViewerModal({
                   e.stopPropagation();
                   setIsMuted((prev) => !prev);
                 }}
-                className="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition"
-                title={isMuted ? "Unmute" : "Mute"}
+                className="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition cursor-pointer"
+                title={isMuted ? "Unmute (M)" : "Mute (M)"}
               >
                 {isMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
               </button>
             )}
 
             {currentStory.type !== "text" && (
-              <button
-                type="button"
-                onClick={handleDownloadMedia}
-                className="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition"
-                title="Download Story Media"
-              >
-                <Download size={15} />
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setFitMode((prev) => (prev === "cover" ? "contain" : "cover"));
+                  }}
+                  className="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition cursor-pointer"
+                  title={fitMode === "cover" ? "Fit to screen (Contain)" : "Fill screen (Cover)"}
+                >
+                  {fitMode === "cover" ? <Maximize2 size={15} /> : <Minimize2 size={15} />}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDownloadMedia}
+                  className="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition cursor-pointer"
+                  title="Download Story Media"
+                >
+                  <Download size={15} />
+                </button>
+              </>
             )}
 
             <button
               type="button"
               onClick={handleCopyStoryLink}
-              className="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition"
+              className="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition cursor-pointer"
               title="Share / Copy Story Link"
             >
               <Share2 size={15} />
@@ -242,7 +259,7 @@ export function StoryViewerModal({
                   e.stopPropagation();
                   onDelete(currentStory.id);
                 }}
-                className="p-1 text-white/70 hover:text-rose-400 hover:bg-white/10 rounded-full transition"
+                className="p-1 text-white/70 hover:text-rose-400 hover:bg-white/10 rounded-full transition cursor-pointer"
                 title="Delete Story"
               >
                 <Trash2 size={16} />
@@ -257,7 +274,7 @@ export function StoryViewerModal({
             onClick={() => onNavigate(currentIndex - 1)}
             onMouseDown={(e) => e.stopPropagation()}
             onTouchStart={(e) => e.stopPropagation()}
-            className="absolute left-3 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-black/50 hover:bg-black/80 flex items-center justify-center text-white transition"
+            className="absolute left-3 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-black/50 hover:bg-black/80 flex items-center justify-center text-white transition cursor-pointer"
           >
             <ChevronLeft size={20} />
           </button>
@@ -268,7 +285,7 @@ export function StoryViewerModal({
             onClick={() => onNavigate(currentIndex + 1)}
             onMouseDown={(e) => e.stopPropagation()}
             onTouchStart={(e) => e.stopPropagation()}
-            className="absolute right-3 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-black/50 hover:bg-black/80 flex items-center justify-center text-white transition"
+            className="absolute right-3 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-black/50 hover:bg-black/80 flex items-center justify-center text-white transition cursor-pointer"
           >
             <ChevronRight size={20} />
           </button>
@@ -289,7 +306,7 @@ export function StoryViewerModal({
               muted={isMuted}
               loop
               playsInline
-              className="h-full w-full object-cover"
+              className={`h-full w-full ${fitMode === "contain" ? "object-contain" : "object-cover"}`}
             />
           ) : (
             <Image
@@ -297,7 +314,7 @@ export function StoryViewerModal({
               alt="Story"
               fill
               sizes="(max-width: 768px) 100vw, 600px"
-              className="object-cover"
+              className={fitMode === "contain" ? "object-contain" : "object-cover"}
             />
           )}
         </div>
