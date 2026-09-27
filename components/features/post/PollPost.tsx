@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { CheckCircle2, BarChart2, Eye, EyeOff } from "lucide-react";
+import { CheckCircle2, BarChart2, Eye, EyeOff, RotateCcw } from "lucide-react";
 import { Badge, Button } from "@/components/ui";
 
 interface PollOption {
@@ -15,9 +15,10 @@ interface Props {
   options: PollOption[];
   userVotedOptionId?: string;
   onVote: (optionId: string) => void;
+  onRetractVote?: () => void;
 }
 
-export default function PollPost({ question, options = [], userVotedOptionId, onVote }: Props) {
+export default function PollPost({ question, options = [], userVotedOptionId, onVote, onRetractVote }: Props) {
   const [showResultsAnyway, setShowResultsAnyway] = useState(false);
   const totalVotes = options.reduce((sum, option) => sum + option.votes, 0);
   const hasVoted = !!userVotedOptionId;
@@ -83,7 +84,27 @@ export default function PollPost({ question, options = [], userVotedOptionId, on
       </div>
 
       <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-[#1f2937]/50">
-        <span>{hasVoted ? "You voted in this poll" : "Click an option to cast your vote"}</span>
+        <div className="flex items-center gap-2">
+          <span>{hasVoted ? "You voted in this poll" : "Click an option to cast your vote"}</span>
+          {hasVoted && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onRetractVote) {
+                  onRetractVote();
+                } else {
+                  onVote("");
+                }
+              }}
+              className="flex items-center gap-1 text-[11px] text-blue-400 hover:text-blue-300 transition cursor-pointer underline"
+              title="Change your vote"
+            >
+              <RotateCcw size={11} />
+              <span>Change vote</span>
+            </button>
+          )}
+        </div>
         {!hasVoted && (
           <button
             type="button"
