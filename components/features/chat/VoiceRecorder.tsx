@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Mic, Square, Trash2, Send, Play, Pause, RotateCcw } from "lucide-react";
+import { Mic, Square, Trash2, Send, Play, Pause, RotateCcw, AlertCircle, Lock } from "lucide-react";
 import { Button } from "@/components/ui";
 
 interface VoiceRecorderProps {
@@ -55,7 +55,17 @@ export function VoiceRecorder({ onSendVoiceNote, onCancel }: VoiceRecorderProps)
       setIsRecording(true);
 
       timerRef.current = setInterval(() => {
-        setRecordingTime((prev) => prev + 1);
+        setRecordingTime((prev) => {
+          if (prev + 1 >= 120) {
+            if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+              mediaRecorderRef.current.stop();
+            }
+            setIsRecording(false);
+            if (timerRef.current) clearInterval(timerRef.current);
+            return 120;
+          }
+          return prev + 1;
+        });
       }, 1000);
     } catch (err) {
       console.error("Microphone access error:", err);
@@ -127,17 +137,42 @@ export function VoiceRecorder({ onSendVoiceNote, onCancel }: VoiceRecorderProps)
           )}
         </div>
 
-        <span className="text-xs font-mono font-bold text-white shrink-0">
-          {formatTime(recordingTime)}
-        </span>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className={`text-xs font-mono font-bold ${recordingTime >= 105 ? "text-amber-400" : "text-white"}`}>
+            {formatTime(recordingTime)}
+          </span>
+          <span className="text-[10px] text-slate-500 font-mono">/ 2:00</span>
+        </div>
 
-        {/* Live Recording Pulses */}
+        {/* Hands-free recording lock badge */}
         {isRecording && (
-          <div className="flex items-center gap-1 overflow-hidden h-4">
-            <span className="w-1 h-3 bg-red-500 rounded-full animate-bounce [animation-delay:-0.3s]" />
-            <span className="w-1 h-4 bg-red-500 rounded-full animate-bounce [animation-delay:-0.15s]" />
-            <span className="w-1 h-2 bg-red-500 rounded-full animate-bounce" />
-            <span className="w-1 h-4 bg-red-500 rounded-full animate-bounce [animation-delay:-0.2s]" />
+          <span className="hidden sm:inline-flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 shrink-0">
+            <Lock size={9} />
+            <span>Locked</span>
+          </span>
+        )}
+
+        {/* Approaching limit warning */}
+        {isRecording && recordingTime >= 105 && (
+          <div className="flex items-center gap-1 text-[10px] text-amber-400 font-semibold animate-pulse shrink-0">
+            <AlertCircle size={11} />
+            <span>{120 - recordingTime}s left</span>
+          </div>
+        )}
+
+        {/* Live Recording Waveform */}
+        {isRecording && (
+          <div className="flex items-center gap-0.5 overflow-hidden h-4 px-1">
+            {[40, 70, 30, 90, 60, 100, 45, 80].map((h, i) => (
+              <span
+                key={i}
+                className="w-0.5 bg-red-500 rounded-full transition-all duration-150"
+                style={{
+                  height: `${Math.max(4, h * (0.35 + (Math.sin((recordingTime + i) * 1.5) + 1) * 0.3))}px`,
+                  opacity: 0.6 + (i % 3) * 0.15,
+                }}
+              />
+            ))}
           </div>
         )}
       </div>
