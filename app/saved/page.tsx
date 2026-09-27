@@ -5,7 +5,7 @@ import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
 import Link from "next/link";
-import { Bookmark, BookmarkX, Search, X, Tag, Download, Check, Image as ImageIcon, Video, FileText, BarChart2, AlignLeft, Trash2, AlertTriangle, ArrowUpDown, LayoutGrid, List, FileSpreadsheet, Users } from "lucide-react";
+import { Bookmark, BookmarkX, Search, X, Tag, Download, Check, Image as ImageIcon, Video, FileText, BarChart2, AlignLeft, Trash2, AlertTriangle, ArrowUpDown, LayoutGrid, List, FileSpreadsheet, Users, CheckSquare, Square } from "lucide-react";
 import { bookmarkService } from "@/services/bookmarkService";
 import { mapBackendPostToPostType, PostType, usePostStore } from "@/store/postStore";
 import { PageHeader, Badge, EmptyState, Loader } from "@/components/ui";
@@ -16,6 +16,9 @@ export default function SavedPostsPage() {
   const [copiedExport, setCopiedExport] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
+  const [isBatchMode, setIsBatchMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isBatchDeleting, setIsBatchDeleting] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedType, setSelectedType] = useState("all");
   const [selectedAuthor, setSelectedAuthor] = useState("all");
@@ -189,6 +192,47 @@ export default function SavedPostsPage() {
     }
   };
 
+  const toggleSelectPost = (postId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(postId)) {
+        next.delete(postId);
+      } else {
+        next.add(postId);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedIds.size === sortedPosts.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(sortedPosts.map((p) => p.id)));
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedIds.size === 0) return;
+    setIsBatchDeleting(true);
+    const toDeletePosts = savedPosts.filter((p) => selectedIds.has(p.id));
+    setSavedPosts((prev) => prev.filter((p) => !selectedIds.has(p.id)));
+    toDeletePosts.forEach((p) => toggleSavePost(p.id));
+    const idsToDelete = Array.from(selectedIds);
+    setSelectedIds(new Set());
+    setIsBatchMode(false);
+
+    try {
+      await Promise.allSettled(
+        toDeletePosts.map((p) => bookmarkService.deleteBookmark(p.bookmarkId || p.id))
+      );
+    } catch (err) {
+      console.error("Error batch deleting bookmarks:", err);
+    } finally {
+      setIsBatchDeleting(false);
+    }
+  };
+
   const uniqueAuthors = Array.from(
     new Set(
       savedPosts
@@ -248,6 +292,22 @@ export default function SavedPostsPage() {
                   <Badge variant="warning">{savedPosts.length} Saved</Badge>
                   {savedPosts.length > 0 && (
                     <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsBatchMode(!isBatchMode);
+                          setSelectedIds(new Set());
+                        }}
+                        className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition cursor-pointer ${
+                          isBatchMode
+                            ? "bg-blue-600 border-blue-500 text-white"
+                            : "bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700"
+                        }`}
+                        title="Toggle batch selection"
+                      >
+                        <CheckSquare size={13} />
+                        <span>{isBatchMode ? "Exit Select" : "Select"}</span>
+                      </button>
                       <button
                         type="button"
                         onClick={handleExportBookmarks}
@@ -478,6 +538,50 @@ export default function SavedPostsPage() {
               </div>
             </div>
 
+            {/* Batch Selection Action Bar */}
+            {isBatchMode && (
+              <div className="p-3 px-4 rounded-xl bg-slate-900 border border-blue-500/40 flex items-center justify-between gap-3 sticky top-4 z-20 shadow-lg backdrop-blur-md">
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={handleSelectAll}
+                    className="flex items-center gap-2 text-xs font-semibold text-slate-200 hover:text-white cursor-pointer"
+                  >
+                    {selectedIds.size > 0 && selectedIds.size === sortedPosts.length ? (
+                      <CheckSquare size={16} className="text-blue-400" />
+                    ) : (
+                      <Square size={16} className="text-slate-400" />
+                    )}
+                    <span>Select All ({sortedPosts.length})</span>
+                  </button>
+                  <span className="text-xs text-slate-400">
+                    • <strong className="text-white">{selectedIds.size}</strong> selected
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsBatchMode(false);
+                      setSelectedIds(new Set());
+                    }}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 transition cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={selectedIds.size === 0 || isBatchDeleting}
+                    onClick={handleDeleteSelected}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-rose-600 hover:bg-rose-500 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer shadow-sm shadow-rose-600/30 flex items-center gap-1.5"
+                  >
+                    {isBatchDeleting ? <Loader size="sm" /> : <Trash2 size={13} />}
+                    <span>Delete Selected ({selectedIds.size})</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
             {loading ? (
               <div className="py-16 text-center">
                 <Loader label="Loading bookmarked posts..." />
@@ -497,8 +601,25 @@ export default function SavedPostsPage() {
             ) : viewMode === "grid" ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {sortedPosts.map((post) => (
-                  <div key={post.id} className="rounded-2xl border border-[#1f2937] bg-[#111827] overflow-hidden flex flex-col justify-between group hover:border-slate-700 transition">
+                  <div
+                    key={post.id}
+                    onClick={isBatchMode ? () => toggleSelectPost(post.id) : undefined}
+                    className={`rounded-2xl border bg-[#111827] overflow-hidden flex flex-col justify-between group hover:border-slate-700 transition ${
+                      isBatchMode ? "cursor-pointer" : ""
+                    } ${
+                      selectedIds.has(post.id) ? "border-blue-500 ring-2 ring-blue-500/30" : "border-[#1f2937]"
+                    }`}
+                  >
                     <div className="relative aspect-video bg-slate-900 overflow-hidden">
+                      {isBatchMode && (
+                        <div className="absolute top-2 left-2 z-10 p-1.5 rounded-lg bg-black/70 backdrop-blur-xs text-white">
+                          {selectedIds.has(post.id) ? (
+                            <CheckSquare size={16} className="text-blue-400" />
+                          ) : (
+                            <Square size={16} className="text-slate-300" />
+                          )}
+                        </div>
+                      )}
                       {post.images && post.images.length > 0 ? (
                         <img src={post.images[0]} alt="" className="w-full h-full object-cover group-hover:scale-105 transition duration-300" />
                       ) : post.article?.thumbnail ? (
@@ -513,14 +634,19 @@ export default function SavedPostsPage() {
                         <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-black/70 backdrop-blur-xs text-white border border-white/10 uppercase">
                           {post.category || "discussions"}
                         </span>
-                        <button
-                          type="button"
-                          onClick={() => handleUnbookmark(post.bookmarkId || "", post.id)}
-                          className="p-1 rounded-md bg-black/70 hover:bg-rose-600 text-white transition cursor-pointer"
-                          title="Remove bookmark"
-                        >
-                          <BookmarkX size={13} />
-                        </button>
+                        {!isBatchMode && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleUnbookmark(post.bookmarkId || "", post.id);
+                            }}
+                            className="p-1 rounded-md bg-black/70 hover:bg-rose-600 text-white transition cursor-pointer"
+                            title="Remove bookmark"
+                          >
+                            <BookmarkX size={13} />
+                          </button>
+                        )}
                       </div>
                     </div>
 
@@ -537,7 +663,7 @@ export default function SavedPostsPage() {
                       </div>
 
                       <div className="pt-2 border-t border-[#1f2937]/70 flex items-center justify-between text-[11px] text-slate-400">
-                        <Link href={`/post/${post.id}`} className="text-blue-400 hover:text-blue-300 font-semibold">
+                        <Link href={`/post/${post.id}`} className="text-blue-400 hover:text-blue-300 font-semibold" onClick={(e) => isBatchMode && e.preventDefault()}>
                           View Post →
                         </Link>
                         <span className="capitalize text-slate-500">{post.type}</span>
@@ -550,6 +676,21 @@ export default function SavedPostsPage() {
               <div className="space-y-6">
                 {sortedPosts.map((post) => (
                   <div key={post.id} className="relative group">
+                    {isBatchMode && (
+                      <div
+                        onClick={() => toggleSelectPost(post.id)}
+                        className="absolute top-4 left-4 z-20 flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-slate-900/90 border border-slate-700 shadow-md backdrop-blur-xs cursor-pointer hover:border-blue-500 transition"
+                      >
+                        {selectedIds.has(post.id) ? (
+                          <CheckSquare size={16} className="text-blue-400" />
+                        ) : (
+                          <Square size={16} className="text-slate-400" />
+                        )}
+                        <span className="text-xs font-medium text-slate-200">
+                          {selectedIds.has(post.id) ? "Selected" : "Select"}
+                        </span>
+                      </div>
+                    )}
                     <div className="absolute top-4 right-14 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
                       <div className="relative flex items-center">
                         <Tag size={12} className="absolute left-2 text-slate-400 pointer-events-none" />
