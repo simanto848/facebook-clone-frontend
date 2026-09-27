@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import Link from "next/link";
-import { Heart, MessageSquare, Check, CornerDownRight, Trash2, Edit2, Copy, Link2 } from "lucide-react";
+import { Heart, MessageSquare, Check, CornerDownRight, Trash2, Edit2, Copy, Link2, X } from "lucide-react";
 import { CommentType } from "@/store/postStore";
 import { useAuthStore } from "@/store/authStore";
 import { Avatar, Button, Input } from "@/components/ui";
@@ -87,15 +87,28 @@ export default function CommentItem({ comment, onLike, onReply, onEdit, onDelete
             </div>
 
             {isEditing ? (
-              <form onSubmit={handleEditSubmit} className="mt-2 flex gap-2">
+              <form onSubmit={handleEditSubmit} className="mt-2 flex gap-2 items-center">
                 <Input
                   value={editText}
                   onChange={(e) => setEditText(e.target.value)}
                   className="h-8 text-xs bg-[#111827]"
                   autoFocus
                 />
-                <Button variant="primary" size="sm" type="submit" className="h-8 px-2.5">
+                <Button variant="primary" size="sm" type="submit" className="h-8 px-2.5" title="Save changes">
                   <Check size={14} />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  type="button"
+                  onClick={() => {
+                    setEditText(comment.content);
+                    setIsEditing(false);
+                  }}
+                  className="h-8 px-2 text-xs text-slate-400 hover:text-white"
+                  title="Cancel editing"
+                >
+                  <X size={14} />
                 </Button>
               </form>
             ) : (
@@ -186,6 +199,19 @@ export default function CommentItem({ comment, onLike, onReply, onEdit, onDelete
               />
               <Button variant="primary" size="sm" type="submit" className="h-9 px-3 shrink-0">
                 Reply
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                type="button"
+                onClick={() => {
+                  setReplyText("");
+                  setIsReplying(false);
+                }}
+                className="h-9 px-2 text-xs text-slate-400 hover:text-white shrink-0"
+                title="Cancel reply"
+              >
+                <X size={14} />
               </Button>
             </form>
           )}
