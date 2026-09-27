@@ -374,6 +374,50 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
     }
   };
 
+  const handleExportIcs = () => {
+    if (!event) return;
+    const nowStr = new Date().toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+    let start = new Date();
+    if (event.startTime) {
+      const parsed = new Date(event.startTime);
+      if (!isNaN(parsed.getTime())) start = parsed;
+    }
+    const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
+    const formatIcsDate = (date: Date) => date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+
+    const icsContent = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//TechSphere//EventDetailPage//EN",
+      "CALSCALE:GREGORIAN",
+      "BEGIN:VEVENT",
+      `UID:${event.id || Date.now()}@techsphere.com`,
+      `DTSTAMP:${nowStr}`,
+      `DTSTART:${formatIcsDate(start)}`,
+      `DTEND:${formatIcsDate(end)}`,
+      `SUMMARY:${(event.title || "Event").replace(/,/g, "\\,")}`,
+      `DESCRIPTION:${(event.description || "").replace(/\n/g, "\\n").replace(/,/g, "\\,")}`,
+      `LOCATION:${(event.location || "").replace(/,/g, "\\,")}`,
+      "STATUS:CONFIRMED",
+      "END:VEVENT",
+      "END:VCALENDAR",
+    ].join("\r\n");
+
+    const blob = new Blob([icsContent], { type: "text/calendar;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${(event.title || "event").toLowerCase().replace(/[^a-z0-9]/g, "_")}.ics`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setRsvpToast({
+      message: "iCal (.ics) calendar file downloaded successfully!",
+      type: "success",
+    });
+  };
+
   const handleOpenEdit = () => {
     if (!event) return;
     setEditForm({
@@ -704,6 +748,26 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
                         title="Add event to Google Calendar"
                       >
                         Add to Google Cal
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="md"
+                        leftIcon={<Download size={16} className="text-purple-400" />}
+                        onClick={handleExportIcs}
+                        className="flex-1 sm:flex-none border border-slate-700/60 text-slate-300 hover:text-white"
+                        title="Download iCalendar file (.ics)"
+                      >
+                        Download .ICS
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="md"
+                        leftIcon={copied ? <Check size={16} className="text-emerald-400" /> : <Share2 size={16} className="text-slate-300" />}
+                        onClick={handleShare}
+                        className="flex-1 sm:flex-none border border-slate-700/60 text-slate-300 hover:text-white"
+                        title="Copy event link"
+                      >
+                        {copied ? "Link Copied!" : "Share Link"}
                       </Button>
                     </div>
                   </CardContent>
