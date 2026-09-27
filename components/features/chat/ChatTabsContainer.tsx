@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { X, Minimize2, Maximize2, Send, Phone, Video, MoreVertical, BellOff, Trash2, User, ThumbsUp, ExternalLink } from "lucide-react";
+import { X, Minimize2, Maximize2, Send, Phone, Video, MoreVertical, Bell, BellOff, Trash2, User, ThumbsUp, ExternalLink, Check } from "lucide-react";
 import { useChatStore, ChatBox } from "@/store/chatStore";
 import { Avatar, Button, Input } from "@/components/ui";
 import { CallModal } from "./CallModal";
@@ -16,7 +16,18 @@ function ChatTab({ box }: { box: ChatBox }) {
   const { socket, typingUsers } = useSocketContext();
   const [inputText, setInputText] = useState("");
   const [showMenu, setShowMenu] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [activeCall, setActiveCall] = useState<"audio" | "video" | null>(null);
+
+  const handleToggleMute = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const next = !isMuted;
+    setIsMuted(next);
+    setToastMsg(next ? "Notifications muted" : "Notifications unmuted");
+    setShowMenu(false);
+    setTimeout(() => setToastMsg(null), 2200);
+  };
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -72,6 +83,14 @@ function ChatTab({ box }: { box: ChatBox }) {
           ${box.isCollapsed ? "h-12" : "h-[420px]"}
         `}
       >
+        {/* Inline Action Toast */}
+        {toastMsg && (
+          <div className="absolute top-14 left-1/2 -translate-x-1/2 z-40 px-3 py-1 rounded-full bg-black/90 backdrop-blur-md border border-white/20 text-white text-[11px] font-medium shadow-xl pointer-events-none animate-in fade-in zoom-in-95 duration-150 flex items-center gap-1.5">
+            <Check size={12} className="text-emerald-400" />
+            <span>{toastMsg}</span>
+          </div>
+        )}
+
         {/* Options Menu Dropdown */}
         {showMenu && !box.isCollapsed && (
           <>
@@ -99,14 +118,11 @@ function ChatTab({ box }: { box: ChatBox }) {
                 <span>Open in Messenger</span>
               </button>
               <button
-                onClick={() => {
-                  alert("Muted notifications.");
-                  setShowMenu(false);
-                }}
+                onClick={handleToggleMute}
                 className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-slate-300 hover:bg-[#1f2937] hover:text-white transition text-left cursor-pointer"
               >
-                <BellOff size={13} />
-                <span>Mute Notifications</span>
+                {isMuted ? <Bell size={13} className="text-blue-400" /> : <BellOff size={13} />}
+                <span>{isMuted ? "Unmute Notifications" : "Mute Notifications"}</span>
               </button>
               <button
                 onClick={() => {
@@ -297,12 +313,45 @@ function ChatTab({ box }: { box: ChatBox }) {
 }
 
 export default function ChatTabsContainer() {
-  const { openChatBoxes } = useChatStore();
+  const { openChatBoxes, closeChat, toggleCollapse } = useChatStore();
 
   if (!openChatBoxes || openChatBoxes.length === 0) return null;
 
+  const handleMinimizeAll = () => {
+    openChatBoxes.forEach((b: ChatBox) => {
+      if (!b.isCollapsed) toggleCollapse(b.id);
+    });
+  };
+
+  const handleCloseAll = () => {
+    openChatBoxes.forEach((b: ChatBox) => {
+      closeChat(b.id);
+    });
+  };
+
   return (
     <div className="fixed bottom-0 right-6 z-50 flex items-end gap-3 pointer-events-none">
+      {openChatBoxes.length > 1 && (
+        <div className="pointer-events-auto flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#111827] border border-[#1f2937] shadow-2xl mb-1 text-xs select-none">
+          <button
+            type="button"
+            onClick={handleMinimizeAll}
+            className="px-2 py-0.5 rounded-lg text-[10px] font-semibold text-slate-300 hover:text-white hover:bg-[#1f2937] transition cursor-pointer"
+            title="Minimize all chat tabs"
+          >
+            Minimize All
+          </button>
+          <span className="text-slate-600">|</span>
+          <button
+            type="button"
+            onClick={handleCloseAll}
+            className="px-2 py-0.5 rounded-lg text-[10px] font-semibold text-slate-400 hover:text-rose-400 hover:bg-[#1f2937] transition cursor-pointer"
+            title="Close all chat tabs"
+          >
+            Close All
+          </button>
+        </div>
+      )}
       {openChatBoxes.map((box: ChatBox) => (
         <ChatTab key={box.id} box={box} />
       ))}
