@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Search, Users, X, CheckCheck, MessageSquare, Pin } from "lucide-react";
+import { Search, Users, X, CheckCheck, MessageSquare, Pin, BellOff, Bell } from "lucide-react";
 import Image from "next/image";
 import { useChatStore } from "@/store/chatStore";
 import { CreateGroupModal } from "../chat/CreateGroupModal";
@@ -9,9 +9,10 @@ import { CreateGroupModal } from "../chat/CreateGroupModal";
 export default function ConversationList() {
   const { conversations, activeConversationId, setActiveConversationId, fetchConversations, markConversationAsRead } = useChatStore();
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterTab, setFilterTab] = useState<"all" | "unread" | "online" | "groups">("all");
+  const [filterTab, setFilterTab] = useState<"all" | "unread" | "online" | "groups" | "muted">("all");
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
   const [pinnedIds, setPinnedIds] = useState<string[]>([]);
+  const [mutedIds, setMutedIds] = useState<string[]>([]);
 
   useEffect(() => {
     fetchConversations();
@@ -19,6 +20,8 @@ export default function ConversationList() {
       try {
         const stored = localStorage.getItem("pinned_conversations");
         if (stored) setPinnedIds(JSON.parse(stored));
+        const storedMuted = localStorage.getItem("muted_conversations");
+        if (storedMuted) setMutedIds(JSON.parse(storedMuted));
       } catch {}
     }
   }, [fetchConversations]);
@@ -34,9 +37,21 @@ export default function ConversationList() {
     });
   };
 
+  const toggleMute = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setMutedIds((prev) => {
+      const next = prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id];
+      if (typeof window !== "undefined") {
+        localStorage.setItem("muted_conversations", JSON.stringify(next));
+      }
+      return next;
+    });
+  };
+
   const unreadCount = conversations.filter((c) => c.hasUnread).length;
   const onlineCount = conversations.filter((c) => c.online).length;
   const groupsCount = conversations.filter((c) => c.id.startsWith("group_") || (c as any).isGroup).length;
+  const mutedCount = conversations.filter((c) => mutedIds.includes(c.id)).length;
 
   const handleMarkAllAsRead = () => {
     conversations
@@ -50,6 +65,7 @@ export default function ConversationList() {
     if (filterTab === "unread" && !c.hasUnread) return false;
     if (filterTab === "online" && !c.online) return false;
     if (filterTab === "groups" && !(c.id.startsWith("group_") || (c as any).isGroup)) return false;
+    if (filterTab === "muted" && !mutedIds.includes(c.id)) return false;
 
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
@@ -102,6 +118,21 @@ export default function ConversationList() {
           )}
         </div>
 
+        {searchQuery.trim() && (
+          <div className="flex items-center justify-between text-[11px] text-slate-400 px-1 pt-0.5">
+            <span>
+              Found <strong className="text-blue-400">{filteredConversations.length}</strong> conversation{filteredConversations.length === 1 ? "" : "s"}
+            </span>
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              className="text-xs text-rose-400 hover:underline cursor-pointer"
+            >
+              Clear
+            </button>
+          </div>
+        )}
+
         {/* Filter Pills */}
         <div className="flex items-center justify-between gap-1 overflow-x-auto no-scrollbar">
           <div className="flex items-center gap-1.5">
@@ -110,6 +141,7 @@ export default function ConversationList() {
               { id: "unread" as const, label: "Unread", count: unreadCount },
               { id: "online" as const, label: "Online", count: onlineCount },
               { id: "groups" as const, label: "Groups", count: groupsCount },
+              { id: "muted" as const, label: "Muted", count: mutedCount },
             ].map((tab) => {
               const isActive = filterTab === tab.id;
               return (
@@ -175,6 +207,7 @@ export default function ConversationList() {
           sortedConversations.map((user) => {
             const isActive = user.id === activeConversationId;
             const isPinned = pinnedIds.includes(user.id);
+            const isMuted = mutedIds.includes(user.id);
             const lastMsg = user.messages[user.messages.length - 1];
 
             return (
@@ -206,9 +239,26 @@ export default function ConversationList() {
                       {isPinned && (
                         <Pin size={11} className="text-blue-400 rotate-45 shrink-0 fill-blue-400" />
                       )}
+                      {isMuted && (
+                        <span title="Muted conversation" className="inline-flex">
+                          <BellOff size={11} className="text-slate-500 shrink-0" />
+                        </span>
+                      )}
                     </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      {lastMsg && <span className="text-[10px] text-slate-500">{lastMsg.time}</span>}
+                    <div className="flex items-center gap-1 shrink-0">
+                      {lastMsg && <span className="text-[10px] text-slate-500 mr-0.5">{lastMsg.time}</span>}
+                      <button
+                        type="button"
+                        onClick={(e) => toggleMute(e, user.id)}
+                        className={`p-1 rounded-md text-xs transition cursor-pointer ${
+                          isMuted
+                            ? "text-amber-400 hover:text-amber-300"
+                            : "opacity-0 group-hover:opacity-100 text-slate-400 hover:text-white hover:bg-slate-700/50"
+                        }`}
+                        title={isMuted ? "Unmute conversation" : "Mute notifications"}
+                      >
+                        <BellOff size={12} className={isMuted ? "text-amber-400" : ""} />
+                      </button>
                       <button
                         type="button"
                         onClick={(e) => togglePin(e, user.id)}
