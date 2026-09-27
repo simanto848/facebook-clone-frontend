@@ -20,6 +20,7 @@ import {
   Avatar,
   Loader,
   EmptyState,
+  Dialog,
 } from "@/components/ui";
 
 interface PageProps {
@@ -34,7 +35,8 @@ export default function BrandPageDetailPage({ params }: PageProps) {
 
   const [page, setPage] = useState<any>(null);
   const [pagePosts, setPagePosts] = useState<PostType[]>([]);
-  const [activeTab, setActiveTab] = useState<"posts" | "about" | "reviews">("posts");
+  const [activeTab, setActiveTab] = useState<"posts" | "photos" | "about" | "reviews">("posts");
+  const [selectedPhotoPreview, setSelectedPhotoPreview] = useState<string | null>(null);
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
   const [likeLoading, setLikeLoading] = useState(false);
@@ -359,30 +361,36 @@ export default function BrandPageDetailPage({ params }: PageProps) {
                 </div>
 
                 {/* Navigation Tabs */}
-                <div className="flex items-center gap-2 border-b border-[#1f2937] pb-1">
-                  {[
-                    { key: "posts", label: "Posts & Updates", icon: FileText },
-                    { key: "reviews", label: "Reviews & Ratings", icon: Star },
-                    { key: "about", label: "About & Info", icon: Info },
-                  ].map((tab) => {
-                    const Icon = tab.icon;
-                    const isActive = activeTab === tab.key;
-                    return (
-                      <button
-                        key={tab.key}
-                        onClick={() => setActiveTab(tab.key as any)}
-                        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                          isActive
-                            ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20"
-                            : "text-slate-400 hover:text-white hover:bg-slate-800/60"
-                        }`}
-                      >
-                        <Icon size={14} />
-                        {tab.label}
-                      </button>
-                    );
-                  })}
-                </div>
+                {(() => {
+                  const allPagePhotos = pagePosts.flatMap((p) => p.images || []).filter(Boolean);
+                  return (
+                    <div className="flex items-center gap-2 border-b border-[#1f2937] pb-1 overflow-x-auto no-scrollbar">
+                      {[
+                        { key: "posts", label: "Posts & Updates", icon: FileText },
+                        { key: "photos", label: `Photos (${allPagePhotos.length})`, icon: ImageIcon },
+                        { key: "reviews", label: "Reviews & Ratings", icon: Star },
+                        { key: "about", label: "About & Info", icon: Info },
+                      ].map((tab) => {
+                        const Icon = tab.icon;
+                        const isActive = activeTab === tab.key;
+                        return (
+                          <button
+                            key={tab.key}
+                            onClick={() => setActiveTab(tab.key as any)}
+                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                              isActive
+                                ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20"
+                                : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+                            }`}
+                          >
+                            <Icon size={14} />
+                            {tab.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
 
                 {activeTab === "posts" && (
                   <>
@@ -519,6 +527,63 @@ export default function BrandPageDetailPage({ params }: PageProps) {
                       )}
                     </div>
                   </>
+                )}
+
+                {activeTab === "photos" && (() => {
+                  const allPagePhotos = pagePosts.flatMap((p) => p.images || []).filter(Boolean);
+                  return (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-bold text-sm text-white">Page Photos & Media</h3>
+                        <Badge variant="glass">{allPagePhotos.length} photos</Badge>
+                      </div>
+
+                      {allPagePhotos.length === 0 ? (
+                        <EmptyState
+                          icon={<ImageIcon size={36} className="text-slate-500" />}
+                          title="No photos shared yet"
+                          description="Photos and media published by this page will appear here."
+                        />
+                      ) : (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                          {allPagePhotos.map((imgUrl, idx) => (
+                            <div
+                              key={idx}
+                              onClick={() => setSelectedPhotoPreview(imgUrl)}
+                              className="relative aspect-square rounded-xl overflow-hidden bg-slate-900 border border-[#1f2937] hover:border-blue-500 group cursor-pointer transition"
+                            >
+                              <img
+                                src={imgUrl}
+                                alt="Page photo"
+                                className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                              />
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <span className="text-xs text-white font-semibold">View Photo</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* Photo Preview Dialog */}
+                {selectedPhotoPreview && (
+                  <Dialog
+                    isOpen={Boolean(selectedPhotoPreview)}
+                    onClose={() => setSelectedPhotoPreview(null)}
+                    size="lg"
+                    title="Photo Preview"
+                  >
+                    <div className="relative h-96 w-full bg-black rounded-xl overflow-hidden flex items-center justify-center">
+                      <img
+                        src={selectedPhotoPreview}
+                        alt="Photo preview"
+                        className="max-h-full max-w-full object-contain"
+                      />
+                    </div>
+                  </Dialog>
                 )}
 
                 {activeTab === "about" && (
