@@ -41,6 +41,7 @@ export default function Navbar() {
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const { conversations, openChat, fetchConversations } = useChatStore();
 
   useEffect(() => {
@@ -187,6 +188,17 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  useEffect(() => {
     const savedTheme = (localStorage.getItem("app-theme") || "dark") as "dark" | "light" | "cyberpunk";
     setCurrentTheme(savedTheme);
     document.documentElement.classList.remove("theme-light", "theme-cyberpunk");
@@ -295,6 +307,7 @@ export default function Navbar() {
         {/* Search */}
         <div ref={searchContainerRef} className="relative hidden w-105 md:block">
           <Input
+            ref={searchInputRef}
             placeholder="Search people, posts, topics..."
             value={searchQuery}
             leftIcon={<Search size={16} />}
@@ -307,8 +320,15 @@ export default function Navbar() {
             onFocus={() => {
               if (searchQuery.length > 0) setShowSearchSuggestions(true);
             }}
-            className="rounded-full bg-[#1f2937] border-[#374151]"
+            className="rounded-full bg-[#1f2937] border-[#374151] pr-12"
           />
+
+          {!searchQuery && (
+            <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none hidden sm:flex items-center gap-0.5 px-1.5 py-0.5 rounded-md border border-slate-700 bg-slate-800/90 text-[10px] text-slate-400 font-mono shadow-xs">
+              <span>⌘</span>
+              <span>K</span>
+            </div>
+          )}
 
           {showSearchSuggestions && (
             <div className="absolute left-0 right-0 top-12 z-50 rounded-2xl border border-[#1f2937] bg-[#111827] shadow-2xl p-3 animate-in fade-in slide-in-from-top-2 duration-150">
