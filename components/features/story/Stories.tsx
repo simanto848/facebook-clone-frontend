@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
-import { Plus, Type, Image as ImageIcon, Video, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Type, Image as ImageIcon, Video, ChevronLeft, ChevronRight, AlignLeft, AlignCenter, AlignRight, Sparkles } from "lucide-react";
 import { usePostStore, StoryType } from "@/store/postStore";
 import { useAuthStore } from "@/store/authStore";
 import { storyService } from "@/services/storyService";
@@ -15,6 +15,10 @@ const GRADIENT_THEMES = [
   { id: "ocean", label: "Ocean", bgClass: "from-blue-600 via-cyan-600 to-teal-700", preview: "bg-linear-to-br from-blue-600 via-cyan-600 to-teal-700", fallbackImg: "https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=600" },
   { id: "emerald", label: "Emerald", bgClass: "from-emerald-600 via-teal-700 to-slate-950", preview: "bg-linear-to-br from-emerald-600 via-teal-700 to-slate-950", fallbackImg: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=600" },
   { id: "neon", label: "Neon", bgClass: "from-purple-600 via-fuchsia-600 to-blue-700", preview: "bg-linear-to-br from-purple-600 via-fuchsia-600 to-blue-700", fallbackImg: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=600" },
+  { id: "cyberpunk", label: "Cyberpunk", bgClass: "from-amber-400 via-pink-600 to-purple-800", preview: "bg-linear-to-br from-amber-400 via-pink-600 to-purple-800", fallbackImg: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600" },
+  { id: "aurora", label: "Aurora", bgClass: "from-emerald-400 via-cyan-600 to-indigo-800", preview: "bg-linear-to-br from-emerald-400 via-cyan-600 to-indigo-800", fallbackImg: "https://images.unsplash.com/photo-1531366936337-7c912a4589a7?w=600" },
+  { id: "crimson", label: "Crimson", bgClass: "from-rose-600 via-red-700 to-orange-800", preview: "bg-linear-to-br from-rose-600 via-red-700 to-orange-800", fallbackImg: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600" },
+  { id: "obsidian", label: "Obsidian", bgClass: "from-zinc-900 via-neutral-900 to-black", preview: "bg-linear-to-br from-zinc-900 via-neutral-900 to-black", fallbackImg: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600" },
 ];
 
 export default function Stories() {
@@ -26,6 +30,8 @@ export default function Stories() {
   const [newStoryText, setNewStoryText] = useState("");
   const [newStoryMedia, setNewStoryMedia] = useState("");
   const [selectedGradient, setSelectedGradient] = useState("midnight");
+  const [storyFontStyle, setStoryFontStyle] = useState<"sans" | "serif" | "mono">("sans");
+  const [storyTextAlign, setStoryTextAlign] = useState<"center" | "left" | "right">("center");
   const [isSubmittingStory, setIsSubmittingStory] = useState(false);
   const [storyError, setStoryError] = useState<string | null>(null);
   const [storyToDelete, setStoryToDelete] = useState<string | null>(null);
@@ -323,13 +329,17 @@ export default function Stories() {
           />
 
           {newStoryType === "text" ? (
-            <div className="space-y-3">
+            <div className="space-y-3.5">
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-300 block">Story Text</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-300 block">Story Text</label>
+                  <span className="text-[10px] text-slate-400">{newStoryText.length}/200</span>
+                </div>
                 <textarea
-                  placeholder="What is on your mind?"
+                  placeholder="What is on your mind? Share a thought, announcement, or quote..."
                   value={newStoryText}
                   onChange={(e) => setNewStoryText(e.target.value)}
+                  maxLength={200}
                   className="w-full h-24 rounded-xl border border-[#374151] bg-[#1f2937] p-3 text-xs text-white outline-none resize-none focus:border-blue-500"
                   required
                 />
@@ -337,8 +347,13 @@ export default function Stories() {
 
               {/* Gradient Theme Selector */}
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300 block">Gradient Theme</label>
-                <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                <label className="text-xs font-semibold text-slate-300 flex items-center justify-between">
+                  <span>Background Theme</span>
+                  <span className="text-[10px] text-slate-400 capitalize">
+                    {(GRADIENT_THEMES.find((t) => t.id === selectedGradient) || GRADIENT_THEMES[0]).label}
+                  </span>
+                </label>
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
                   {GRADIENT_THEMES.map((theme) => (
                     <button
                       key={theme.id}
@@ -346,23 +361,117 @@ export default function Stories() {
                       onClick={() => setSelectedGradient(theme.id)}
                       className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium transition cursor-pointer border shrink-0 ${
                         selectedGradient === theme.id
-                          ? "border-blue-500 bg-blue-500/20 text-white shadow-sm"
+                          ? "border-blue-500 bg-blue-500/20 text-white shadow-sm ring-1 ring-blue-500/50"
                           : "border-slate-700 bg-slate-800 text-slate-400 hover:text-white"
                       }`}
                     >
-                      <span className={`w-3.5 h-3.5 rounded-full ${theme.preview}`} />
+                      <span className={`w-3.5 h-3.5 rounded-full ${theme.preview} shrink-0`} />
                       <span>{theme.label}</span>
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Text Card Preview */}
-              {newStoryText.trim() && (
+              {/* Typography & Alignment Controls */}
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                {/* Font Style */}
                 <div className="space-y-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Card Preview</span>
-                  <div className={`h-28 rounded-xl bg-linear-to-br ${(GRADIENT_THEMES.find((t) => t.id === selectedGradient) || GRADIENT_THEMES[0]).bgClass} p-3 flex items-center justify-center text-center shadow-inner`}>
-                    <p className="text-xs font-bold text-white line-clamp-3">{newStoryText}</p>
+                  <label className="text-[11px] font-semibold text-slate-400 block">Font Style</label>
+                  <div className="flex items-center gap-1 p-0.5 rounded-lg bg-slate-800/80 border border-slate-700/60">
+                    {(
+                      [
+                        { id: "sans", label: "Sans" },
+                        { id: "serif", label: "Serif" },
+                        { id: "mono", label: "Mono" },
+                      ] as const
+                    ).map((f) => (
+                      <button
+                        key={f.id}
+                        type="button"
+                        onClick={() => setStoryFontStyle(f.id)}
+                        className={`flex-1 py-1 rounded text-xs transition cursor-pointer ${
+                          storyFontStyle === f.id
+                            ? "bg-blue-600 text-white font-bold shadow-xs"
+                            : "text-slate-400 hover:text-white"
+                        }`}
+                      >
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Text Alignment */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-semibold text-slate-400 block">Alignment</label>
+                  <div className="flex items-center gap-1 p-0.5 rounded-lg bg-slate-800/80 border border-slate-700/60">
+                    {(
+                      [
+                        { id: "left", icon: AlignLeft },
+                        { id: "center", icon: AlignCenter },
+                        { id: "right", icon: AlignRight },
+                      ] as const
+                    ).map((al) => {
+                      const Icon = al.icon;
+                      return (
+                        <button
+                          key={al.id}
+                          type="button"
+                          onClick={() => setStoryTextAlign(al.id)}
+                          className={`flex-1 py-1 rounded flex items-center justify-center transition cursor-pointer ${
+                            storyTextAlign === al.id
+                              ? "bg-blue-600 text-white shadow-xs"
+                              : "text-slate-400 hover:text-white"
+                          }`}
+                        >
+                          <Icon size={13} />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Text Card Live Preview */}
+              {newStoryText.trim() && (
+                <div className="space-y-1 pt-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                    <Sparkles size={11} className="text-amber-400" />
+                    <span>Story Card Preview</span>
+                  </span>
+                  <div
+                    className={`h-36 rounded-2xl bg-linear-to-br ${(GRADIENT_THEMES.find((t) => t.id === selectedGradient) || GRADIENT_THEMES[0]).bgClass} p-4 flex flex-col justify-between shadow-xl relative overflow-hidden`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Avatar
+                        src={authUser?.avatar || "https://images.unsplash.com/photo-1779040622687-42bb00790c67?w=100"}
+                        name={authUser?.displayName || authUser?.username || "You"}
+                        size="xs"
+                      />
+                      <span className="text-[11px] font-semibold text-white/90">
+                        {authUser?.displayName || authUser?.username || "You"}
+                      </span>
+                    </div>
+
+                    <p
+                      className={`text-sm font-bold text-white line-clamp-4 ${
+                        storyFontStyle === "serif"
+                          ? "font-serif"
+                          : storyFontStyle === "mono"
+                          ? "font-mono"
+                          : "font-sans"
+                      } ${
+                        storyTextAlign === "left"
+                          ? "text-left"
+                          : storyTextAlign === "right"
+                          ? "text-right"
+                          : "text-center"
+                      }`}
+                    >
+                      {newStoryText}
+                    </p>
+
+                    <div className="text-[9px] text-white/60 text-right">Just now</div>
                   </div>
                 </div>
               )}
