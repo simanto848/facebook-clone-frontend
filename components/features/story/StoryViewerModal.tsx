@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, Heart, Eye, Trash2, Play, Pause, Volume2, VolumeX, Send } from "lucide-react";
+import { ChevronLeft, ChevronRight, Heart, Eye, Trash2, Play, Pause, Volume2, VolumeX, Send, Share2 } from "lucide-react";
 import { Dialog, Avatar, Button, Badge } from "@/components/ui";
 
 export interface StoryItem {
@@ -44,6 +44,18 @@ export function StoryViewerModal({
   const [reactionToast, setReactionToast] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
   const currentStory = stories[currentIndex];
+
+  const handleCopyStoryLink = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (typeof window !== "undefined" && currentStory) {
+      const url = `${window.location.origin}/?story=${encodeURIComponent(currentStory.id)}`;
+      navigator.clipboard.writeText(url);
+      setReactionToast("Story link copied to clipboard!");
+      setTimeout(() => {
+        setReactionToast(null);
+      }, 2200);
+    }
+  };
 
   const handleSendReply = (e: React.FormEvent) => {
     e.preventDefault();
@@ -187,6 +199,15 @@ export function StoryViewerModal({
                 {isMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
               </button>
             )}
+
+            <button
+              type="button"
+              onClick={handleCopyStoryLink}
+              className="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition"
+              title="Share / Copy Story Link"
+            >
+              <Share2 size={15} />
+            </button>
 
             <Badge variant="glass">{currentStory.type.toUpperCase()}</Badge>
             {onDelete && (
