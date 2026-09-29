@@ -30,6 +30,20 @@ export default function SecuritySection() {
   ]);
   const [copiedCodes, setCopiedCodes] = useState(false);
   const [showBackupCodes, setShowBackupCodes] = useState(false);
+  const [sessionToRevoke, setSessionToRevoke] = useState<{ id: string; device: string } | null>(null);
+
+  React.useEffect(() => {
+    try {
+      const stored2FA = localStorage.getItem("settings_security_2fa");
+      if (stored2FA !== null) {
+        setTwoFactor(stored2FA === "true");
+      }
+      const storedAlerts = localStorage.getItem("settings_security_alerts");
+      if (storedAlerts !== null) {
+        setUnrecognizedLoginAlerts(storedAlerts === "true");
+      }
+    } catch {}
+  }, []);
 
   // Active Sessions
   const [sessions, setSessions] = useState([
@@ -100,13 +114,27 @@ export default function SecuritySection() {
       return;
     }
     setTwoFactor(true);
+    try {
+      localStorage.setItem("settings_security_2fa", "true");
+    } catch {}
     setTwoFactorSuccess(true);
     setTwoFactorError(null);
+    setSuccessMsg("Two-Factor Authentication is now enabled for your account.");
     setTimeout(() => {
       setIsTwoFactorModalOpen(false);
       setTwoFactorSuccess(false);
       setTwoFactorCode("");
     }, 1200);
+  };
+
+  const handleDisable2FA = () => {
+    setTwoFactor(false);
+    setShowBackupCodes(false);
+    try {
+      localStorage.setItem("settings_security_2fa", "false");
+    } catch {}
+    setSuccessMsg("Two-Factor Authentication has been disabled.");
+    setTimeout(() => setSuccessMsg(null), 3500);
   };
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -242,8 +270,7 @@ export default function SecuritySection() {
               type="button"
               onClick={() => {
                 if (twoFactor) {
-                  setTwoFactor(false);
-                  setShowBackupCodes(false);
+                  handleDisable2FA();
                 } else {
                   setIsTwoFactorModalOpen(true);
                 }
@@ -420,7 +447,13 @@ export default function SecuritySection() {
             </div>
             <Switch
               checked={unrecognizedLoginAlerts}
-              onChange={(e) => setUnrecognizedLoginAlerts(e.target.checked)}
+              onChange={(e) => {
+                const nextVal = e.target.checked;
+                setUnrecognizedLoginAlerts(nextVal);
+                try {
+                  localStorage.setItem("settings_security_alerts", String(nextVal));
+                } catch {}
+              }}
             />
           </div>
         </div>
