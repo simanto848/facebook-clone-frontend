@@ -3,7 +3,7 @@
 import React, { useState, useCallback } from "react";
 import Image from "next/image";
 import { useDropzone } from "react-dropzone";
-import { UploadCloud, X, Image as ImageIcon, Video, Loader2, Globe, Lock, Users, Hash, Sparkles, Trash2, Smile, Palette } from "lucide-react";
+import { UploadCloud, X, Image as ImageIcon, Video, Loader2, Globe, Lock, Users, Hash, Sparkles, Trash2, Smile, Palette, CalendarClock } from "lucide-react";
 import { Dialog, Button } from "@/components/ui";
 import { compressImageFile, createMediaPreview, revokeMediaPreview, type MediaPreview } from "@/lib/mediaUpload";
 import { postService } from "@/services/postService";
@@ -33,6 +33,8 @@ export function CreatePostModal({ isOpen, onClose, initialType = "gallery" }: Cr
   const [showFeelingPicker, setShowFeelingPicker] = useState(false);
   const [selectedBg, setSelectedBg] = useState("none");
   const [showBgPicker, setShowBgPicker] = useState(false);
+  const [scheduledDate, setScheduledDate] = useState("");
+  const [showSchedulePicker, setShowSchedulePicker] = useState(false);
   const [previews, setPreviews] = useState<MediaPreview[]>([]);
   const [compressing, setCompressing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -194,6 +196,8 @@ export function CreatePostModal({ isOpen, onClose, initialType = "gallery" }: Cr
       setContent("");
       setFeeling(null);
       setShowFeelingPicker(false);
+      setScheduledDate("");
+      setShowSchedulePicker(false);
       if (typeof window !== "undefined") {
         localStorage.removeItem("post_composer_draft");
       }
@@ -289,9 +293,85 @@ export function CreatePostModal({ isOpen, onClose, initialType = "gallery" }: Cr
                 <Palette size={11} className="text-purple-400" />
                 <span>Theme</span>
               </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSchedulePicker((prev) => !prev);
+                  setShowFeelingPicker(false);
+                  setShowBgPicker(false);
+                }}
+                className={`flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[10px] font-semibold transition cursor-pointer ${
+                  showSchedulePicker || scheduledDate
+                    ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
+                    : "bg-[#0f172a] border-[#374151] text-slate-300 hover:text-white"
+                }`}
+                title="Schedule post for later"
+              >
+                <CalendarClock size={11} className="text-emerald-400" />
+                <span>{scheduledDate ? "Scheduled" : "Schedule"}</span>
+              </button>
             </div>
           </div>
         </div>
+
+        {/* Schedule Post Drawer */}
+        {showSchedulePicker && (
+          <div className="p-3 rounded-xl border border-slate-700 bg-slate-900/90 shadow-xl space-y-2 animate-in fade-in duration-150">
+            <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+              <span>Schedule for later publication</span>
+              <button
+                type="button"
+                onClick={() => setShowSchedulePicker(false)}
+                className="text-slate-400 hover:text-white"
+              >
+                <X size={12} />
+              </button>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="datetime-local"
+                value={scheduledDate}
+                min={new Date().toISOString().slice(0, 16)}
+                onChange={(e) => setScheduledDate(e.target.value)}
+                className="w-full text-xs bg-[#0f172a] border border-[#374151] rounded-lg px-3 py-1.5 text-white outline-none focus:border-emerald-500"
+              />
+              {scheduledDate && (
+                <button
+                  type="button"
+                  onClick={() => setScheduledDate("")}
+                  className="px-2 py-1.5 text-[11px] text-red-400 hover:text-red-300 bg-red-500/10 rounded-lg shrink-0 transition"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+              <span className="text-[10px] text-slate-400">Quick presets:</span>
+              <button
+                type="button"
+                onClick={() => {
+                  const d = new Date(Date.now() + 60 * 60 * 1000);
+                  setScheduledDate(d.toISOString().slice(0, 16));
+                }}
+                className="text-[10px] bg-slate-800 hover:bg-slate-700 px-2 py-0.5 rounded text-slate-200 transition"
+              >
+                In 1 hour
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const d = new Date(Date.now() + 24 * 60 * 60 * 1000);
+                  d.setHours(9, 0, 0, 0);
+                  setScheduledDate(d.toISOString().slice(0, 16));
+                }}
+                className="text-[10px] bg-slate-800 hover:bg-slate-700 px-2 py-0.5 rounded text-slate-200 transition"
+              >
+                Tomorrow 9:00 AM
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Background Theme Swatches */}
         {showBgPicker && (
@@ -511,7 +591,7 @@ export function CreatePostModal({ isOpen, onClose, initialType = "gallery" }: Cr
             Cancel
           </Button>
           <Button type="submit" variant="primary" size="sm" loading={submitting} disabled={compressing || (!content.trim() && previews.length === 0)}>
-            Post to Feed
+            {scheduledDate ? "Schedule Post" : "Post to Feed"}
           </Button>
         </div>
       </form>
