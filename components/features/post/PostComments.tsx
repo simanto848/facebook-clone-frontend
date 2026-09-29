@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
-import { Send, Loader2 } from "lucide-react";
+import { Send, Loader2, Search, X } from "lucide-react";
 import { usePostStore, CommentType } from "@/store/postStore";
 import { useAuthStore } from "@/store/authStore";
 import { commentService } from "@/services/commentService";
@@ -307,19 +307,29 @@ export default function PostComments({ postId, comments }: Props) {
   };
 
   const [sortBy, setSortBy] = useState<"newest" | "top">("newest");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSearch, setShowSearch] = useState(false);
 
   const handleQuickEmoji = (emoji: string) => {
     setCommentText((prev) => (prev ? `${prev} ${emoji}` : emoji));
   };
 
-  const sortedComments = [...commentList].sort((a, b) => {
+  const filteredComments = commentList.filter((c) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    const matchContent = c.content.toLowerCase().includes(q);
+    const matchAuthor = c.author.name.toLowerCase().includes(q) || c.author.username.toLowerCase().includes(q);
+    return matchContent || matchAuthor;
+  });
+
+  const sortedComments = [...filteredComments].sort((a, b) => {
     if (sortBy === "top") return (b.likes || 0) - (a.likes || 0);
     return 0;
   });
 
   return (
     <div className="border-t border-[#1f2937] bg-[#111827]/30 px-5 py-4">
-      {/* Quick Emoji Reaction Bar */}
+      {/* Quick Emoji Reaction Bar & Controls */}
       <div className="flex items-center justify-between gap-2 mb-2.5">
         <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar text-xs">
           <span className="text-[10px] text-slate-500 font-medium shrink-0">Quick react:</span>
@@ -336,33 +346,71 @@ export default function PostComments({ postId, comments }: Props) {
           ))}
         </div>
 
-        {commentList.length > 1 && (
-          <div className="flex items-center gap-1 text-[10px] shrink-0 text-slate-400">
+        <div className="flex items-center gap-1.5 text-[10px] shrink-0 text-slate-400">
+          {commentList.length > 2 && (
             <button
               type="button"
-              onClick={() => setSortBy("newest")}
-              className={`px-1.5 py-0.5 rounded ${sortBy === "newest" ? "text-blue-400 font-bold" : "hover:text-white"}`}
+              onClick={() => {
+                setShowSearch(!showSearch);
+                if (showSearch) setSearchQuery("");
+              }}
+              className={`p-1 rounded hover:bg-[#1f2937] transition cursor-pointer ${showSearch ? "text-blue-400" : "text-slate-400"}`}
+              title="Search comments"
             >
-              Newest
+              <Search size={12} />
             </button>
-            <span>•</span>
-            <button
-              type="button"
-              onClick={() => setSortBy("top")}
-              className={`px-1.5 py-0.5 rounded ${sortBy === "top" ? "text-blue-400 font-bold" : "hover:text-white"}`}
-            >
-              Top
-            </button>
-          </div>
-        )}
+          )}
+
+          {commentList.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={() => setSortBy("newest")}
+                className={`px-1.5 py-0.5 rounded transition ${sortBy === "newest" ? "text-blue-400 font-bold" : "hover:text-white"}`}
+              >
+                Newest
+              </button>
+              <span>•</span>
+              <button
+                type="button"
+                onClick={() => setSortBy("top")}
+                className={`px-1.5 py-0.5 rounded transition ${sortBy === "top" ? "text-blue-400 font-bold" : "hover:text-white"}`}
+              >
+                Top
+              </button>
+            </>
+          )}
+        </div>
       </div>
+
+      {/* Optional Search Filter Bar */}
+      {showSearch && (
+        <div className="mb-3 relative flex items-center">
+          <input
+            type="text"
+            placeholder="Filter comments by user or keyword..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full text-xs bg-[#0f172a] border border-[#1f2937] rounded-lg px-3 py-1.5 pr-7 text-white outline-none focus:border-blue-500"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              className="absolute right-2 text-slate-400 hover:text-white"
+            >
+              <X size={12} />
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Comment Form */}
       <form onSubmit={handleSubmit} className="flex gap-3">
-        <div className="relative h-9 w-9 overflow-hidden rounded-full shrink-0 border border-[#1f2937]">
+        <div className="relative h-9 w-9 overflow-hidden rounded-full shrink-0 border border-[#1f2937] bg-slate-800">
           <Image
-            src="https://images.unsplash.com/photo-1779040622687-42bb00790c67?w=100"
-            alt="Alex Morgan"
+            src={user?.avatar || "https://images.unsplash.com/photo-1779040622687-42bb00790c67?w=100"}
+            alt={user?.displayName || user?.username || "You"}
             fill
             sizes="36px"
             className="object-cover"
