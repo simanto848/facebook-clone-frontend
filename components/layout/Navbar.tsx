@@ -36,6 +36,7 @@ export default function Navbar() {
   const { socket } = useSocketContext();
   const [activeDropdown, setActiveDropdown] = useState<"profile" | "notifications" | "messages" | "theme" | null>(null);
   const [currentTheme, setCurrentTheme] = useState<"dark" | "light" | "cyberpunk">("dark");
+  const [userStatus, setUserStatus] = useState<"online" | "away" | "busy" | "invisible">("online");
   const [searchQuery, setSearchQuery] = useState("");
   const [messageSearchQuery, setMessageSearchQuery] = useState("");
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
@@ -43,6 +44,22 @@ export default function Navbar() {
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { conversations, openChat, fetchConversations } = useChatStore();
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("user_presence_status");
+      if (stored === "online" || stored === "away" || stored === "busy" || stored === "invisible") {
+        setUserStatus(stored);
+      }
+    } catch {}
+  }, []);
+
+  const handleStatusChange = (status: "online" | "away" | "busy" | "invisible") => {
+    setUserStatus(status);
+    try {
+      localStorage.setItem("user_presence_status", status);
+    } catch {}
+  };
 
   useEffect(() => {
     fetchConversations();
@@ -680,16 +697,65 @@ export default function Navbar() {
                 </div>
                 <div className="hidden text-left lg:block">
                   <p className="text-sm font-medium text-white">{user.displayName || user.username}</p>
-                  <p className="text-xs text-green-400">Online</p>
+                  <p className={`text-xs flex items-center gap-1 ${
+                    userStatus === "online"
+                      ? "text-emerald-400"
+                      : userStatus === "away"
+                      ? "text-amber-400"
+                      : userStatus === "busy"
+                      ? "text-rose-400"
+                      : "text-slate-400"
+                  }`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${
+                      userStatus === "online"
+                        ? "bg-emerald-400"
+                        : userStatus === "away"
+                        ? "bg-amber-400"
+                        : userStatus === "busy"
+                        ? "bg-rose-400"
+                        : "bg-slate-400"
+                    }`} />
+                    <span className="capitalize">{userStatus === "busy" ? "Busy" : userStatus}</span>
+                  </p>
                 </div>
               </button>
 
               {activeDropdown === "profile" && (
                 <div className="absolute right-0 top-14 z-50 w-72 overflow-hidden rounded-2xl border border-[#1f2937] bg-[#111827] shadow-2xl shadow-black/40 animate-in fade-in slide-in-from-top-2 duration-150">
-                  {/* User Info */}
-                  <div className="border-b border-[#1f2937] p-4">
-                    <p className="font-semibold text-white">{user.displayName || user.username}</p>
-                    <p className="text-sm text-slate-400">{user.email}</p>
+                  {/* User Info & Status Selector */}
+                  <div className="border-b border-[#1f2937] p-4 space-y-3">
+                    <div>
+                      <p className="font-semibold text-white">{user.displayName || user.username}</p>
+                      <p className="text-sm text-slate-400">{user.email}</p>
+                    </div>
+
+                    <div className="pt-2 border-t border-[#1f2937]/60">
+                      <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block mb-1.5">
+                        Set Presence Status
+                      </span>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {[
+                          { id: "online", label: "Online", dot: "bg-emerald-400", text: "text-emerald-400" },
+                          { id: "away", label: "Away", dot: "bg-amber-400", text: "text-amber-400" },
+                          { id: "busy", label: "Do Not Disturb", dot: "bg-rose-400", text: "text-rose-400" },
+                          { id: "invisible", label: "Invisible", dot: "bg-slate-400", text: "text-slate-400" },
+                        ].map((st) => (
+                          <button
+                            key={st.id}
+                            type="button"
+                            onClick={() => handleStatusChange(st.id as any)}
+                            className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs transition cursor-pointer border ${
+                              userStatus === st.id
+                                ? "bg-slate-800 border-blue-500/50 text-white font-medium"
+                                : "bg-[#181f2f]/60 hover:bg-slate-800 border-transparent text-slate-400"
+                            }`}
+                          >
+                            <span className={`w-2 h-2 rounded-full ${st.dot} shrink-0`} />
+                            <span className="truncate text-[11px]">{st.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
 
                   {/* Menu */}
