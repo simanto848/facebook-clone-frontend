@@ -88,6 +88,8 @@ export default function ReelsPage() {
   const [isPlaying, setIsPlaying] = useState(true);
   const [isAutoplay, setIsAutoplay] = useState(true);
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
+  const [volume, setVolume] = useState<number>(0.8);
+  const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
   const [heartAnim, setHeartAnim] = useState<{ id: number; x: number; y: number } | null>(null);
   const lastClickTimeRef = useRef<number>(0);
@@ -109,11 +111,29 @@ export default function ReelsPage() {
     setIsMuted(nextMuted);
     if (videoRef.current) {
       videoRef.current.muted = nextMuted;
+      if (!nextMuted && videoRef.current.volume === 0) {
+        videoRef.current.volume = 0.8;
+        setVolume(0.8);
+      }
     }
     setSoundBadge(nextMuted ? "muted" : "unmuted");
     setTimeout(() => {
       setSoundBadge(null);
     }, 1200);
+  };
+
+  const handleVolumeChange = (newVal: number) => {
+    setVolume(newVal);
+    if (videoRef.current) {
+      videoRef.current.volume = newVal;
+      if (newVal === 0) {
+        videoRef.current.muted = true;
+        setIsMuted(true);
+      } else if (isMuted) {
+        videoRef.current.muted = false;
+        setIsMuted(false);
+      }
+    }
   };
 
   const handleVideoEnded = () => {
@@ -533,6 +553,7 @@ export default function ReelsPage() {
                 <span className="text-[11px] font-mono font-bold bg-black/50 px-2.5 py-1 rounded-full text-slate-300">
                   {activeReelIndex + 1} / {reels.length}
                 </span>
+                {/* Playback speed button */}
                 <button
                   type="button"
                   onClick={cyclePlaybackSpeed}
@@ -541,14 +562,43 @@ export default function ReelsPage() {
                 >
                   {playbackSpeed}x
                 </button>
-                <button
-                  type="button"
-                  onClick={toggleSound}
-                  className="p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition cursor-pointer"
-                  title={isMuted ? "Unmute audio" : "Mute audio"}
+
+                {/* Volume Control with hover slider */}
+                <div
+                  className="relative flex items-center"
+                  onMouseEnter={() => setShowVolumeSlider(true)}
+                  onMouseLeave={() => setShowVolumeSlider(false)}
                 >
-                  {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
-                </button>
+                  <button
+                    type="button"
+                    onClick={toggleSound}
+                    className="p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition cursor-pointer"
+                    title={isMuted ? "Unmute audio" : `Mute audio (${Math.round(volume * 100)}%)`}
+                  >
+                    {isMuted || volume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
+                  </button>
+
+                  {showVolumeSlider && (
+                    <div
+                      className="absolute right-full mr-1 px-2.5 py-1.5 rounded-full bg-black/80 backdrop-blur-md border border-white/10 flex items-center gap-1.5 animate-in fade-in duration-150 z-30"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.05"
+                        value={isMuted ? 0 : volume}
+                        onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
+                        className="w-16 h-1 accent-blue-500 cursor-pointer"
+                      />
+                      <span className="text-[10px] font-mono text-slate-300 w-6 text-right">
+                        {isMuted ? 0 : Math.round(volume * 100)}%
+                      </span>
+                    </div>
+                  )}
+                </div>
+
                 <button
                   type="button"
                   onClick={() => setShowShortcutsModal(true)}
