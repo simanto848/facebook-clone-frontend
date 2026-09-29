@@ -5,10 +5,10 @@ import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
 import Link from "next/link";
-import { Bookmark, BookmarkX, Search, X, Tag, Download, Check, Image as ImageIcon, Video, FileText, BarChart2, AlignLeft, Trash2, AlertTriangle, ArrowUpDown, LayoutGrid, List, FileSpreadsheet, Users, CheckSquare, Square } from "lucide-react";
+import { Bookmark, BookmarkX, Search, X, Tag, Download, Check, Image as ImageIcon, Video, FileText, BarChart2, AlignLeft, Trash2, AlertTriangle, ArrowUpDown, LayoutGrid, List, FileSpreadsheet, Users, CheckSquare, Square, FolderPlus, Folder, Plus } from "lucide-react";
 import { bookmarkService } from "@/services/bookmarkService";
 import { mapBackendPostToPostType, PostType, usePostStore } from "@/store/postStore";
-import { PageHeader, Badge, EmptyState, Loader } from "@/components/ui";
+import { PageHeader, Badge, EmptyState, Loader, Dialog, Button } from "@/components/ui";
 
 export default function SavedPostsPage() {
   const [savedPosts, setSavedPosts] = useState<(PostType & { bookmarkId?: string; category?: string })[]>([]);
@@ -25,7 +25,46 @@ export default function SavedPostsPage() {
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "popular">("newest");
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [searchQuery, setSearchQuery] = useState("");
+  const [customCollections, setCustomCollections] = useState<{ id: string; name: string; color?: string }[]>([]);
+  const [showNewCollectionModal, setShowNewCollectionModal] = useState(false);
+  const [newCollectionName, setNewCollectionName] = useState("");
   const { toggleSavePost } = usePostStore();
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("user_custom_collections");
+      if (stored) {
+        setCustomCollections(JSON.parse(stored));
+      }
+    } catch {}
+  }, []);
+
+  const handleCreateCollection = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCollectionName.trim()) return;
+    const id = `col_${Date.now()}`;
+    const created = { id, name: newCollectionName.trim() };
+    const updated = [...customCollections, created];
+    setCustomCollections(updated);
+    try {
+      localStorage.setItem("user_custom_collections", JSON.stringify(updated));
+    } catch {}
+    setNewCollectionName("");
+    setShowNewCollectionModal(false);
+    setSelectedCategory(id);
+  };
+
+  const handleDeleteCollection = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updated = customCollections.filter((c) => c.id !== id);
+    setCustomCollections(updated);
+    try {
+      localStorage.setItem("user_custom_collections", JSON.stringify(updated));
+    } catch {}
+    if (selectedCategory === id) {
+      setSelectedCategory("all");
+    }
+  };
 
   const handleExportBookmarks = () => {
     if (savedPosts.length === 0) return;
@@ -144,13 +183,22 @@ export default function SavedPostsPage() {
     media: searchedPosts.filter((p) => p.category === "media").length,
     discussions: searchedPosts.filter((p) => p.category === "discussions").length,
     articles: searchedPosts.filter((p) => p.category === "articles").length,
+    ...customCollections.reduce((acc, c) => {
+      acc[c.id] = searchedPosts.filter((p) => p.category === c.id).length;
+      return acc;
+    }, {} as Record<string, number>),
   };
 
   const categories = [
-    { id: "all", label: "All Items" },
-    { id: "media", label: "Media & Photos" },
-    { id: "discussions", label: "Discussions" },
-    { id: "articles", label: "Articles" },
+    { id: "all", label: "All Items", isCustom: false },
+    { id: "media", label: "Media & Photos", isCustom: false },
+    { id: "discussions", label: "Discussions", isCustom: false },
+    { id: "articles", label: "Articles", isCustom: false },
+    ...customCollections.map((c) => ({
+      id: c.id,
+      label: c.name,
+      isCustom: true,
+    })),
   ];
 
   const postTypes = [
@@ -425,7 +473,7 @@ export default function SavedPostsPage() {
               </div>
             )}
 
-            {/* CATEGORY FILTER TABS */}
+            {/* CATEGORY FILTER TABS & COLLECTION CREATOR */}
             <div className="flex items-center gap-2 overflow-x-auto pb-1">
               {categories.map((cat) => {
                 const isActive = selectedCategory === cat.id;
@@ -440,6 +488,7 @@ export default function SavedPostsPage() {
                         : "bg-slate-800/80 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-700/50"
                     }`}
                   >
+                    {cat.isCustom && <Folder size={12} className="text-amber-400" />}
                     <span>{cat.label}</span>
                     <span
                       className={`text-[10px] px-1.5 py-0.2 rounded-full ${
@@ -448,9 +497,28 @@ export default function SavedPostsPage() {
                     >
                       {count}
                     </span>
+                    {cat.isCustom && (
+                      <span
+                        onClick={(e) => handleDeleteCollection(cat.id, e)}
+                        className="ml-1 hover:text-red-400 p-0.5"
+                        title="Delete collection"
+                      >
+                        <X size={11} />
+                      </span>
+                    )}
                   </button>
                 );
               })}
+
+              <button
+                type="button"
+                onClick={() => setShowNewCollectionModal(true)}
+                className="px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap flex items-center gap-1.5 bg-slate-800/50 hover:bg-slate-800 text-blue-400 border border-dashed border-blue-500/40 hover:border-blue-500 transition cursor-pointer"
+                title="Create new collection folder"
+              >
+                <FolderPlus size={13} />
+                <span>New Collection</span>
+              </button>
             </div>
 
             {/* FORMAT / TYPE FILTER PILLS */}
@@ -703,6 +771,11 @@ export default function SavedPostsPage() {
                           <option value="discussions">Discussions</option>
                           <option value="media">Media</option>
                           <option value="articles">Articles</option>
+                          {customCollections.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              📁 {c.name}
+                            </option>
+                          ))}
                         </select>
                       </div>
 
@@ -729,6 +802,55 @@ export default function SavedPostsPage() {
           <RightSidebar />
         </aside>
       </div>
+
+      {/* New Collection Modal Dialog */}
+      <Dialog
+        isOpen={showNewCollectionModal}
+        onClose={() => setShowNewCollectionModal(false)}
+        title="Create New Saved Collection"
+      >
+        <form onSubmit={handleCreateCollection} className="space-y-4 pt-2">
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              Collection Folder Name
+            </label>
+            <input
+              type="text"
+              placeholder="e.g., Design Inspiration, Recipes, Vacation Ideas"
+              value={newCollectionName}
+              onChange={(e) => setNewCollectionName(e.target.value)}
+              autoFocus
+              className="w-full text-xs bg-[#0f172a] border border-[#374151] rounded-xl px-3 py-2 text-white outline-none focus:border-blue-500 transition"
+            />
+          </div>
+
+          <p className="text-[11px] text-slate-400">
+            Organize your bookmarked posts into custom collections for easy access.
+          </p>
+
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#1f2937]">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setShowNewCollectionModal(false);
+                setNewCollectionName("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              disabled={!newCollectionName.trim()}
+            >
+              Create Collection
+            </Button>
+          </div>
+        </form>
+      </Dialog>
     </div>
   );
 }
