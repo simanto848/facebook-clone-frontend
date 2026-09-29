@@ -5,8 +5,8 @@ import Link from "next/link";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
-import { usePostStore } from "@/store/postStore";
-import { Plus, Users, Compass, ArrowLeft, Search, X, Filter } from "lucide-react";
+import { usePostStore, PostType } from "@/store/postStore";
+import { Plus, Users, Compass, ArrowLeft, Search, X, Filter, Share2, Check, Copy } from "lucide-react";
 import Image from "next/image";
 import { groupService } from "@/services/groupService";
 import {
@@ -68,6 +68,16 @@ export default function GroupsPage() {
   const [selectedGuild, setSelectedGuild] = useState<Guild | null>(null);
   const [joinedGuilds, setJoinedGuilds] = useState<Record<string, boolean>>({ g1: true });
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [copiedGuildId, setCopiedGuildId] = useState<string | null>(null);
+
+  const handleCopyInviteLink = (guildId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const url = typeof window !== "undefined" ? `${window.location.origin}/groups/${guildId}` : `/groups/${guildId}`;
+    navigator.clipboard.writeText(url);
+    setCopiedGuildId(guildId);
+    setTimeout(() => setCopiedGuildId(null), 2500);
+  };
 
   // New Guild Form
   const [name, setName] = useState("");
@@ -204,13 +214,13 @@ export default function GroupsPage() {
 
   const getGuildPosts = (guildName: string) => {
     if (guildName === "UI Brutalists") {
-      return posts.filter((p) => p.content.toLowerCase().includes("brutalis") || p.author.username === "sarahc");
+      return posts.filter((p: any) => p.content?.toLowerCase().includes("brutalis") || p.author?.username === "sarahc");
     }
     if (guildName === "Core Infrastructure") {
-      return posts.filter((p) => p.content.toLowerCase().includes("websock") || p.content.toLowerCase().includes("server") || p.author.username === "elena");
+      return posts.filter((p: any) => p.content?.toLowerCase().includes("websock") || p.content?.toLowerCase().includes("server") || p.author?.username === "elena");
     }
     if (guildName === "Tokyo Creative Club") {
-      return posts.filter((p) => p.content.toLowerCase().includes("neon") || p.author.username === "davidk");
+      return posts.filter((p: any) => p.content?.toLowerCase().includes("neon") || p.author?.username === "davidk");
     }
     return posts.slice(0, 2);
   };
@@ -448,13 +458,18 @@ export default function GroupsPage() {
                               <div className="flex items-center gap-2 mt-1">
                                 <Badge variant="secondary" size="sm">{guild.category}</Badge>
                                 <span className="text-xs text-slate-400">{guild.members} members</span>
+                                {ownedGuildIds[guild.id] && (
+                                  <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                                    Admin
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </div>
                           <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">{guild.description}</p>
                         </CardContent>
 
-                        <div className="px-5 py-3 border-t border-[#1f2937]/60 flex gap-2">
+                        <div className="px-5 py-3 border-t border-[#1f2937]/60 flex items-center gap-2">
                           <Button
                             variant={joinedGuilds[guild.id] ? "secondary" : "primary"}
                             fullWidth
@@ -463,6 +478,18 @@ export default function GroupsPage() {
                           >
                             {joinedGuilds[guild.id] ? "Joined" : "Join Guild"}
                           </Button>
+                          <button
+                            type="button"
+                            onClick={(e) => handleCopyInviteLink(guild.id, e)}
+                            className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition cursor-pointer border border-slate-700/50 shrink-0"
+                            title={copiedGuildId === guild.id ? "Invite link copied!" : "Copy group invite link"}
+                          >
+                            {copiedGuildId === guild.id ? (
+                              <Check size={14} className="text-emerald-400" />
+                            ) : (
+                              <Share2 size={14} />
+                            )}
+                          </button>
                           <Link href={`/groups/${guild.id}`}>
                             <Button
                               variant="ghost"
