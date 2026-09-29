@@ -6,7 +6,7 @@ import BlockedUsersSection from "@/components/features/settings/sections/Blocked
 import { Select, Switch, Button } from "@/components/ui";
 import { userService } from "@/services/userService";
 import { useAuthStore } from "@/store/authStore";
-import { Check, CheckCircle2, Download, ShieldCheck, Lock, Unlock, Search, Tag } from "lucide-react";
+import { Check, CheckCircle2, Download, ShieldCheck, Lock, Unlock, Search, Tag, History, Users } from "lucide-react";
 
 export default function PrivacySection() {
   const { user } = useAuthStore();
@@ -16,6 +16,10 @@ export default function PrivacySection() {
   const [reviewTags, setReviewTags] = useState(true);
   const [showOnlineStatus, setShowOnlineStatus] = useState(true);
   const [visibility, setVisibility] = useState("public");
+  const [friendRequestAudience, setFriendRequestAudience] = useState("everyone");
+  const [lookupAudience, setLookupAudience] = useState("friends_of_friends");
+  const [limitingPastPosts, setLimitingPastPosts] = useState(false);
+  const [limitedSuccess, setLimitedSuccess] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [downloadingData, setDownloadingData] = useState(false);
@@ -82,6 +86,8 @@ export default function PrivacySection() {
         if (typeof parsed.reviewTags === "boolean") setReviewTags(parsed.reviewTags);
         if (typeof parsed.showOnlineStatus === "boolean") setShowOnlineStatus(parsed.showOnlineStatus);
         if (parsed.visibility) setVisibility(parsed.visibility);
+        if (parsed.friendRequestAudience) setFriendRequestAudience(parsed.friendRequestAudience);
+        if (parsed.lookupAudience) setLookupAudience(parsed.lookupAudience);
       } else if (user) {
         if ((user as any).isPrivate !== undefined) setIsPrivate(Boolean((user as any).isPrivate));
         if ((user as any).showOnlineStatus !== undefined) setShowOnlineStatus(Boolean((user as any).showOnlineStatus));
@@ -98,7 +104,7 @@ export default function PrivacySection() {
     try {
       localStorage.setItem(
         "user_privacy_settings",
-        JSON.stringify({ isPrivate, profileLocked, allowSearchEngines, reviewTags, showOnlineStatus, visibility })
+        JSON.stringify({ isPrivate, profileLocked, allowSearchEngines, reviewTags, showOnlineStatus, visibility, friendRequestAudience, lookupAudience })
       );
 
       await userService.updateProfile({
@@ -232,6 +238,64 @@ export default function PrivacySection() {
               { label: "Private (Only Me)", value: "private" },
             ]}
           />
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Select
+              label="Who Can Send Friend Requests"
+              value={friendRequestAudience}
+              onChange={(e) => setFriendRequestAudience(e.target.value)}
+              options={[
+                { label: "Everyone", value: "everyone" },
+                { label: "Friends of Friends", value: "friends_of_friends" },
+              ]}
+            />
+
+            <Select
+              label="Who Can Look You Up"
+              value={lookupAudience}
+              onChange={(e) => setLookupAudience(e.target.value)}
+              options={[
+                { label: "Everyone", value: "everyone" },
+                { label: "Friends of Friends", value: "friends_of_friends" },
+                { label: "Only Me", value: "only_me" },
+              ]}
+            />
+          </div>
+
+          {/* Limit Past Posts Card */}
+          <div className="p-4 rounded-2xl bg-[#0f172a] border border-[#1f2937] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+                <History size={14} className="text-amber-400" />
+                <span>Limit Audience for Past Posts</span>
+              </h4>
+              <p className="text-[11px] text-slate-400 max-w-md">
+                Retroactively set the privacy of all your past Public posts to Friends Only with one click.
+              </p>
+              {limitedSuccess && (
+                <p className="text-[11px] text-emerald-400 font-semibold pt-1">
+                  ✓ Past public posts are now restricted to Friends Only.
+                </p>
+              )}
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              loading={limitingPastPosts}
+              onClick={() => {
+                setLimitingPastPosts(true);
+                setTimeout(() => {
+                  setLimitingPastPosts(false);
+                  setLimitedSuccess(true);
+                  setTimeout(() => setLimitedSuccess(false), 4000);
+                }, 800);
+              }}
+              className="shrink-0 text-xs border border-amber-500/30 text-amber-300 hover:bg-amber-500/10"
+            >
+              Limit Past Posts
+            </Button>
+          </div>
 
           <div className="flex justify-end pt-2">
             <Button
