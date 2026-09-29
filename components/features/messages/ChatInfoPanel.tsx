@@ -1,6 +1,6 @@
 "use client";
 
-import { X, Bell, BellOff, Download, Trash2, Copy, Check, ExternalLink, AlertTriangle, FileText } from "lucide-react";
+import { X, Bell, BellOff, Download, Trash2, Copy, Check, ExternalLink, AlertTriangle, FileText, Search, MessageSquare } from "lucide-react";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { useChatStore } from "@/store/chatStore";
@@ -18,6 +18,7 @@ export default function ChatInfoPanel({ onClose }: Props) {
   const [copiedPinnedIndex, setCopiedPinnedIndex] = useState<number | null>(null);
   const [pinnedNotes, setPinnedNotes] = useState<string[]>([]);
   const [newPinText, setNewPinText] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const { conversations, activeConversationId, clearConversationMessages } = useChatStore();
 
   const activeConversation = conversations.find(
@@ -144,7 +145,13 @@ export default function ChatInfoPanel({ onClose }: Props) {
     setTimeout(() => setClearedToast(false), 3000);
   };
 
-  const tabs = ["images", "videos", "links", "pinned"];
+  const tabs = ["images", "videos", "links", "pinned", "search"];
+
+  const matchedMessages = searchQuery.trim() && activeConversation?.messages
+    ? activeConversation.messages.filter((m: any) =>
+        m.text && typeof m.text === "string" && m.text.toLowerCase().includes(searchQuery.trim().toLowerCase())
+      )
+    : [];
 
   if (!activeConversation) return null;
 
@@ -314,6 +321,64 @@ export default function ChatInfoPanel({ onClose }: Props) {
                   </div>
                 </div>
               ))
+            )}
+          </div>
+        )}
+
+        {activeTab === "search" && (
+          <div className="space-y-3">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" size={13} />
+              <input
+                type="text"
+                placeholder="Search in this chat..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-[#1f2937]/70 border border-[#374151]/50 rounded-lg pl-8 pr-7 py-1.5 text-xs text-white placeholder:text-slate-500 outline-none focus:border-blue-500"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+
+            {searchQuery.trim() === "" ? (
+              <div className="py-8 text-center text-xs text-slate-500 space-y-1">
+                <MessageSquare className="w-8 h-8 text-slate-600 mx-auto mb-2 opacity-60" />
+                <p>Type keywords to search past messages.</p>
+              </div>
+            ) : matchedMessages.length === 0 ? (
+              <div className="py-8 text-center text-xs text-slate-500">
+                <p>No messages matching &ldquo;{searchQuery}&rdquo;</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-[10px] font-semibold text-slate-400">
+                  {matchedMessages.length} {matchedMessages.length === 1 ? "result" : "results"} found
+                </p>
+                {matchedMessages.map((msg: any, i: number) => {
+                  const isMe = msg.sender === "me";
+                  return (
+                    <div
+                      key={msg.id || i}
+                      className="p-2.5 rounded-xl bg-[#1f2937]/50 border border-[#374151]/30 text-xs space-y-1"
+                    >
+                      <div className="flex items-center justify-between text-[10px]">
+                        <span className={`font-semibold ${isMe ? "text-blue-400" : "text-emerald-400"}`}>
+                          {isMe ? "You" : activeConversation.name}
+                        </span>
+                        <span className="text-slate-500">{msg.time || "Recently"}</span>
+                      </div>
+                      <p className="text-slate-200 text-xs leading-relaxed">{msg.text}</p>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
         )}
