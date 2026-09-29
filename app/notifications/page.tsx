@@ -95,6 +95,7 @@ export default function NotificationsPage() {
   const [readBanner, setReadBanner] = useState<string | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [requestStatus, setRequestStatus] = useState<Record<string, "accepted" | "declined">>({});
 
   useEffect(() => {
     try {
@@ -213,6 +214,23 @@ export default function NotificationsPage() {
       // Continue optimistic remove
     }
     setNotifications((prev) => prev.filter((n) => n.id !== id));
+  };
+
+  const handleAcceptRequest = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setRequestStatus((prev) => ({ ...prev, [id]: "accepted" }));
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, unread: false, text: "is now your friend." } : n))
+    );
+    setReadBanner("Friend request confirmed!");
+    setTimeout(() => setReadBanner(null), 3000);
+  };
+
+  const handleDeclineRequest = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setRequestStatus((prev) => ({ ...prev, [id]: "declined" }));
+    setReadBanner("Friend request declined.");
+    setTimeout(() => setReadBanner(null), 3000);
   };
 
   const unreadCount = notifications.filter((n) => n.unread).length;
@@ -441,6 +459,37 @@ export default function NotificationsPage() {
                   <span className="text-xs text-muted-foreground/80 mt-1 block">
                     {item.time}
                   </span>
+
+                  {/* Inline Friend Request Actions */}
+                  {item.type === "friend_request" && (
+                    <div className="mt-2.5 flex items-center gap-2">
+                      {requestStatus[item.id] === "accepted" ? (
+                        <span className="flex items-center gap-1 text-xs text-emerald-400 font-semibold bg-emerald-500/10 px-2.5 py-1 rounded-lg">
+                          <CheckCircle2 size={13} />
+                          Friends
+                        </span>
+                      ) : requestStatus[item.id] === "declined" ? (
+                        <span className="text-xs text-slate-400 italic">Request removed</span>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            onClick={(e) => handleAcceptRequest(item.id, e)}
+                            className="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold transition shadow-xs cursor-pointer"
+                          >
+                            Confirm
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => handleDeclineRequest(item.id, e)}
+                            className="px-3 py-1 bg-[#242526] hover:bg-[#3a3b3c] text-slate-300 rounded-lg text-xs font-medium transition cursor-pointer"
+                          >
+                            Delete
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
