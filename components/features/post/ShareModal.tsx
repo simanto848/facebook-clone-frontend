@@ -19,6 +19,7 @@ export default function ShareModal({ isOpen, onClose, postId, post, onShareSucce
   const [shared, setShared] = useState(false);
   const [copied, setCopied] = useState(false);
   const [dmSearch, setDmSearch] = useState("");
+  const [includePreview, setIncludePreview] = useState(true);
   const { conversations, sendDirectMessage } = useChatStore();
 
   const targetPostId = postId || post?.id || "";
@@ -282,6 +283,46 @@ export default function ShareModal({ isOpen, onClose, postId, post, onShareSucce
                   </div>
                 );
               })()}
+            </div>
+          )}
+
+          {/* Link Preview Card */}
+          {post && (
+            <div className="p-3 rounded-xl bg-[#0f172a] border border-[#1f2937] space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-slate-400">Post Link Preview</span>
+                <button
+                  type="button"
+                  onClick={() => setIncludePreview(!includePreview)}
+                  className={`text-[10px] px-2 py-0.5 rounded-full font-medium transition cursor-pointer ${
+                    includePreview
+                      ? "bg-blue-600/20 text-blue-400 border border-blue-500/30"
+                      : "bg-slate-800 text-slate-400"
+                  }`}
+                >
+                  {includePreview ? "Preview Card Attached" : "Link Only"}
+                </button>
+              </div>
+
+              {includePreview && (
+                <div className="flex items-start gap-2.5 p-2 rounded-lg bg-[#111827] border border-[#1f2937]/70 text-xs">
+                  <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 bg-slate-800">
+                    <img
+                      src={post.author?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100"}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-white truncate text-[11px]">
+                      {post.author?.name || "User"}
+                    </p>
+                    <p className="text-slate-300 text-[11px] line-clamp-2 leading-snug">
+                      {post.content || "Shared media post"}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
