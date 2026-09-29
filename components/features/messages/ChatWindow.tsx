@@ -19,6 +19,8 @@ import {
   ThumbsUp,
   Reply,
   ChevronDown,
+  Copy,
+  Check,
 } from "lucide-react";
 import Image from "next/image";
 import { useState, useEffect, useRef } from "react";
@@ -46,7 +48,15 @@ export default function ChatWindow() {
   const [editText, setEditText] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [replyingTo, setReplyingTo] = useState<{ sender: string; text: string } | null>(null);
+  const [copiedMsgIndex, setCopiedMsgIndex] = useState<number | null>(null);
   const [showScrollBottom, setShowScrollBottom] = useState(false);
+  const messageInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleCopyMessage = (text: string, index: number) => {
+    navigator.clipboard.writeText(text);
+    setCopiedMsgIndex(index);
+    setTimeout(() => setCopiedMsgIndex(null), 2000);
+  };
 
   const handleMessagesScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
@@ -558,16 +568,33 @@ export default function ChatWindow() {
                         <span>{msg.time}</span>
                         {msg.isEdited && <span className="text-slate-400 font-medium">(edited)</span>}
 
+                        {/* Copy Message Trigger */}
+                        {isHovered && !msg.isDeleted && (
+                          <button
+                            type="button"
+                            onClick={() => handleCopyMessage(msg.text, msg.originalIndex)}
+                            className="p-0.5 text-slate-400 hover:text-white transition cursor-pointer"
+                            title="Copy text"
+                          >
+                            {copiedMsgIndex === msg.originalIndex ? (
+                              <Check size={12} className="text-emerald-400" />
+                            ) : (
+                              <Copy size={12} />
+                            )}
+                          </button>
+                        )}
+
                         {/* Reply Action Trigger */}
                         {isHovered && !msg.isDeleted && (
                           <button
                             type="button"
-                            onClick={() =>
+                            onClick={() => {
                               setReplyingTo({
                                 sender: isMe ? "You" : activeConversation.name,
                                 text: msg.text,
-                              })
-                            }
+                              });
+                              messageInputRef.current?.focus();
+                            }}
                             className="p-0.5 text-slate-400 hover:text-blue-400 transition cursor-pointer"
                             title="Reply to message"
                           >
@@ -760,10 +787,11 @@ export default function ChatWindow() {
                 </div>
 
                 <input
+                  ref={messageInputRef}
                   type="text"
                   value={messageText}
                   onChange={handleInputChange}
-                  placeholder="Type a message..."
+                  placeholder={replyingTo ? `Replying to ${replyingTo.sender}...` : "Type a message..."}
                   className="flex-1 bg-transparent text-white outline-none placeholder:text-slate-500 text-sm px-2"
                 />
 
