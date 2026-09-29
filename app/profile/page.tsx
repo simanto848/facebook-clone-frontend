@@ -51,6 +51,50 @@ export default function ProfilePage() {
   const [isAddingSkill, setIsAddingSkill] = useState(false);
   const [postSearchQuery, setPostSearchQuery] = useState("");
   const [postLayout, setPostLayout] = useState<"feed" | "grid">("feed");
+  const [featuredItems, setFeaturedItems] = useState<{ id: string; title: string; image: string }[]>([
+    { id: "f1", title: "Architecture", image: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=300" },
+    { id: "f2", title: "Street Photography", image: "https://images.unsplash.com/photo-1519608487953-e999c86e7455?w=300" },
+    { id: "f3", title: "Creative Lab", image: "https://images.unsplash.com/photo-1778192391493-7436d746b128?w=300" },
+  ]);
+  const [isAddFeaturedOpen, setIsAddFeaturedOpen] = useState(false);
+  const [newFeaturedTitle, setNewFeaturedTitle] = useState("");
+  const [newFeaturedImage, setNewFeaturedImage] = useState("");
+
+  useEffect(() => {
+    try {
+      const storedFeatured = localStorage.getItem("user_profile_featured");
+      if (storedFeatured) {
+        setFeaturedItems(JSON.parse(storedFeatured));
+      }
+    } catch {}
+  }, []);
+
+  const handleAddFeatured = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newFeaturedTitle.trim()) return;
+    const item = {
+      id: `feat_${Date.now()}`,
+      title: newFeaturedTitle.trim(),
+      image: newFeaturedImage.trim() || "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=300",
+    };
+    const updated = [...featuredItems, item];
+    setFeaturedItems(updated);
+    try {
+      localStorage.setItem("user_profile_featured", JSON.stringify(updated));
+    } catch {}
+    setNewFeaturedTitle("");
+    setNewFeaturedImage("");
+    setIsAddFeaturedOpen(false);
+  };
+
+  const handleRemoveFeatured = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updated = featuredItems.filter((f) => f.id !== id);
+    setFeaturedItems(updated);
+    try {
+      localStorage.setItem("user_profile_featured", JSON.stringify(updated));
+    } catch {}
+  };
 
   useEffect(() => {
     try {
@@ -692,26 +736,60 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Recent Highlights */}
-            <div className="rounded-2xl border border-[#1f2937] bg-[#111827] p-6 shadow-xl">
-              <div className="mb-4 flex items-center justify-between">
-                <h2 className="font-semibold text-sm">Recent Highlights</h2>
-                <button className="text-xs font-semibold text-blue-400">See All</button>
+            {/* Recent Highlights / Featured Showcase */}
+            <div className="rounded-2xl border border-[#1f2937] bg-[#111827] p-6 shadow-xl space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="font-semibold text-sm text-white">Featured Highlights</h2>
+                  <p className="text-[11px] text-slate-400">Pinned showcases & collections</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsAddFeaturedOpen(true)}
+                  className="text-xs font-semibold text-blue-400 hover:text-blue-300 transition cursor-pointer flex items-center gap-1"
+                >
+                  <Plus size={13} />
+                  <span>Add</span>
+                </button>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <div className="aspect-square rounded-xl bg-[#1f2937] relative overflow-hidden">
-                  <Image src="https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=200" fill sizes="100px" className="object-cover" alt="Recent 1" />
-                </div>
-                <div className="aspect-square rounded-xl bg-[#1f2937] relative overflow-hidden">
-                  <Image src="https://images.unsplash.com/photo-1519608487953-e999c86e7455?w=200" fill sizes="100px" className="object-cover" alt="Recent 2" />
-                </div>
-                <div className="aspect-square rounded-xl bg-[#1f2937] relative overflow-hidden">
-                  <Image src="https://images.unsplash.com/photo-1778192391493-7436d746b128?w=200" fill sizes="100px" className="object-cover" alt="Recent 3" />
-                </div>
+                {featuredItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="aspect-square rounded-xl bg-[#1f2937] relative overflow-hidden group border border-[#1f2937] hover:border-blue-500/50 transition cursor-pointer"
+                  >
+                    <Image
+                      src={item.image}
+                      fill
+                      sizes="150px"
+                      className="object-cover transition-transform duration-300 group-hover:scale-105"
+                      alt={item.title}
+                    />
+                    <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent flex items-end p-2.5">
+                      <span className="text-xs font-bold text-white truncate drop-shadow-md">
+                        {item.title}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => handleRemoveFeatured(item.id, e)}
+                      className="absolute top-1.5 right-1.5 p-1 rounded-full bg-black/60 hover:bg-rose-600 text-white opacity-0 group-hover:opacity-100 transition cursor-pointer"
+                      title="Remove highlight"
+                    >
+                      <X size={11} />
+                    </button>
+                  </div>
+                ))}
 
-                <button className="aspect-square rounded-xl bg-[#1f2937] flex items-center justify-center hover:bg-[#263247] transition text-slate-400 hover:text-white">
-                  <Plus />
+                <button
+                  type="button"
+                  onClick={() => setIsAddFeaturedOpen(true)}
+                  className="aspect-square rounded-xl bg-[#1f2937]/50 hover:bg-[#1f2937] border border-dashed border-slate-700 hover:border-blue-500 flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-blue-400 transition cursor-pointer"
+                  title="Add new featured highlight"
+                >
+                  <Plus size={18} />
+                  <span className="text-[10px] font-semibold">New</span>
                 </button>
               </div>
             </div>
@@ -1019,6 +1097,77 @@ export default function ProfilePage() {
               className="bg-blue-600 hover:bg-blue-700"
             >
               {savingCover ? "Saving..." : "Save Cover Photo"}
+            </Button>
+          </div>
+        </form>
+      </Dialog>
+
+      {/* ADD FEATURED MODAL */}
+      <Dialog
+        isOpen={isAddFeaturedOpen}
+        onClose={() => setIsAddFeaturedOpen(false)}
+        title="Add to Featured Highlights"
+        description="Pin favorite memories, collections, or project showcases to your profile."
+      >
+        <form onSubmit={handleAddFeatured} className="space-y-4 pt-2">
+          <div>
+            <label className="text-xs font-semibold text-slate-300 block mb-1.5">Highlight Title</label>
+            <Input
+              type="text"
+              placeholder="e.g. Vacation 2026, Design Lab, Photography"
+              value={newFeaturedTitle}
+              onChange={(e) => setNewFeaturedTitle(e.target.value)}
+              required
+              autoFocus
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-slate-300 block mb-1.5">Cover Image URL (optional)</label>
+            <Input
+              type="url"
+              placeholder="https://images.unsplash.com/..."
+              value={newFeaturedImage}
+              onChange={(e) => setNewFeaturedImage(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <span className="text-[11px] text-slate-400">Quick Image Presets:</span>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                "https://images.unsplash.com/photo-1518770660439-4636190af475?w=300",
+                "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=300",
+                "https://images.unsplash.com/photo-1511447333015-45b65e60f6d5?w=300",
+              ].map((img, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => setNewFeaturedImage(img)}
+                  className="relative h-14 rounded-lg overflow-hidden border border-slate-700 hover:border-blue-500 transition cursor-pointer"
+                >
+                  <Image src={img} fill className="object-cover" alt="" />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#1f2937]">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setIsAddFeaturedOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              disabled={!newFeaturedTitle.trim()}
+            >
+              Save Highlight
             </Button>
           </div>
         </form>
