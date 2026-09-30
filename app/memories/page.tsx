@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
-import { Sparkles, Calendar, Share2, Check, Users, Heart, Search, X, Download, Copy, Star, Settings, EyeOff, UserX, CalendarX, Plus } from "lucide-react";
+import { Sparkles, Calendar, Share2, Check, Users, Heart, Search, X, Download, Copy, Star, Settings, EyeOff, UserX, CalendarX, Plus, Play, Pause, ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import { memoryService } from "@/services/memoryService";
 import { postService } from "@/services/postService";
@@ -82,6 +82,11 @@ export default function MemoriesPage() {
   const [copiedMemoryId, setCopiedMemoryId] = useState<string | null>(null);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const { createPost } = usePostStore();
+
+  // Slideshow recap state
+  const [isSlideshowOpen, setIsSlideshowOpen] = useState(false);
+  const [slideshowIndex, setSlideshowIndex] = useState(0);
+  const [isSlideshowPlaying, setIsSlideshowPlaying] = useState(true);
 
   // Preferences State (Hide people, dates, notification settings)
   const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
@@ -376,6 +381,16 @@ export default function MemoriesPage() {
     return true;
   });
 
+  useEffect(() => {
+    if (!isSlideshowOpen || !isSlideshowPlaying || filteredMemories.length <= 1) return;
+    const timer = setInterval(() => {
+      setSlideshowIndex((curr) => (curr + 1) % filteredMemories.length);
+    }, 4500);
+    return () => clearInterval(timer);
+  }, [isSlideshowOpen, isSlideshowPlaying, filteredMemories.length]);
+
+  const activeSlideMemory = filteredMemories[slideshowIndex] || filteredMemories[0];
+
   return (
     <div className="min-h-screen bg-[#0f172a] text-white">
       <div className="flex">
@@ -394,6 +409,21 @@ export default function MemoriesPage() {
               badge={
                 <div className="flex items-center gap-2">
                   <Badge variant="primary">{filteredMemories.length} Memories</Badge>
+                  {filteredMemories.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSlideshowIndex(0);
+                        setIsSlideshowPlaying(true);
+                        setIsSlideshowOpen(true);
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-linear-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-md transition cursor-pointer"
+                      title="Play Memories Recap Slideshow"
+                    >
+                      <Play size={12} className="fill-current" />
+                      <span>Play Recap</span>
+                    </button>
+                  )}
                   {memories.length > 0 && (
                     <>
                       <button
@@ -857,6 +887,124 @@ export default function MemoriesPage() {
             </Button>
           </div>
         </div>
+      </Dialog>
+
+      {/* MEMORIES RECAP SLIDESHOW MODAL */}
+      <Dialog
+        isOpen={isSlideshowOpen && !!activeSlideMemory}
+        onClose={() => setIsSlideshowOpen(false)}
+        size="lg"
+        showHeader={false}
+      >
+        {activeSlideMemory && (
+          <div className="relative h-[480px] w-full bg-[#0a0f1d] rounded-2xl overflow-hidden flex flex-col justify-between p-5 select-none">
+            {/* Top progress bars */}
+            <div className="flex gap-1.5 z-20">
+              {filteredMemories.map((m, idx) => (
+                <div key={m.id} className="h-1 flex-1 bg-white/20 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full bg-purple-400 transition-all duration-300 ${
+                      idx < slideshowIndex ? "w-full" : idx === slideshowIndex ? "w-full" : "w-0"
+                    }`}
+                  />
+                </div>
+              ))}
+            </div>
+
+            {/* Header with year and controls */}
+            <div className="flex items-center justify-between z-20 pt-2">
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-0.5 rounded-full bg-purple-600/30 text-purple-300 border border-purple-500/40 text-xs font-bold">
+                  {activeSlideMemory.yearsAgo} Year{activeSlideMemory.yearsAgo > 1 ? "s" : ""} Ago
+                </span>
+                <span className="text-xs text-slate-400">• {activeSlideMemory.dateStr}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsSlideshowPlaying((prev) => !prev)}
+                  className="p-1.5 rounded-full bg-black/40 hover:bg-white/10 text-white transition cursor-pointer"
+                  title={isSlideshowPlaying ? "Pause autoplay" : "Play autoplay"}
+                >
+                  {isSlideshowPlaying ? <Pause size={14} /> : <Play size={14} className="fill-current" />}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsSlideshowOpen(false)}
+                  className="p-1.5 rounded-full bg-black/40 hover:bg-white/10 text-white transition cursor-pointer"
+                >
+                  <X size={15} />
+                </button>
+              </div>
+            </div>
+
+            {/* Slide Content */}
+            <div className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-6 py-4 space-y-4">
+              {activeSlideMemory.mediaUrl ? (
+                <div className="relative h-44 w-full max-w-md rounded-2xl overflow-hidden border border-purple-500/30 shadow-2xl">
+                  <Image
+                    src={activeSlideMemory.mediaUrl}
+                    alt="Memory"
+                    fill
+                    sizes="(max-width: 768px) 100vw, 400px"
+                    className="object-cover"
+                  />
+                </div>
+              ) : activeSlideMemory.type === "friendship" ? (
+                <div className="flex flex-col items-center gap-2">
+                  <div className="h-16 w-16 rounded-full bg-purple-600/20 border-2 border-purple-400 flex items-center justify-center text-2xl">
+                    🎉
+                  </div>
+                  <Badge variant="success">Friendship Anniversary</Badge>
+                </div>
+              ) : null}
+
+              <p className="text-base sm:text-lg font-semibold text-white max-w-lg leading-relaxed drop-shadow-md">
+                &ldquo;{activeSlideMemory.content}&rdquo;
+              </p>
+            </div>
+
+            {/* Bottom Navigation & Share Bar */}
+            <div className="flex items-center justify-between z-20 pt-2 border-t border-white/10">
+              <span className="text-xs text-slate-400 font-mono">
+                {slideshowIndex + 1} of {filteredMemories.length}
+              </span>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={slideshowIndex === 0}
+                  onClick={() => setSlideshowIndex((curr) => Math.max(0, curr - 1))}
+                  className="text-white hover:bg-white/10 h-8 px-2"
+                >
+                  <ChevronLeft size={16} />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={slideshowIndex === filteredMemories.length - 1}
+                  onClick={() => setSlideshowIndex((curr) => Math.min(filteredMemories.length - 1, curr + 1))}
+                  className="text-white hover:bg-white/10 h-8 px-2"
+                >
+                  <ChevronRight size={16} />
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  leftIcon={<Share2 size={13} />}
+                  onClick={() => {
+                    setIsSlideshowOpen(false);
+                    setActiveShareMemory(activeSlideMemory);
+                  }}
+                  className="bg-purple-600 hover:bg-purple-700 h-8 text-xs ml-2"
+                >
+                  Share
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </Dialog>
     </div>
   );
