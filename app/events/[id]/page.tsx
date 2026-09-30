@@ -250,13 +250,65 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
     if (newStatus === "going" && prevStatus !== "going") {
       setAttendeesCount((c) => c + 1);
       setRsvpToast({ message: "🎉 You're going to this event! Saved to your schedule.", type: "success" });
+      setEvent((prev: any) => {
+        if (!prev) return prev;
+        const currentRsvps = prev.rsvps || [];
+        const existingIdx = currentRsvps.findIndex((r: any) => r.user?.id === "me" || r.user?.username === "you");
+        const myRsvp = {
+          user: {
+            id: "me",
+            name: "You",
+            username: "you",
+            avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100",
+          },
+          status: "GOING",
+        };
+        const updated = existingIdx >= 0
+          ? currentRsvps.map((r: any, idx: number) => idx === existingIdx ? myRsvp : r)
+          : [myRsvp, ...currentRsvps];
+        return { ...prev, rsvps: updated };
+      });
     } else if (prevStatus === "going" && newStatus !== "going") {
       setAttendeesCount((c) => Math.max(0, c - 1));
       setRsvpToast({ message: "RSVP removed from this event.", type: "info" });
+      setEvent((prev: any) => {
+        if (!prev) return prev;
+        const currentRsvps = prev.rsvps || [];
+        return {
+          ...prev,
+          rsvps: currentRsvps.filter((r: any) => r.user?.id !== "me" && r.user?.username !== "you"),
+        };
+      });
     } else if (newStatus === "interested") {
       setRsvpToast({ message: "⭐ Marked as interested! We'll keep you notified.", type: "info" });
+      setEvent((prev: any) => {
+        if (!prev) return prev;
+        const currentRsvps = prev.rsvps || [];
+        const existingIdx = currentRsvps.findIndex((r: any) => r.user?.id === "me" || r.user?.username === "you");
+        const myRsvp = {
+          user: {
+            id: "me",
+            name: "You",
+            username: "you",
+            avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100",
+          },
+          status: "INTERESTED",
+        };
+        const updated = existingIdx >= 0
+          ? currentRsvps.map((r: any, idx: number) => idx === existingIdx ? myRsvp : r)
+          : [myRsvp, ...currentRsvps];
+        return { ...prev, rsvps: updated };
+      });
     } else if (!newStatus) {
       setRsvpToast({ message: "RSVP status cleared.", type: "info" });
+      setEvent((prev: any) => {
+        if (!prev) return prev;
+        const currentRsvps = prev.rsvps || [];
+        return {
+          ...prev,
+          rsvps: currentRsvps.filter((r: any) => r.user?.id !== "me" && r.user?.username !== "you"),
+        };
+      });
     }
 
     setTimeout(() => {
@@ -269,6 +321,23 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
       }
     } catch (err) {
       console.error("RSVP update error:", err);
+    }
+  };
+
+  const handleAddToYahooCalendar = () => {
+    if (!event) return;
+    const title = encodeURIComponent(event.title || "Event");
+    const details = encodeURIComponent(event.description || "");
+    const location = encodeURIComponent(event.location || "");
+    let start = new Date();
+    if (event.startTime) {
+      const parsed = new Date(event.startTime);
+      if (!isNaN(parsed.getTime())) start = parsed;
+    }
+    const formatYahooDate = (date: Date) => date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+    const yahooUrl = `https://calendar.yahoo.com/?v=60&view=d&type=20&title=${title}&st=${formatYahooDate(start)}&desc=${details}&in_loc=${location}`;
+    if (typeof window !== "undefined") {
+      window.open(yahooUrl, "_blank", "noopener,noreferrer");
     }
   };
 
