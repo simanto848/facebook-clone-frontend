@@ -10,8 +10,17 @@ import RightSidebar from "@/components/layout/RightSidebar";
 import { usePostStore, mapBackendPostToPostType } from "@/store/postStore";
 import { postService } from "@/services/postService";
 import { feedService } from "@/services/feedService";
-import { ShieldAlert, RefreshCw, ArrowUp, Search, X } from "lucide-react";
+import { ShieldAlert, RefreshCw, ArrowUp, Search, X, Clock, TrendingUp, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui";
+
+const TOPIC_CATEGORIES = [
+  { id: "all", label: "All Posts", icon: "🌐" },
+  { id: "tech", label: "Tech & Code", icon: "💻", keywords: ["tech", "code", "dev", "react", "next", "js", "webgl", "typescript", "architecture", "css"] },
+  { id: "design", label: "Design & UI", icon: "🎨", keywords: ["design", "ui", "ux", "layout", "figma", "theme", "style", "palette"] },
+  { id: "photography", label: "Photos", icon: "📸", keywords: ["photo", "camera", "shot", "view", "image", "sunset", "city"] },
+  { id: "startups", label: "Startups", icon: "🚀", keywords: ["startup", "launch", "product", "growth", "build", "saas", "team"] },
+  { id: "ai", label: "AI & ML", icon: "⚡", keywords: ["ai", "ml", "gpt", "model", "llm", "neural", "deepmind", "agent"] },
+];
 
 // Stories Skeleton Loader
 const StoriesSkeleton = () => (
@@ -71,6 +80,8 @@ export default function Home() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [formatFilter, setFormatFilter] = useState<"all" | "media" | "text" | "poll">("all");
+  const [topicCategory, setTopicCategory] = useState<string>("all");
+  const [sortOrder, setSortOrder] = useState<"recent" | "top">("recent");
 
   useEffect(() => {
     const handleScroll = () => {
@@ -145,6 +156,16 @@ export default function Home() {
       list = list.filter((p) => p.type === "poll" || !!p.poll);
     }
 
+    if (topicCategory !== "all") {
+      const cat = TOPIC_CATEGORIES.find((c) => c.id === topicCategory);
+      if (cat?.keywords) {
+        list = list.filter((p) => {
+          const content = (p.content || "").toLowerCase();
+          return cat.keywords.some((kw) => content.includes(kw));
+        });
+      }
+    }
+
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       list = list.filter(
@@ -153,6 +174,20 @@ export default function Home() {
           p.author?.name?.toLowerCase().includes(q) ||
           p.author?.username?.toLowerCase().includes(q)
       );
+    }
+
+    if (sortOrder === "top") {
+      list.sort((a, b) => {
+        const sumA = Object.values(a.reactions || {}).reduce((x, y) => x + y, 0) + (a.comments?.length || 0);
+        const sumB = Object.values(b.reactions || {}).reduce((x, y) => x + y, 0) + (b.comments?.length || 0);
+        return sumB - sumA;
+      });
+    } else {
+      list.sort((a, b) => {
+        const timeA = new Date(a.createdAt).getTime() || 0;
+        const timeB = new Date(b.createdAt).getTime() || 0;
+        return timeB - timeA;
+      });
     }
 
     return list;
@@ -173,6 +208,26 @@ export default function Home() {
           <div className="w-full max-w-3xl px-6 py-6 space-y-6">
             {isLoading ? <StoriesSkeleton /> : <Stories />}
             <CreatePost />
+
+            {/* Facebook-style Topic Category Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+              {TOPIC_CATEGORIES.map((topic) => (
+                <button
+                  key={topic.id}
+                  type="button"
+                  onClick={() => setTopicCategory(topic.id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-all cursor-pointer ${
+                    topicCategory === topic.id
+                      ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
+                      : "bg-[#111827] text-slate-300 hover:text-white border border-[#1f2937] hover:bg-slate-800"
+                  }`}
+                >
+                  <span>{topic.icon}</span>
+                  <span>{topic.label}</span>
+                </button>
+              ))}
+            </div>
+
             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
               <div className="flex-1">
                 <FeedFilter
@@ -183,6 +238,32 @@ export default function Home() {
                 />
               </div>
               <div className="flex items-center gap-2">
+                {/* Sort order toggle (Recent vs Top Stories) */}
+                <div className="flex items-center gap-1 bg-[#111827] border border-[#1f2937] rounded-xl p-1 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setSortOrder("recent")}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-lg font-semibold transition cursor-pointer ${
+                      sortOrder === "recent" ? "bg-blue-600 text-white shadow-xs" : "text-slate-400 hover:text-white"
+                    }`}
+                    title="Sort by most recent"
+                  >
+                    <Clock size={12} />
+                    <span>Recent</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSortOrder("top")}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-lg font-semibold transition cursor-pointer ${
+                      sortOrder === "top" ? "bg-blue-600 text-white shadow-xs" : "text-slate-400 hover:text-white"
+                    }`}
+                    title="Sort by top engagement"
+                  >
+                    <TrendingUp size={12} />
+                    <span>Top</span>
+                  </button>
+                </div>
+
                 <div className="relative">
                   <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
