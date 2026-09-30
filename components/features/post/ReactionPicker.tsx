@@ -14,6 +14,47 @@ export const reactionsList = [
   { type: "angry", label: "Angry", emoji: "😡", color: "text-orange-500" },
 ];
 
+const playReactionSound = (type: string) => {
+  if (typeof window === "undefined") return;
+  try {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    const now = ctx.currentTime;
+    let baseFreq = 440;
+    if (type === "like") baseFreq = 523.25;
+    else if (type === "love") baseFreq = 659.25;
+    else if (type === "haha") baseFreq = 587.33;
+    else if (type === "wow") baseFreq = 783.99;
+    else if (type === "sad") baseFreq = 392.00;
+    else if (type === "angry") baseFreq = 329.63;
+
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(baseFreq, now);
+    osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.3, now + 0.12);
+    gain.gain.setValueAtTime(0.1, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+
+    osc.start(now);
+    osc.stop(now + 0.15);
+  } catch {
+    // ignore audio failure
+  }
+
+  try {
+    if (typeof navigator !== "undefined" && navigator.vibrate) {
+      navigator.vibrate(20);
+    }
+  } catch {
+    // ignore
+  }
+};
+
 export default function ReactionPicker({ onSelect, onClose }: Props) {
   return (
     <div
@@ -30,14 +71,16 @@ export default function ReactionPicker({ onSelect, onClose }: Props) {
           key={reaction.type}
           onClick={(e) => {
             e.stopPropagation();
+            playReactionSound(reaction.type);
             onSelect(reaction.type);
             if (onClose) onClose();
           }}
           className="
             relative text-2xl transition duration-200
             hover:scale-135 hover:-translate-y-1.5
-            group/btn
+            group/btn cursor-pointer
           "
+          title={reaction.label}
         >
           <span>{reaction.emoji}</span>
           <span

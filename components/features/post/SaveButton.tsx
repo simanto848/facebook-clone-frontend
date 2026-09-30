@@ -50,10 +50,21 @@ export default function SaveButton({ isSaved, onClick, showText = false, postId 
 
   const handleMainClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    try {
+      if (typeof navigator !== "undefined" && navigator.vibrate) {
+        navigator.vibrate(15);
+      }
+    } catch {
+      // ignore
+    }
     onClick();
     if (!isSaved) {
+      setSavedToast("Saved to Bookmarks");
       setShowCollections(true);
+    } else {
+      setSavedToast("Removed from Bookmarks");
     }
+    setTimeout(() => setSavedToast(null), 2000);
   };
 
   return (
