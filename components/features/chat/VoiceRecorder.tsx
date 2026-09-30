@@ -14,6 +14,8 @@ export function VoiceRecorder({ onSendVoiceNote, onCancel }: VoiceRecorderProps)
   const [recordingTime, setRecordingTime] = useState(0);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [isPlayingPreview, setIsPlayingPreview] = useState(false);
+  const [previewProgress, setPreviewProgress] = useState(0);
+  const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -25,6 +27,10 @@ export function VoiceRecorder({ onSendVoiceNote, onCancel }: VoiceRecorderProps)
 
     return () => {
       stopRecordingCleanup();
+      if (previewAudioRef.current) {
+        previewAudioRef.current.pause();
+        previewAudioRef.current = null;
+      }
     };
   }, []);
 
@@ -91,17 +97,45 @@ export function VoiceRecorder({ onSendVoiceNote, onCancel }: VoiceRecorderProps)
   const togglePreviewPlay = () => {
     if (!audioUrl) return;
     if (!previewAudioRef.current) {
-      previewAudioRef.current = new Audio(audioUrl);
-      previewAudioRef.current.onended = () => setIsPlayingPreview(false);
+      const audio = new Audio(audioUrl);
+      audio.playbackRate = playbackSpeed;
+      audio.ontimeupdate = () => {
+        if (audio.duration && !isNaN(audio.duration)) {
+          setPreviewProgress((audio.currentTime / audio.duration) * 100);
+        }
+      };
+      audio.onended = () => {
+        setIsPlayingPreview(false);
+        setPreviewProgress(0);
+      };
+      previewAudioRef.current = audio;
     }
 
     if (isPlayingPreview) {
       previewAudioRef.current.pause();
       setIsPlayingPreview(false);
     } else {
+      previewAudioRef.current.playbackRate = playbackSpeed;
       previewAudioRef.current.play().catch(console.error);
       setIsPlayingPreview(true);
     }
+  };
+
+  const cyclePlaybackSpeed = () => {
+    const nextSpeed = playbackSpeed === 1 ? 1.5 : playbackSpeed === 1.5 ? 2 : 1;
+    setPlaybackSpeed(nextSpeed);
+    if (previewAudioRef.current) {
+      previewAudioRef.current.playbackRate = nextSpeed;
+    }
+  };
+
+  const handleSeekPreview = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!previewAudioRef.current || !previewAudioRef.current.duration) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const ratio = Math.max(0, Math.min(1, clickX / rect.width));
+    previewAudioRef.current.currentTime = ratio * previewAudioRef.current.duration;
+    setPreviewProgress(ratio * 100);
   };
 
   const handleReRecord = () => {
@@ -110,6 +144,7 @@ export function VoiceRecorder({ onSendVoiceNote, onCancel }: VoiceRecorderProps)
       previewAudioRef.current = null;
     }
     setIsPlayingPreview(false);
+    setPreviewProgress(0);
     setAudioUrl(null);
     setRecordingTime(0);
     startRecording();
@@ -129,7 +164,7 @@ export function VoiceRecorder({ onSendVoiceNote, onCancel }: VoiceRecorderProps)
 
   return (
     <div className="flex items-center justify-between gap-3 p-2 bg-[#1f2937] border border-blue-500/30 rounded-2xl animate-in fade-in duration-150">
-      <div className="flex items-center gap-2.5 min-w-0">
+      <div className="flex items-center gap-2.5 min-w-0 flex-1">
         <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-red-600/20 text-red-500 shrink-0">
           <Mic size={16} className={isRecording ? "animate-pulse" : ""} />
           {isRecording && (
@@ -175,6 +210,31 @@ export function VoiceRecorder({ onSendVoiceNote, onCancel }: VoiceRecorderProps)
             ))}
           </div>
         )}
+
+        {/* Playback preview visualizer and scrub bar when done */}
+        {!isRecording && audioUrl && (
+          <div
+            className="flex-1 max-w-[200px] h-6 flex items-center gap-1 px-2 bg-slate-800/80 rounded-lg cursor-pointer select-none group"
+            onClick={handleSeekPreview}
+            title="Click to seek preview"
+          >
+            <div className="flex items-center gap-0.5 w-full h-full">
+              {[35, 60, 85, 45, 100, 75, 50, 90, 65, 40, 80, 55].map((h, i) => {
+                const barPercent = (i / 12) * 100;
+                const isPlayed = previewProgress >= barPercent;
+                return (
+                  <span
+                    key={i}
+                    className={`flex-1 rounded-full transition-colors duration-100 ${
+                      isPlayed ? "bg-blue-400" : "bg-slate-600 group-hover:bg-slate-500"
+                    }`}
+                    style={{ height: `${Math.max(4, (h / 100) * 18)}px` }}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex items-center gap-1.5 shrink-0">
@@ -192,7 +252,7 @@ export function VoiceRecorder({ onSendVoiceNote, onCancel }: VoiceRecorderProps)
           </Button>
         )}
 
-        {/* Preview Playback & Re-record */}
+        {/* Preview Playback, Speed & Re-record */}
         {!isRecording && audioUrl && (
           <>
             <Button
@@ -201,10 +261,19 @@ export function VoiceRecorder({ onSendVoiceNote, onCancel }: VoiceRecorderProps)
               size="sm"
               onClick={togglePreviewPlay}
               className="h-8 w-8 p-0 rounded-full text-blue-400 hover:bg-blue-400/10 cursor-pointer"
-              title="Preview voice note"
+              title={isPlayingPreview ? "Pause preview" : "Play preview"}
             >
               {isPlayingPreview ? <Pause size={15} /> : <Play size={15} />}
             </Button>
+
+            <button
+              type="button"
+              onClick={cyclePlaybackSpeed}
+              className="px-1.5 py-0.5 text-[10px] font-mono font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded border border-slate-700 cursor-pointer transition-colors"
+              title="Change playback speed"
+            >
+              {playbackSpeed}x
+            </button>
 
             <Button
               type="button"
