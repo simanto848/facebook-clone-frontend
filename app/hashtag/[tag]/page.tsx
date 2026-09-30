@@ -6,12 +6,13 @@ import Link from "next/link";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
-import { Hash, Flame, Bell, Loader2, Sparkles, TrendingUp, Check, Send, Plus, Clock, Image as ImageIcon, FileText, Filter, Share2, Search, X } from "lucide-react";
+import Image from "next/image";
+import { Hash, Flame, Bell, Loader2, Sparkles, TrendingUp, Check, Send, Plus, Clock, Image as ImageIcon, FileText, Filter, Share2, Search, X, LayoutGrid, List, MessageCircle, Heart } from "lucide-react";
 import { usePostStore, mapBackendPostToPostType, PostType } from "@/store/postStore";
 import { useAuthStore } from "@/store/authStore";
 import { hashtagService } from "@/services/hashtagService";
 import { postService } from "@/services/postService";
-import { PageHeader, Badge, Button, EmptyState, Avatar } from "@/components/ui";
+import { PageHeader, Badge, Button, EmptyState, Avatar, Dialog } from "@/components/ui";
 
 export default function HashtagPage() {
   const params = useParams();
@@ -25,6 +26,8 @@ export default function HashtagPage() {
   const [hashtagPosts, setHashtagPosts] = useState<PostType[]>([]);
   const [sortBy, setSortBy] = useState<"top" | "latest">("latest");
   const [mediaFilter, setMediaFilter] = useState<"all" | "media" | "text">("all");
+  const [viewMode, setViewMode] = useState<"feed" | "grid">("feed");
+  const [previewPost, setPreviewPost] = useState<PostType | null>(null);
   const [tagSearchQuery, setTagSearchQuery] = useState("");
   const [copiedLink, setCopiedLink] = useState(false);
   const [trendingTopics, setTrendingTopics] = useState<any[]>([]);
@@ -434,6 +437,30 @@ export default function HashtagPage() {
                   </button>
                 </div>
 
+                {/* View Mode Switcher (Feed vs Grid) */}
+                <div className="flex items-center gap-0.5 bg-[#111827] border border-[#1f2937] rounded-xl p-1 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("feed")}
+                    className={`p-1.5 rounded-lg transition cursor-pointer ${
+                      viewMode === "feed" ? "bg-blue-600 text-white shadow-xs" : "text-slate-400 hover:text-white"
+                    }`}
+                    title="Feed List View"
+                  >
+                    <List size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("grid")}
+                    className={`p-1.5 rounded-lg transition cursor-pointer ${
+                      viewMode === "grid" ? "bg-blue-600 text-white shadow-xs" : "text-slate-400 hover:text-white"
+                    }`}
+                    title="Media Grid View"
+                  >
+                    <LayoutGrid size={14} />
+                  </button>
+                </div>
+
                 {/* Search in topic */}
                 <div className="relative">
                   <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -472,6 +499,57 @@ export default function HashtagPage() {
                 }
                 description="Be the first developer to publish a post with this hashtag!"
               />
+            ) : viewMode === "grid" ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+                {displayedPosts.map((post) => {
+                  const mediaUrl =
+                    (post.images && post.images.length > 0 && post.images[0]) ||
+                    (post.type === "image" && post.images?.[0]) ||
+                    "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=600";
+                  const totalLikes =
+                    (post.reactions?.like || 0) +
+                    (post.reactions?.love || 0) +
+                    (post.reactions?.haha || 0) +
+                    (post.reactions?.wow || 0);
+                  const commentsCount = Array.isArray(post.comments) ? post.comments.length : 0;
+
+                  return (
+                    <div
+                      key={post.id}
+                      onClick={() => setPreviewPost(post)}
+                      className="group relative aspect-square rounded-2xl overflow-hidden border border-[#1f2937] bg-[#111827] cursor-pointer"
+                    >
+                      <Image
+                        src={mediaUrl}
+                        alt="Post media"
+                        fill
+                        sizes="(max-width: 768px) 50vw, 33vw"
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      {/* Hover stats overlay */}
+                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-3">
+                        <div className="flex items-center gap-1.5">
+                          <Avatar src={post.author.avatar} name={post.author.name} size="xs" />
+                          <span className="text-[11px] font-semibold text-white truncate">{post.author.name}</span>
+                        </div>
+                        <p className="text-[11px] text-slate-200 line-clamp-2 leading-relaxed">
+                          {post.content}
+                        </p>
+                        <div className="flex items-center justify-between text-xs text-white pt-1 border-t border-white/10">
+                          <span className="flex items-center gap-1">
+                            <Heart size={12} className="fill-red-500 text-red-500" />
+                            <span>{totalLikes}</span>
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <MessageCircle size={12} className="text-blue-400" />
+                            <span>{commentsCount}</span>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             ) : (
               <div className="space-y-6">
                 {displayedPosts.map((post) => (
@@ -481,6 +559,20 @@ export default function HashtagPage() {
             )}
           </div>
         </main>
+
+        {/* Media Grid Post Preview Modal */}
+        <Dialog
+          isOpen={!!previewPost}
+          onClose={() => setPreviewPost(null)}
+          size="lg"
+          showHeader={false}
+        >
+          {previewPost && (
+            <div className="p-2">
+              <PostCard post={previewPost} />
+            </div>
+          )}
+        </Dialog>
 
         {/* RIGHT SIDEBAR */}
         <aside className="hidden xl:block w-80 shrink-0">
