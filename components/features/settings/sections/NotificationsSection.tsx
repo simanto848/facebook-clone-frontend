@@ -215,15 +215,74 @@ export default function NotificationsSection() {
 
         {/* Quiet Hours / Do Not Disturb */}
         <div className="space-y-3">
-          <Switch
-            label="Quiet Hours (Do Not Disturb)"
-            description="Mute non-urgent sound and push notifications during specified hours."
-            checked={quietHoursEnabled}
-            onChange={(e) => setQuietHoursEnabled(e.target.checked)}
-          />
+          <div className="flex items-center justify-between">
+            <Switch
+              label="Quiet Hours (Do Not Disturb)"
+              description="Mute non-urgent sound and push notifications during specified hours."
+              checked={quietHoursEnabled}
+              onChange={(e) => setQuietHoursEnabled(e.target.checked)}
+            />
+            {quietHoursEnabled && (
+              <span
+                className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${
+                  (() => {
+                    const now = new Date();
+                    const day = now.getDay();
+                    if (quietDays === "weekdays" && (day === 0 || day === 6)) return false;
+                    if (quietDays === "weekends" && day !== 0 && day !== 6) return false;
+                    const cur = now.getHours() * 60 + now.getMinutes();
+                    const [sh, sm] = quietHoursStart.split(":").map(Number);
+                    const [eh, em] = quietHoursEnd.split(":").map(Number);
+                    const st = (sh || 0) * 60 + (sm || 0);
+                    const et = (eh || 0) * 60 + (em || 0);
+                    return st <= et ? cur >= st && cur < et : cur >= st || cur < et;
+                  })()
+                    ? "bg-purple-500/20 text-purple-300 border-purple-500/40 animate-pulse"
+                    : "bg-slate-800 text-slate-400 border-slate-700"
+                }`}
+              >
+                {(() => {
+                  const now = new Date();
+                  const day = now.getDay();
+                  if (quietDays === "weekdays" && (day === 0 || day === 6)) return "Schedule Standby";
+                  if (quietDays === "weekends" && day !== 0 && day !== 6) return "Schedule Standby";
+                  const cur = now.getHours() * 60 + now.getMinutes();
+                  const [sh, sm] = quietHoursStart.split(":").map(Number);
+                  const [eh, em] = quietHoursEnd.split(":").map(Number);
+                  const st = (sh || 0) * 60 + (sm || 0);
+                  const et = (eh || 0) * 60 + (em || 0);
+                  const active = st <= et ? cur >= st && cur < et : cur >= st || cur < et;
+                  return active ? "🌙 Active Now" : "☀️ Standby";
+                })()}
+              </span>
+            )}
+          </div>
 
           {quietHoursEnabled && (
-            <div className="ml-12 p-3 rounded-xl bg-[#0f172a] border border-[#1f2937] space-y-2.5">
+            <div className="ml-12 p-3.5 rounded-2xl bg-[#0f172a] border border-[#1f2937] space-y-3">
+              {/* Presets */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+                <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mr-1">Presets:</span>
+                {[
+                  { label: "😴 Sleep", start: "22:00", end: "07:00", days: "all" as const },
+                  { label: "💻 Focus", start: "09:00", end: "12:00", days: "weekdays" as const },
+                  { label: "☕ Evening", start: "20:00", end: "23:00", days: "all" as const },
+                ].map((preset) => (
+                  <button
+                    key={preset.label}
+                    type="button"
+                    onClick={() => {
+                      setQuietHoursStart(preset.start);
+                      setQuietHoursEnd(preset.end);
+                      setQuietDays(preset.days);
+                    }}
+                    className="px-2 py-0.5 rounded-full text-[11px] font-medium text-slate-300 bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 transition cursor-pointer shrink-0"
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5 text-xs text-slate-300 font-semibold">
                   <Moon size={13} className="text-purple-400" />
@@ -250,6 +309,7 @@ export default function NotificationsSection() {
                   ))}
                 </div>
               </div>
+
               <div className="flex flex-wrap items-center gap-3 text-xs text-slate-300">
                 <div className="flex items-center gap-2">
                   <span className="text-slate-400">From:</span>
