@@ -17,8 +17,9 @@ export default function CreatePost() {
   const [content, setContent] = useState("");
   const [visibility, setVisibility] = useState<"public" | "friends" | "private">("public");
   const [type, setType] = useState<"text" | "image" | "video" | "poll" | "shared" | "article">("text");
-  const [feeling, setFeeling] = useState<{ emoji: string; label: string } | null>(null);
+  const [feeling, setFeeling] = useState<{ emoji: string; label: string; type?: "feeling" | "activity" } | null>(null);
   const [showFeelingPicker, setShowFeelingPicker] = useState(false);
+  const [feelingTab, setFeelingTab] = useState<"feelings" | "activities">("feelings");
 
   // Post type specific inputs
   const [images, setImages] = useState<string[]>([]);
@@ -173,7 +174,9 @@ export default function CreatePost() {
           <div className="flex-1 space-y-3">
             {feeling && (
               <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-medium">
-                <span>is feeling {feeling.emoji} {feeling.label}</span>
+                <span>
+                  {feeling.type === "activity" ? `${feeling.emoji} ${feeling.label}` : `is feeling ${feeling.emoji} ${feeling.label}`}
+                </span>
                 <button
                   type="button"
                   onClick={() => setFeeling(null)}
@@ -229,6 +232,30 @@ export default function CreatePost() {
                 <Link2 size={13} />
               </button>
             </div>
+
+            {/* Quick Feeling / Activity Chips Row */}
+            {!feeling && (
+              <div className="flex items-center gap-1.5 overflow-x-auto py-0.5 no-scrollbar">
+                {[
+                  { emoji: "😊", label: "Happy", type: "feeling" as const },
+                  { emoji: "🚀", label: "Excited", type: "feeling" as const },
+                  { emoji: "☕", label: "Coffee break", type: "activity" as const },
+                  { emoji: "✈️", label: "Traveling", type: "activity" as const },
+                  { emoji: "🎧", label: "Listening", type: "activity" as const },
+                  { emoji: "🎉", label: "Celebrating", type: "activity" as const },
+                ].map((chip) => (
+                  <button
+                    key={chip.label}
+                    type="button"
+                    onClick={() => setFeeling(chip)}
+                    className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium text-slate-300 bg-[#1e293b] hover:bg-slate-700 border border-slate-700/60 transition cursor-pointer shrink-0"
+                  >
+                    <span>{chip.emoji}</span>
+                    <span>{chip.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
 
             <textarea
               placeholder={`What's on your mind, ${user?.displayName?.split(" ")[0] || "Alex"}?`}
@@ -534,21 +561,73 @@ export default function CreatePost() {
               </button>
 
               {showFeelingPicker && (
-                <div className="absolute left-0 bottom-full mb-2 w-56 rounded-2xl border border-[#1f2937] bg-[#111827] shadow-2xl p-2.5 z-30 animate-in fade-in zoom-in-95 space-y-1">
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 py-1">
-                    How are you feeling?
+                <div className="absolute left-0 bottom-full mb-2 w-64 rounded-2xl border border-[#1f2937] bg-[#111827] shadow-2xl p-2.5 z-30 animate-in fade-in zoom-in-95 space-y-2">
+                  <div className="flex items-center justify-between px-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                      Feeling / Activity
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowFeelingPicker(false)}
+                      className="text-slate-400 hover:text-white p-0.5 rounded cursor-pointer"
+                    >
+                      <X size={13} />
+                    </button>
                   </div>
-                  <div className="grid grid-cols-2 gap-1">
-                    {[
-                      { emoji: "😊", label: "Happy" },
-                      { emoji: "🚀", label: "Excited" },
-                      { emoji: "☕", label: "Relaxed" },
-                      { emoji: "🎯", label: "Focused" },
-                      { emoji: "🎉", label: "Celebrating" },
-                      { emoji: "💡", label: "Inspired" },
-                      { emoji: "💪", label: "Productive" },
-                      { emoji: "🔥", label: "Motivated" },
-                    ].map((item) => (
+
+                  {/* Category switcher */}
+                  <div className="grid grid-cols-2 gap-1 p-0.5 bg-[#0f172a] rounded-lg border border-[#1f2937]/70">
+                    <button
+                      type="button"
+                      onClick={() => setFeelingTab("feelings")}
+                      className={`py-1 text-center text-xs font-semibold rounded-md transition cursor-pointer ${
+                        feelingTab === "feelings"
+                          ? "bg-blue-600 text-white shadow-xs"
+                          : "text-slate-400 hover:text-white"
+                      }`}
+                    >
+                      Feelings
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFeelingTab("activities")}
+                      className={`py-1 text-center text-xs font-semibold rounded-md transition cursor-pointer ${
+                        feelingTab === "activities"
+                          ? "bg-blue-600 text-white shadow-xs"
+                          : "text-slate-400 hover:text-white"
+                      }`}
+                    >
+                      Activities
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-1 max-h-44 overflow-y-auto no-scrollbar pt-0.5">
+                    {(feelingTab === "feelings"
+                      ? [
+                          { emoji: "😊", label: "Happy", type: "feeling" as const },
+                          { emoji: "🚀", label: "Excited", type: "feeling" as const },
+                          { emoji: "☕", label: "Relaxed", type: "feeling" as const },
+                          { emoji: "🎯", label: "Focused", type: "feeling" as const },
+                          { emoji: "💖", label: "Loved", type: "feeling" as const },
+                          { emoji: "🙏", label: "Grateful", type: "feeling" as const },
+                          { emoji: "💡", label: "Inspired", type: "feeling" as const },
+                          { emoji: "💪", label: "Productive", type: "feeling" as const },
+                          { emoji: "🔥", label: "Motivated", type: "feeling" as const },
+                          { emoji: "😴", label: "Tired", type: "feeling" as const },
+                        ]
+                      : [
+                          { emoji: "✈️", label: "Traveling to", type: "activity" as const },
+                          { emoji: "🍕", label: "Eating", type: "activity" as const },
+                          { emoji: "☕", label: "Drinking coffee", type: "activity" as const },
+                          { emoji: "🎧", label: "Listening to", type: "activity" as const },
+                          { emoji: "🎬", label: "Watching", type: "activity" as const },
+                          { emoji: "📚", label: "Reading", type: "activity" as const },
+                          { emoji: "🎮", label: "Playing", type: "activity" as const },
+                          { emoji: "🎉", label: "Celebrating", type: "activity" as const },
+                          { emoji: "🏃", label: "Exercising", type: "activity" as const },
+                          { emoji: "💻", label: "Coding", type: "activity" as const },
+                        ]
+                    ).map((item) => (
                       <button
                         key={item.label}
                         type="button"
@@ -556,7 +635,7 @@ export default function CreatePost() {
                           setFeeling(item);
                           setShowFeelingPicker(false);
                         }}
-                        className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-[#1f2937] text-left text-xs text-slate-200 transition cursor-pointer"
+                        className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-[#1f2937] text-left text-xs text-slate-200 transition cursor-pointer"
                       >
                         <span className="text-base">{item.emoji}</span>
                         <span className="truncate">{item.label}</span>
