@@ -128,6 +128,10 @@ export function StoryViewerModal({
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) {
+        return;
+      }
       if (e.code === "Space") {
         e.preventDefault();
         setIsPaused((prev) => !prev);
@@ -135,14 +139,18 @@ export function StoryViewerModal({
         e.preventDefault();
         setIsMuted((prev) => !prev);
       } else if (e.code === "ArrowLeft" && currentIndex > 0) {
+        e.preventDefault();
         onNavigate(currentIndex - 1);
       } else if (e.code === "ArrowRight" && currentIndex < stories.length - 1) {
+        e.preventDefault();
         onNavigate(currentIndex + 1);
+      } else if (e.code === "Escape") {
+        onClose();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, currentIndex, stories.length, onNavigate]);
+  }, [isOpen, currentIndex, stories.length, onNavigate, onClose]);
 
   if (!currentStory) return null;
 
@@ -352,6 +360,24 @@ export function StoryViewerModal({
                 title={`React with ${emoji}`}
               >
                 {emoji}
+              </button>
+            ))}
+          </div>
+
+          {/* Quick Reply Preset Pills */}
+          <div className="flex items-center justify-center gap-1.5 overflow-x-auto py-0.5 no-scrollbar">
+            {["🔥 Fire!", "🙌 Love this!", "👏 Great shot!", "😂 So funny!"].map((preset) => (
+              <button
+                key={preset}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setReactionToast(`Sent "${preset}" to ${currentStory.author.name}`);
+                  setTimeout(() => setReactionToast(null), 2200);
+                }}
+                className="px-2.5 py-0.5 text-[11px] font-medium text-white/90 bg-white/10 hover:bg-white/20 border border-white/15 rounded-full transition-all shrink-0 cursor-pointer active:scale-95"
+              >
+                {preset}
               </button>
             ))}
           </div>
