@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Search, Users, X, CheckCheck, MessageSquare, Pin, BellOff, Bell } from "lucide-react";
+import { Search, Users, X, CheckCheck, MessageSquare, Pin, BellOff, Bell, Archive, ArchiveRestore, Mail, MailOpen } from "lucide-react";
 import Image from "next/image";
 import { useChatStore } from "@/store/chatStore";
 import { CreateGroupModal } from "../chat/CreateGroupModal";
@@ -9,19 +9,23 @@ import { CreateGroupModal } from "../chat/CreateGroupModal";
 export default function ConversationList() {
   const { conversations, activeConversationId, setActiveConversationId, fetchConversations, markConversationAsRead } = useChatStore();
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterTab, setFilterTab] = useState<"all" | "unread" | "online" | "groups" | "muted">("all");
+  const [filterTab, setFilterTab] = useState<"all" | "unread" | "online" | "groups" | "muted" | "archived">("all");
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
   const [pinnedIds, setPinnedIds] = useState<string[]>([]);
   const [mutedIds, setMutedIds] = useState<string[]>([]);
+  const [archivedIds, setArchivedIds] = useState<string[]>([]);
+  const [manualUnreadIds, setManualUnreadIds] = useState<string[]>([]);
 
   useEffect(() => {
     fetchConversations();
     if (typeof window !== "undefined") {
       try {
-        const stored = localStorage.getItem("pinned_conversations");
-        if (stored) setPinnedIds(JSON.parse(stored));
+        const storedPinned = localStorage.getItem("pinned_conversations");
+        if (storedPinned) setPinnedIds(JSON.parse(storedPinned));
         const storedMuted = localStorage.getItem("muted_conversations");
         if (storedMuted) setMutedIds(JSON.parse(storedMuted));
+        const storedArchived = localStorage.getItem("archived_conversations");
+        if (storedArchived) setArchivedIds(JSON.parse(storedArchived));
       } catch {}
     }
   }, [fetchConversations]);
@@ -48,24 +52,56 @@ export default function ConversationList() {
     });
   };
 
-  const unreadCount = conversations.filter((c) => c.hasUnread).length;
-  const onlineCount = conversations.filter((c) => c.online).length;
-  const groupsCount = conversations.filter((c) => c.id.startsWith("group_") || (c as any).isGroup).length;
-  const mutedCount = conversations.filter((c) => mutedIds.includes(c.id)).length;
+  const toggleArchive = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setArchivedIds((prev) => {
+      const next = prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id];
+      if (typeof window !== "undefined") {
+        localStorage.setItem("archived_conversations", JSON.stringify(next));
+      }
+      return next;
+    });
+  };
+
+  const toggleUnread = (e: React.MouseEvent, id: string, currentUnread: boolean) => {
+    e.stopPropagation();
+    if (currentUnread) {
+      markConversationAsRead(id);
+      setManualUnreadIds((prev) => prev.filter((item) => item !== id));
+    } else {
+      setManualUnreadIds((prev) => [...prev, id]);
+    }
+  };
+
+  const isConversationUnread = (conv: any) => {
+    return Boolean(conv.hasUnread || manualUnreadIds.includes(conv.id));
+  };
+
+  const activeNonArchived = conversations.filter((c) => !archivedIds.includes(c.id));
+  const unreadCount = activeNonArchived.filter((c) => isConversationUnread(c)).length;
+  const onlineCount = activeNonArchived.filter((c) => c.online).length;
+  const groupsCount = activeNonArchived.filter((c) => c.id.startsWith("group_") || (c as any).isGroup).length;
+  const mutedCount = activeNonArchived.filter((c) => mutedIds.includes(c.id)).length;
+  const archivedCount = archivedIds.length;
 
   const handleMarkAllAsRead = () => {
-    conversations
-      .filter((c) => c.hasUnread)
-      .forEach((c) => {
-        markConversationAsRead(c.id);
-      });
+    conversations.forEach((c) => {
+      markConversationAsRead(c.id);
+    });
+    setManualUnreadIds([]);
   };
 
   const filteredConversations = conversations.filter((c) => {
-    if (filterTab === "unread" && !c.hasUnread) return false;
-    if (filterTab === "online" && !c.online) return false;
-    if (filterTab === "groups" && !(c.id.startsWith("group_") || (c as any).isGroup)) return false;
-    if (filterTab === "muted" && !mutedIds.includes(c.id)) return false;
+    const isArchived = archivedIds.includes(c.id);
+    if (filterTab === "archived") {
+      if (!isArchived) return false;
+    } else {
+      if (isArchived) return false;
+      if (filterTab === "unread" && !isConversationUnread(c)) return false;
+      if (filterTab === "online" && !c.online) return false;
+      if (filterTab === "groups" && !(c.id.startsWith("group_") || (c as any).isGroup)) return false;
+      if (filterTab === "muted" && !mutedIds.includes(c.id)) return false;
+    }
 
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
@@ -99,19 +135,18 @@ export default function ConversationList() {
         {/* Search input with clear button */}
         <div className="flex items-center rounded-xl bg-[#1f2937] px-4 relative">
           <Search size={16} className="text-slate-400 shrink-0" />
-
           <input
-            placeholder="Search messages or people..."
+            type="text"
+            placeholder="Search conversations..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-10 flex-1 bg-transparent px-3 text-white outline-none text-xs placeholder:text-slate-500"
+            className="w-full bg-transparent px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none"
           />
-
           {searchQuery && (
             <button
-              type="button"
               onClick={() => setSearchQuery("")}
-              className="text-slate-400 hover:text-white p-1 transition cursor-pointer"
+              className="text-slate-400 hover:text-white transition p-1"
+              title="Clear search"
             >
               <X size={14} />
             </button>
@@ -137,11 +172,12 @@ export default function ConversationList() {
         <div className="flex items-center justify-between gap-1 overflow-x-auto no-scrollbar">
           <div className="flex items-center gap-1.5">
             {[
-              { id: "all" as const, label: "All", count: conversations.length },
+              { id: "all" as const, label: "All", count: activeNonArchived.length },
               { id: "unread" as const, label: "Unread", count: unreadCount },
               { id: "online" as const, label: "Online", count: onlineCount },
               { id: "groups" as const, label: "Groups", count: groupsCount },
               { id: "muted" as const, label: "Muted", count: mutedCount },
+              { id: "archived" as const, label: "Archived", count: archivedCount },
             ].map((tab) => {
               const isActive = filterTab === tab.id;
               return (
@@ -174,7 +210,7 @@ export default function ConversationList() {
             <button
               type="button"
               onClick={handleMarkAllAsRead}
-              className="flex items-center gap-1 text-[11px] text-blue-400 hover:text-blue-300 transition font-medium whitespace-nowrap px-1"
+              className="flex items-center gap-1 text-[11px] text-blue-400 hover:text-blue-300 transition font-medium whitespace-nowrap px-1 cursor-pointer"
               title="Mark all conversations as read"
             >
               <CheckCheck size={13} />
@@ -195,11 +231,13 @@ export default function ConversationList() {
             <p className="text-xs font-semibold text-slate-300">No conversations found</p>
             <p className="text-[11px] text-slate-500">
               {searchQuery
-                ? `No messages or contacts match "${searchQuery}".`
+                ? `No messages or friends match "${searchQuery}".`
                 : filterTab === "unread"
                 ? "You're all caught up! No unread conversations."
                 : filterTab === "online"
                 ? "None of your friends are currently active."
+                : filterTab === "archived"
+                ? "No archived conversations."
                 : "Search for friends or send a message to start chatting."}
             </p>
           </div>
@@ -208,6 +246,8 @@ export default function ConversationList() {
             const isActive = user.id === activeConversationId;
             const isPinned = pinnedIds.includes(user.id);
             const isMuted = mutedIds.includes(user.id);
+            const isArchived = archivedIds.includes(user.id);
+            const unread = isConversationUnread(user);
             const lastMsg = user.messages[user.messages.length - 1];
 
             return (
@@ -216,7 +256,13 @@ export default function ConversationList() {
                 className={`group relative flex w-full items-center gap-3 rounded-xl p-3 text-left transition cursor-pointer ${
                   isActive ? "bg-[#1f2937]" : "hover:bg-[#1f2937]/50"
                 }`}
-                onClick={() => setActiveConversationId(user.id)}
+                onClick={() => {
+                  setActiveConversationId(user.id);
+                  if (unread) {
+                    markConversationAsRead(user.id);
+                    setManualUnreadIds((prev) => prev.filter((id) => id !== user.id));
+                  }
+                }}
               >
                 <div className="relative shrink-0">
                   <Image
@@ -235,7 +281,9 @@ export default function ConversationList() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-1">
                     <div className="flex items-center gap-1.5 min-w-0">
-                      <h3 className="font-medium text-white text-sm truncate">{user.name}</h3>
+                      <h3 className={`text-sm truncate ${unread ? "font-bold text-white" : "font-medium text-slate-200"}`}>
+                        {user.name}
+                      </h3>
                       {isPinned && (
                         <Pin size={11} className="text-blue-400 rotate-45 shrink-0 fill-blue-400" />
                       )}
@@ -247,6 +295,18 @@ export default function ConversationList() {
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                       {lastMsg && <span className="text-[10px] text-slate-500 mr-0.5">{lastMsg.time}</span>}
+
+                      {/* Mark Read/Unread toggle */}
+                      <button
+                        type="button"
+                        onClick={(e) => toggleUnread(e, user.id, unread)}
+                        className="p-1 rounded-md text-xs transition cursor-pointer opacity-0 group-hover:opacity-100 text-slate-400 hover:text-white hover:bg-slate-700/50"
+                        title={unread ? "Mark as read" : "Mark as unread"}
+                      >
+                        {unread ? <MailOpen size={12} /> : <Mail size={12} />}
+                      </button>
+
+                      {/* Mute toggle */}
                       <button
                         type="button"
                         onClick={(e) => toggleMute(e, user.id)}
@@ -259,6 +319,20 @@ export default function ConversationList() {
                       >
                         <BellOff size={12} className={isMuted ? "text-amber-400" : ""} />
                       </button>
+
+                      {/* Archive toggle */}
+                      <button
+                        type="button"
+                        onClick={(e) => toggleArchive(e, user.id)}
+                        className={`p-1 rounded-md text-xs transition cursor-pointer opacity-0 group-hover:opacity-100 ${
+                          isArchived ? "text-purple-400 hover:text-purple-300" : "text-slate-400 hover:text-white hover:bg-slate-700/50"
+                        }`}
+                        title={isArchived ? "Unarchive conversation" : "Archive conversation"}
+                      >
+                        {isArchived ? <ArchiveRestore size={12} /> : <Archive size={12} />}
+                      </button>
+
+                      {/* Pin toggle */}
                       <button
                         type="button"
                         onClick={(e) => togglePin(e, user.id)}
@@ -272,12 +346,12 @@ export default function ConversationList() {
                     </div>
                   </div>
 
-                  <p className={`truncate text-xs ${isActive ? "text-slate-200" : "text-slate-400"}`}>
+                  <p className={`truncate text-xs ${unread ? "text-white font-semibold" : isActive ? "text-slate-200" : "text-slate-400"}`}>
                     {lastMsg ? `${lastMsg.sender === "me" ? "You: " : ""}${lastMsg.text}` : "No messages yet"}
                   </p>
                 </div>
 
-                {user.hasUnread && (
+                {unread && (
                   <span className="h-2.5 w-2.5 rounded-full bg-blue-500 shrink-0 self-center" />
                 )}
               </div>
