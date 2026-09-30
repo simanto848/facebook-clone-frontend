@@ -7,9 +7,9 @@ import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
 import { usePostStore, mapBackendPostToPostType, PostType } from "@/store/postStore";
 import { postService } from "@/services/postService";
-import { ArrowLeft, MessageSquare, Loader2, Copy, Check, Share2, Compass, Bookmark, BookmarkCheck } from "lucide-react";
+import { ArrowLeft, MessageSquare, Loader2, Copy, Check, Share2, Compass, Bookmark, BookmarkCheck, Eye, Clock, Code2, ExternalLink } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui";
+import { Button, Dialog, Badge } from "@/components/ui";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -25,6 +25,8 @@ export default function PostDetailPage({ params }: PageProps) {
   const [loading, setLoading] = useState(!existingPost);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [embedCopied, setEmbedCopied] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -87,6 +89,17 @@ export default function PostDetailPage({ params }: PageProps) {
         {/* MAIN FEED */}
         <main className="flex-1 flex justify-center">
           <div className="w-full max-w-3xl px-6 py-6 space-y-6">
+            {/* Breadcrumb Navigation */}
+            <div className="flex items-center gap-1.5 text-xs text-slate-400">
+              <Link href="/" className="hover:text-blue-400 transition-colors">Home</Link>
+              <span>/</span>
+              <Link href="/" className="hover:text-blue-400 transition-colors">Feed</Link>
+              <span>/</span>
+              <span className="text-slate-200 truncate max-w-[200px]">
+                {post ? `${post.author.name}'s Post` : "Post"}
+              </span>
+            </div>
+
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <button
@@ -97,7 +110,15 @@ export default function PostDetailPage({ params }: PageProps) {
                   <ArrowLeft size={18} />
                 </button>
                 <div>
-                  <h1 className="text-xl font-bold">Post Details</h1>
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-xl font-bold">Post Details</h1>
+                    {post && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-800 text-[10px] text-slate-400 border border-slate-700 font-mono">
+                        <Clock size={10} />
+                        {Math.max(1, Math.ceil((post.content?.split(/\s+/).length || 1) / 200))} min read
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-slate-400">Discussion thread & replies</p>
                 </div>
               </div>
@@ -122,11 +143,11 @@ export default function PostDetailPage({ params }: PageProps) {
                 <Button
                   variant="secondary"
                   size="sm"
-                  leftIcon={copied ? <Check size={14} className="text-emerald-400" /> : <Share2 size={14} />}
-                  onClick={handleCopyLink}
+                  leftIcon={<Share2 size={14} />}
+                  onClick={() => setIsShareModalOpen(true)}
                   className="border border-[#1f2937]"
                 >
-                  {copied ? "Permalink Copied!" : "Share Permalink"}
+                  Share
                 </Button>
               </div>
             </div>
@@ -233,6 +254,109 @@ export default function PostDetailPage({ params }: PageProps) {
           <RightSidebar />
         </aside>
       </div>
+
+      {/* SHARE MODAL DIALOG */}
+      <Dialog
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        title="Share Post"
+        description="Share this post with your network or copy the link directly."
+      >
+        <div className="space-y-4 pt-2">
+          {/* Quick Copy Link Box */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-300">Direct Link</label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                readOnly
+                value={typeof window !== "undefined" ? window.location.href : ""}
+                className="flex-1 bg-[#0f172a] border border-[#1f2937] rounded-xl px-3 py-2 text-xs text-slate-300 font-mono select-all outline-none"
+              />
+              <Button
+                size="sm"
+                variant="primary"
+                leftIcon={copied ? <Check size={14} /> : <Copy size={14} />}
+                onClick={handleCopyLink}
+              >
+                {copied ? "Copied!" : "Copy"}
+              </Button>
+            </div>
+          </div>
+
+          {/* Social Share Buttons */}
+          <div className="space-y-2 pt-2 border-t border-[#1f2937]">
+            <span className="text-xs font-semibold text-slate-300 block">Share to Social</span>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (typeof window !== "undefined") {
+                    const text = encodeURIComponent(post?.content?.slice(0, 100) || "Check out this post");
+                    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${encodeURIComponent(window.location.href)}`, "_blank");
+                  }
+                }}
+                className="p-2.5 rounded-xl bg-[#0f172a] hover:bg-[#1e293b] border border-[#1f2937] text-xs font-semibold text-white flex items-center justify-center gap-2 transition cursor-pointer"
+              >
+                <span>X / Twitter</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (typeof window !== "undefined") {
+                    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}`, "_blank");
+                  }
+                }}
+                className="p-2.5 rounded-xl bg-[#0f172a] hover:bg-[#1e293b] border border-[#1f2937] text-xs font-semibold text-blue-400 flex items-center justify-center gap-2 transition cursor-pointer"
+              >
+                <span>LinkedIn</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (typeof window !== "undefined") {
+                    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`, "_blank");
+                  }
+                }}
+                className="p-2.5 rounded-xl bg-[#0f172a] hover:bg-[#1e293b] border border-[#1f2937] text-xs font-semibold text-blue-500 flex items-center justify-center gap-2 transition cursor-pointer"
+              >
+                <span>Facebook</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Embed Code Snippet */}
+          <div className="space-y-1.5 pt-2 border-t border-[#1f2937]">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                <Code2 size={13} className="text-purple-400" /> Embed Post
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  if (typeof window !== "undefined") {
+                    const snippet = `<iframe src="${window.location.href}" width="500" height="400" frameborder="0"></iframe>`;
+                    navigator.clipboard.writeText(snippet);
+                    setEmbedCopied(true);
+                    setTimeout(() => setEmbedCopied(false), 2000);
+                  }
+                }}
+                className="text-[11px] text-purple-400 hover:text-purple-300 font-medium cursor-pointer"
+              >
+                {embedCopied ? "Snippet Copied!" : "Copy Embed Code"}
+              </button>
+            </div>
+            <textarea
+              readOnly
+              rows={2}
+              value={typeof window !== "undefined" ? `<iframe src="${window.location.href}" width="500" height="400" frameborder="0"></iframe>` : ""}
+              className="w-full bg-[#0f172a] border border-[#1f2937] rounded-xl p-2 text-[11px] text-slate-400 font-mono resize-none select-all outline-none"
+            />
+          </div>
+        </div>
+      </Dialog>
     </div>
   );
 }
