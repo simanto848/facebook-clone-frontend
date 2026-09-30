@@ -2,9 +2,9 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { useUsers, followUser, unfollowUser } from "@/hooks/useUsers";
 import { useRouter } from "next/navigation";
-import { UserPlus, UserCheck, MessageSquare, ExternalLink, MapPin, Copy, Check } from "lucide-react";
+import { UserPlus, UserCheck, MessageSquare, ExternalLink, MapPin, Copy, Check, Users } from "lucide-react";
 import Link from "next/link";
-import { Button } from "@/components/ui";
+import { Button, Dialog, Avatar } from "@/components/ui";
 import { useChatStore } from "@/store/chatStore";
 
 export interface ProfileCardProps {
@@ -30,6 +30,7 @@ export const ProfileCard = ({
 
   const [isFollowing, setIsFollowing] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [isMutualModalOpen, setIsMutualModalOpen] = useState(false);
 
   useEffect(() => {
     if (profile?.user) {
@@ -62,6 +63,19 @@ export const ProfileCard = ({
   if (!user) {
     return <div className="text-sm text-slate-400">User not found</div>;
   }
+
+  interface MutualFriend {
+    id: string;
+    name: string;
+    username: string;
+    avatar: string;
+  }
+
+  const mutualFriends: MutualFriend[] = user.mutualFriends || [
+    { id: "mf-1", name: "Sarah Chen", username: "sarahc", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100" },
+    { id: "mf-2", name: "Elena Rostova", username: "elena", avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100" },
+    { id: "mf-3", name: "David Kim", username: "davidk", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100" },
+  ];
 
   return (
     <div className="relative">
@@ -118,6 +132,29 @@ export const ProfileCard = ({
               </a>
             )}
           </div>
+
+          {/* Mutual Friends Trigger */}
+          {!isCurrentUser && (
+            <button
+              type="button"
+              onClick={() => setIsMutualModalOpen(true)}
+              className="flex items-center gap-2 mt-2 group/mf cursor-pointer"
+            >
+              <div className="flex -space-x-1.5 overflow-hidden">
+                {mutualFriends.slice(0, 3).map((f) => (
+                  <img
+                    key={f.id}
+                    src={f.avatar}
+                    alt={f.name}
+                    className="inline-block h-4 w-4 rounded-full ring-1 ring-[#111827] object-cover"
+                  />
+                ))}
+              </div>
+              <span className="text-[11px] text-slate-400 group-hover/mf:text-blue-400 group-hover/mf:underline transition-colors">
+                {mutualFriends.length} mutual friend{mutualFriends.length > 1 ? "s" : ""}
+              </span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -170,6 +207,51 @@ export const ProfileCard = ({
           </Button>
         </div>
       )}
+
+      {/* Mutual Friends Modal */}
+      <Dialog
+        isOpen={isMutualModalOpen}
+        onClose={() => setIsMutualModalOpen(false)}
+        title={`Mutual Friends with ${user.name || user.username}`}
+        description="People you both know in common."
+      >
+        <div className="space-y-3 pt-2">
+          {mutualFriends.map((mf) => (
+            <div
+              key={mf.id}
+              className="flex items-center justify-between p-2.5 rounded-xl bg-[#0f172a] border border-[#1f2937]"
+            >
+              <div className="flex items-center gap-2.5">
+                <Avatar src={mf.avatar} name={mf.name} size="sm" />
+                <div>
+                  <p className="text-xs font-semibold text-white">{mf.name}</p>
+                  <p className="text-[10px] text-slate-400">@{mf.username}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 px-2 text-xs text-blue-400 hover:text-white"
+                  onClick={() => {
+                    setIsMutualModalOpen(false);
+                    openChat({ id: mf.id, name: mf.name, avatar: mf.avatar });
+                  }}
+                >
+                  <MessageSquare size={12} className="mr-1" />
+                  Chat
+                </Button>
+                <Link href={`/profile/${mf.username}`}>
+                  <Button size="sm" variant="secondary" className="h-7 px-2 text-xs">
+                    View
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Dialog>
     </div>
   );
 };
