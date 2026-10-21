@@ -124,7 +124,8 @@ export default function SavedPostsPage() {
     setLoading(true);
     try {
       const res = await bookmarkService.getUserBookmarks();
-      const items = res.data || res || [];
+      const raw = res.data?.bookmarks || res.data || res || [];
+      const items = Array.isArray(raw) ? raw : [];
       const posts = items.map((b: any) => {
         const rawPost = b.post || b;
         const mapped = mapBackendPostToPostType(rawPost);
