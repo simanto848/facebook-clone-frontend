@@ -70,4 +70,23 @@ export const groupService = {
     const response = await axios.post(`/groups/${id}/posts`, { content });
     return response.data;
   },
+
+  updateGroup: async (id: string, data: Partial<CreateGroupInput>) => {
+    const axios = await useAxios();
+    const payload: Record<string, any> = {};
+    if (data.name !== undefined) payload.name = data.name;
+    if (data.description !== undefined) payload.description = data.description;
+    if (data.privacy !== undefined) payload.privacy = data.privacy;
+    if (data.coverUrl !== undefined || data.cover !== undefined) {
+      payload.coverUrl = data.coverUrl || data.cover || "";
+    }
+    const response = await axios.patch(`/groups/${id}`, payload);
+    return response.data;
+  },
+
+  deleteGroup: async (id: string) => {
+    const axios = await useAxios();
+    const response = await axios.delete(`/groups/${id}`);
+    return response.data;
+  },
 };
