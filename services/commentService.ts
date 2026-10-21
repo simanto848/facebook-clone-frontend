@@ -14,15 +14,15 @@ export const commentService = {
     return response.data;
   },
 
-  getPostComments: async (postId: string, page = 1, limit = 20) => {
+  getPostComments: async (postId: string, page = 1, pageSize = 20) => {
     const axios = await useAxios();
-    const response = await axios.get(`/comments/post/${postId}?page=${page}&limit=${limit}`);
+    const response = await axios.get(`/comments/post/${postId}?page=${page}&pageSize=${pageSize}`);
     return response.data;
   },
 
-  getCommentReplies: async (commentId: string, page = 1, limit = 10) => {
+  getCommentReplies: async (commentId: string, page = 1, pageSize = 10) => {
     const axios = await useAxios();
-    const response = await axios.get(`/comments/${commentId}/replies?page=${page}&limit=${limit}`);
+    const response = await axios.get(`/comments/${commentId}/replies?page=${page}&pageSize=${pageSize}`);
     return response.data;
   },
 

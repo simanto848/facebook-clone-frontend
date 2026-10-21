@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Heart, MessageSquare, Check, CornerDownRight, Trash2, Edit2, Copy, Link2, X } from "lucide-react";
 import { CommentType } from "@/store/postStore";
 import { useAuthStore } from "@/store/authStore";
 import { Avatar, Button, Input } from "@/components/ui";
+import { commentService } from "@/services/commentService";
 
 interface Props {
   comment: CommentType;
@@ -21,6 +22,41 @@ export default function CommentItem({ comment, onLike, onReply, onEdit, onDelete
   const [editText, setEditText] = useState(comment.content);
   const [copied, setCopied] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [loadedReplies, setLoadedReplies] = useState<CommentType[]>(comment.replies || []);
+  const [loadingReplies, setLoadingReplies] = useState(false);
+
+  useEffect(() => {
+    if (comment.replies && comment.replies.length > 0) {
+      setLoadedReplies(comment.replies);
+    }
+  }, [comment.replies]);
+
+  const handleLoadServerReplies = async () => {
+    setLoadingReplies(true);
+    try {
+      const res = await commentService.getCommentReplies(comment.id);
+      const raw = res?.data?.replies || res?.replies || res?.data || res || [];
+      if (Array.isArray(raw) && raw.length > 0) {
+        const parsed: CommentType[] = raw.map((r: any) => ({
+          id: r.id,
+          author: {
+            name: `${r.author?.firstName || ""} ${r.author?.lastName || ""}`.trim() || r.author?.name || r.author?.username || "User",
+            username: r.author?.username || "user",
+            avatar: r.author?.avatarUrl || r.author?.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100",
+          },
+          content: r.content,
+          createdAt: r.createdAt ? new Date(r.createdAt).toLocaleDateString() : "Recently",
+          likes: r._count?.likes || r.likes || 0,
+          userLiked: Boolean(r.userLiked),
+        }));
+        setLoadedReplies(parsed);
+      }
+    } catch (err) {
+      console.warn("Failed to load comment replies:", err);
+    } finally {
+      setLoadingReplies(false);
+    }
+  };
 
   const handleCopyComment = async () => {
     try {
@@ -64,7 +100,7 @@ export default function CommentItem({ comment, onLike, onReply, onEdit, onDelete
   return (
     <div className="group/item relative mt-4 select-none">
       {/* Connector Line for nested comments */}
-      {comment.replies && comment.replies.length > 0 && (
+      {loadedReplies && loadedReplies.length > 0 && (
         <div className="absolute left-5 top-12 bottom-4 w-0.5 bg-[#1f2937]" />
       )}
 
@@ -134,6 +170,16 @@ export default function CommentItem({ comment, onLike, onReply, onEdit, onDelete
             >
               <MessageSquare size={12} />
               <span>Reply</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleLoadServerReplies}
+              className="flex items-center gap-1 hover:text-blue-400 transition"
+              title="Fetch server replies"
+            >
+              <CornerDownRight size={11} className={loadingReplies ? "animate-pulse text-blue-400" : ""} />
+              <span>{loadingReplies ? "Loading..." : "Replies"}</span>
             </button>
 
             <button
@@ -217,9 +263,9 @@ export default function CommentItem({ comment, onLike, onReply, onEdit, onDelete
           )}
 
           {/* Recursively Render nested replies */}
-          {comment.replies && comment.replies.length > 0 && (
+          {loadedReplies && loadedReplies.length > 0 && (
             <div className="pl-6 border-l border-[#1f2937]/40 mt-1">
-              {comment.replies.map((reply) => (
+              {loadedReplies.map((reply) => (
                 <CommentItem
                   key={reply.id}
                   comment={reply}
