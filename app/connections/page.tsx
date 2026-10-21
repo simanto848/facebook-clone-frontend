@@ -31,6 +31,7 @@ export interface DisplayUser {
 export default function ConnectionsPage() {
   const { openChat } = useChatStore();
   const [requests, setRequests] = useState<DisplayUser[]>([]);
+  const [sentRequests, setSentRequests] = useState<DisplayUser[]>([]);
   const [suggestions, setSuggestions] = useState<DisplayUser[]>([]);
   const [connections, setConnections] = useState<DisplayUser[]>([]);
   const [activeTab, setActiveTab] = useState<string>("requests");
@@ -97,6 +98,25 @@ export default function ConnectionsPage() {
         };
       });
       setRequests(reqData);
+
+      // Load sent requests
+      try {
+        const sentRes = await friendshipService.getSentRequests();
+        const sentRaw = sentRes.data?.requests || sentRes.data || sentRes || [];
+        const sentData = (Array.isArray(sentRaw) ? sentRaw : []).map((item: any) => {
+          const u = item.addressee || item.recipient || item.user || item;
+          return {
+            id: u.id,
+            name: `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.username || "User",
+            avatar: u.avatarUrl || u.profilePicture || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
+            role: u.headline || u.bio || "Member",
+            mutual: u.mutualFriendsCount || 0,
+          };
+        });
+        setSentRequests(sentData);
+      } catch {
+        setSentRequests([]);
+      }
 
       // Load friends
       const friendsRes = await friendshipService.getFriends();
@@ -236,8 +256,24 @@ export default function ConnectionsPage() {
     }
   };
 
+  const handleCancelSentRequest = async (user: DisplayUser) => {
+    setProcessingId(user.id);
+    try {
+      await friendshipService.cancelFriendRequest(user.id);
+      setSentRequests((prev) => prev.filter((r) => r.id !== user.id));
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("app:friendship_updated"));
+      }
+    } catch (err) {
+      console.error("Failed to cancel friend request:", err);
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
   const tabItems = [
     { id: "requests", label: "Requests", badge: requests.length },
+    { id: "sent", label: "Sent Requests", badge: sentRequests.length },
     { id: "suggestions", label: "Suggestions", badge: suggestions.length },
     { id: "connections", label: "Your Connections", badge: connections.length },
   ];
@@ -290,6 +326,7 @@ export default function ConnectionsPage() {
   };
 
   const filteredRequests = filterAndSortUsers(requests);
+  const filteredSentRequests = filterAndSortUsers(sentRequests);
   const filteredSuggestions = filterAndSortUsers(suggestions);
   const filteredConnections = filterAndSortUsers(connections);
 
@@ -686,6 +723,61 @@ export default function ConnectionsPage() {
                           </CardContent>
                         </Card>
                       ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {!loading && activeTab === "sent" && (
+                <div>
+                  {filteredSentRequests.length === 0 ? (
+                    <EmptyState
+                      icon={<Users size={32} className="text-slate-400" />}
+                      title={searchQuery ? "No matching sent requests" : "No sent requests"}
+                      description={
+                        searchQuery
+                          ? `No sent requests match "${searchQuery}".`
+                          : "You have no outgoing pending connection invites."
+                      }
+                    />
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between pb-1">
+                        <span className="text-xs font-semibold text-slate-300">
+                          Outgoing Invites ({filteredSentRequests.length})
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {filteredSentRequests.map((user) => (
+                          <Card key={user.id} hover>
+                            <CardContent className="space-y-4">
+                              <Link href={`/profile/${user.id}`} className="flex items-start gap-3 group">
+                                <Avatar src={user.avatar} name={user.name} size="lg" />
+                                <div className="space-y-0.5 flex-1 min-w-0">
+                                  <p className="text-sm font-bold text-white group-hover:text-blue-400 transition truncate">
+                                    {user.name}
+                                  </p>
+                                  <p className="text-xs text-slate-400 truncate">{user.role}</p>
+                                  <span className="text-[10px] text-amber-400 font-medium">Pending Response</span>
+                                </div>
+                              </Link>
+                              <div className="pt-2 border-t border-[#1f2937]/60">
+                                <Button
+                                  variant="secondary"
+                                  fullWidth
+                                  size="sm"
+                                  leftIcon={<X size={14} />}
+                                  loading={processingId === user.id}
+                                  onClick={() => handleCancelSentRequest(user)}
+                                  className="border border-[#1f2937] text-slate-300 hover:text-red-400"
+                                >
+                                  Cancel Request
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
