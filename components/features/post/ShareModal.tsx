@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Share2, Send, Link as LinkIcon, Check, Globe, MessageCircle, ExternalLink, Mail, MessageSquare, Search, X } from "lucide-react";
 import { shareService } from "@/services/shareService";
+import { postService } from "@/services/postService";
 import { Dialog, Button } from "@/components/ui";
 import { useChatStore } from "@/store/chatStore";
 import { usePostStore } from "@/store/postStore";
@@ -15,6 +16,7 @@ interface ShareModalProps {
 
 export default function ShareModal({ isOpen, onClose, postId, post, onShareSuccess }: ShareModalProps) {
   const [caption, setCaption] = useState("");
+  const [visibility, setVisibility] = useState<"PUBLIC" | "FRIENDS" | "ONLY_ME">("PUBLIC");
   const [sharing, setSharing] = useState(false);
   const [shared, setShared] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -92,7 +94,8 @@ export default function ShareModal({ isOpen, onClose, postId, post, onShareSucce
     setSharing(true);
 
     try {
-      await shareService.sharePost({ postId: targetPostId, caption });
+      await postService.sharePost(targetPostId, caption.trim() || undefined, visibility);
+      onShareSuccess?.();
     } catch (err) {
       console.warn("Backend share error, using optimistic local state:", err);
     }
@@ -328,7 +331,18 @@ export default function ShareModal({ isOpen, onClose, postId, post, onShareSucce
 
           <form onSubmit={handleShare} className="space-y-3 pt-2 border-t border-[#1f2937]">
             <div className="space-y-1.5">
-              <label className="text-slate-300 font-semibold block">Share to Feed Timeline</label>
+              <div className="flex items-center justify-between">
+                <label className="text-slate-300 font-semibold block">Share to Feed Timeline</label>
+                <select
+                  value={visibility}
+                  onChange={(e) => setVisibility(e.target.value as "PUBLIC" | "FRIENDS" | "ONLY_ME")}
+                  className="rounded-lg bg-[#0f172a] border border-[#1f2937] px-2 py-0.5 text-[11px] text-slate-300 focus:outline-hidden focus:border-blue-500"
+                >
+                  <option value="PUBLIC">Public</option>
+                  <option value="FRIENDS">Friends</option>
+                  <option value="ONLY_ME">Only Me</option>
+                </select>
+              </div>
               <textarea
                 value={caption}
                 onChange={(e) => setCaption(e.target.value)}

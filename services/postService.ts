@@ -39,9 +39,9 @@ export const postService = {
     return response.data;
   },
 
-  sharePost: async (id: string, content?: string) => {
+  sharePost: async (id: string, content?: string, visibility?: "PUBLIC" | "FRIENDS" | "ONLY_ME") => {
     const axios = await useAxios();
-    const response = await axios.post(`/posts/${id}/share`, { content });
+    const response = await axios.post(`/posts/${id}/share`, { content, visibility });
     return response.data;
   },
 };
