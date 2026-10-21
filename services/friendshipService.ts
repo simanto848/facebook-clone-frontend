@@ -27,6 +27,18 @@ export const friendshipService = {
     return response.data;
   },
 
+  getSentRequests: async (page = 1, pageSize = 20) => {
+    const axios = await useAxios();
+    const response = await axios.get(`/friendships/requests/sent?page=${page}&pageSize=${pageSize}`);
+    return response.data;
+  },
+
+  cancelFriendRequest: async (userId: string) => {
+    const axios = await useAxios();
+    const response = await axios.post(`/friendships/cancel/${userId}`);
+    return response.data;
+  },
+
   getSuggestions: async () => {
     const axios = await useAxios();
     const response = await axios.get("/users/suggestions");
