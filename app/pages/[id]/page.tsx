@@ -3,7 +3,7 @@
 import React, { useState, useEffect, use } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Flag, ThumbsUp, Plus, Globe, Send, MessageSquare, Image as ImageIcon, X, FileText, Info, ExternalLink, ShieldCheck, Mail, Share2, Check, Star, Clock, Phone } from "lucide-react";
+import { ArrowLeft, Flag, ThumbsUp, Plus, Globe, Send, MessageSquare, Image as ImageIcon, X, FileText, Info, ExternalLink, ShieldCheck, Mail, Share2, Check, Star, Clock, Phone, Edit3, Trash2 } from "lucide-react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
@@ -21,6 +21,7 @@ import {
   Loader,
   EmptyState,
   Dialog,
+  Input,
 } from "@/components/ui";
 
 interface PageProps {
@@ -49,6 +50,14 @@ export default function BrandPageDetailPage({ params }: PageProps) {
   const [postSuccess, setPostSuccess] = useState(false);
   const [postError, setPostError] = useState<string | null>(null);
   const [isReportOpen, setIsReportOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editCategory, setEditCategory] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editWebsite, setEditWebsite] = useState("");
+  const [updatingPage, setUpdatingPage] = useState(false);
+  const [deletingPage, setDeletingPage] = useState(false);
 
   // Reviews state
   const [reviews, setReviews] = useState([
@@ -113,6 +122,10 @@ export default function BrandPageDetailPage({ params }: PageProps) {
           setPage(data);
           setIsLiked(Boolean(data.isLiked));
           setLikesCount(data._count?.likes || data.likes || 0);
+          setEditName(data.name || "");
+          setEditCategory(data.category || "");
+          setEditDescription(data.description || "");
+          setEditWebsite(data.website || "");
         }
 
         const postsRes = await pageService.getPagePosts(id);
@@ -163,6 +176,44 @@ export default function BrandPageDetailPage({ params }: PageProps) {
       }
     } catch (err) {
       console.error("Failed to copy page link:", err);
+    }
+  };
+
+  const handleUpdatePage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editName.trim() || updatingPage) return;
+    setUpdatingPage(true);
+    try {
+      await pageService.updatePage(id, {
+        name: editName.trim(),
+        category: editCategory.trim(),
+        description: editDescription.trim(),
+        website: editWebsite.trim(),
+      });
+      setPage((prev: any) => ({
+        ...prev,
+        name: editName.trim(),
+        category: editCategory.trim(),
+        description: editDescription.trim(),
+        website: editWebsite.trim(),
+      }));
+      setIsEditModalOpen(false);
+    } catch (err) {
+      console.error("Failed to update page:", err);
+    } finally {
+      setUpdatingPage(false);
+    }
+  };
+
+  const handleDeletePage = async () => {
+    if (deletingPage) return;
+    setDeletingPage(true);
+    try {
+      await pageService.deletePage(id);
+      router.push("/pages");
+    } catch (err) {
+      console.error("Failed to delete page:", err);
+      setDeletingPage(false);
     }
   };
 
@@ -316,6 +367,26 @@ export default function BrandPageDetailPage({ params }: PageProps) {
                           className="border border-[#1f2937] text-slate-200 hover:text-white"
                         >
                           {copied ? "Copied!" : "Share"}
+                        </Button>
+
+                        <Button
+                          variant="secondary"
+                          size="md"
+                          leftIcon={<Edit3 size={15} className="text-blue-400" />}
+                          onClick={() => setIsEditModalOpen(true)}
+                          className="border border-[#1f2937] text-slate-200 hover:text-white"
+                        >
+                          Edit
+                        </Button>
+
+                        <Button
+                          variant="secondary"
+                          size="md"
+                          leftIcon={<Trash2 size={15} className="text-red-400" />}
+                          onClick={() => setIsDeleteModalOpen(true)}
+                          className="border border-[#1f2937] text-slate-200 hover:text-red-400"
+                        >
+                          Delete
                         </Button>
 
                         <Button
@@ -891,6 +962,100 @@ export default function BrandPageDetailPage({ params }: PageProps) {
               targetId={page?.id || id}
               targetType="PAGE"
             />
+
+            {/* Edit Page Modal */}
+            <Dialog
+              isOpen={isEditModalOpen}
+              onClose={() => setIsEditModalOpen(false)}
+              title="Edit Page Information"
+              description="Update your brand page profile details and links."
+            >
+              <form onSubmit={handleUpdatePage} className="space-y-4 mt-2">
+                <div>
+                  <label className="text-xs font-medium text-slate-300 block mb-1">Page Name</label>
+                  <Input
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    placeholder="Page Name"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-300 block mb-1">Category</label>
+                  <Input
+                    value={editCategory}
+                    onChange={(e) => setEditCategory(e.target.value)}
+                    placeholder="e.g. Technology, Community, Media"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-300 block mb-1">Description</label>
+                  <textarea
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                    placeholder="About this page..."
+                    rows={3}
+                    className="w-full rounded-xl bg-[#0f172a] border border-[#1f2937] px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-hidden focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-300 block mb-1">Website URL</label>
+                  <Input
+                    value={editWebsite}
+                    onChange={(e) => setEditWebsite(e.target.value)}
+                    placeholder="https://example.com"
+                  />
+                </div>
+                <div className="flex justify-end gap-2 pt-2 border-t border-[#1f2937]">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setIsEditModalOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    loading={updatingPage}
+                  >
+                    Save Changes
+                  </Button>
+                </div>
+              </form>
+            </Dialog>
+
+            {/* Delete Page Confirmation Modal */}
+            <Dialog
+              isOpen={isDeleteModalOpen}
+              onClose={() => setIsDeleteModalOpen(false)}
+              title="Delete Page"
+              description="Are you sure you want to permanently delete this page? This action cannot be undone."
+            >
+              <div className="pt-2">
+                <p className="text-xs text-slate-400">
+                  Deleting <strong className="text-white">{page?.name}</strong> will remove all published page posts, follower connections, and analytics.
+                </p>
+                <div className="flex justify-end gap-2 mt-6">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setIsDeleteModalOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="danger"
+                    loading={deletingPage}
+                    onClick={handleDeletePage}
+                  >
+                    Delete Page
+                  </Button>
+                </div>
+              </div>
+            </Dialog>
           </div>
         </main>
 
