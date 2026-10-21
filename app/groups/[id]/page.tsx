@@ -4,7 +4,7 @@ import React, { useState, useEffect, use } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Users, Shield, Plus, Check, UserPlus, Crown, MessageSquare, Info, ShieldCheck, Share2, Flag, Search, X, Clock, Flame, Filter, Pin, Megaphone, Pencil, Link as LinkIcon, Copy, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, Users, Shield, Plus, Check, UserPlus, Crown, MessageSquare, Info, ShieldCheck, Share2, Flag, Search, X, Clock, Flame, Filter, Pin, Megaphone, Pencil, Link as LinkIcon, Copy, Image as ImageIcon, Edit3, Trash2 } from "lucide-react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
@@ -23,6 +23,7 @@ import {
   Loader,
   Dialog,
   EmptyState,
+  Input,
 } from "@/components/ui";
 
 interface PageProps {
@@ -69,6 +70,13 @@ export default function GroupDetailPage({ params }: PageProps) {
   const [postContent, setPostContent] = useState("");
   const [isPosting, setIsPosting] = useState(false);
   const [postError, setPostError] = useState<string | null>(null);
+  const [isEditGroupOpen, setIsEditGroupOpen] = useState(false);
+  const [isDeleteGroupOpen, setIsDeleteGroupOpen] = useState(false);
+  const [editGroupName, setEditGroupName] = useState("");
+  const [editGroupDescription, setEditGroupDescription] = useState("");
+  const [editGroupPrivacy, setEditGroupPrivacy] = useState<"PUBLIC" | "PRIVATE">("PUBLIC");
+  const [updatingGroup, setUpdatingGroup] = useState(false);
+  const [deletingGroup, setDeletingGroup] = useState(false);
 
   useEffect(() => {
     try {
@@ -122,6 +130,9 @@ export default function GroupDetailPage({ params }: PageProps) {
         setGroup(data);
         setIsJoined(Boolean(data.isMember));
         setMemberCount(data._count?.members || data.membersCount || 1);
+        setEditGroupName(data.name || "");
+        setEditGroupDescription(data.description || "");
+        setEditGroupPrivacy(data.privacy === "PRIVATE" ? "PRIVATE" : "PUBLIC");
       }
 
       // Fetch dynamic group posts
@@ -162,6 +173,42 @@ export default function GroupDetailPage({ params }: PageProps) {
     fetchGroupData();
     fetchMembers();
   }, [id]);
+
+  const handleUpdateGroup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editGroupName.trim() || updatingGroup) return;
+    setUpdatingGroup(true);
+    try {
+      await groupService.updateGroup(id, {
+        name: editGroupName.trim(),
+        description: editGroupDescription.trim(),
+        privacy: editGroupPrivacy,
+      });
+      setGroup((prev: any) => ({
+        ...prev,
+        name: editGroupName.trim(),
+        description: editGroupDescription.trim(),
+        privacy: editGroupPrivacy,
+      }));
+      setIsEditGroupOpen(false);
+    } catch (err) {
+      console.error("Failed to update group:", err);
+    } finally {
+      setUpdatingGroup(false);
+    }
+  };
+
+  const handleDeleteGroup = async () => {
+    if (deletingGroup) return;
+    setDeletingGroup(true);
+    try {
+      await groupService.deleteGroup(id);
+      router.push("/groups");
+    } catch (err) {
+      console.error("Failed to delete group:", err);
+      setDeletingGroup(false);
+    }
+  };
 
   const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -380,6 +427,26 @@ export default function GroupDetailPage({ params }: PageProps) {
                         className="border border-[#1f2937] text-slate-200 hover:text-white"
                       >
                         Invite
+                      </Button>
+
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        leftIcon={<Edit3 size={14} className="text-blue-400" />}
+                        onClick={() => setIsEditGroupOpen(true)}
+                        className="border border-[#1f2937] text-slate-200 hover:text-white"
+                      >
+                        Edit
+                      </Button>
+
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        leftIcon={<Trash2 size={14} className="text-red-400" />}
+                        onClick={() => setIsDeleteGroupOpen(true)}
+                        className="border border-[#1f2937] text-slate-200 hover:text-red-400"
+                      >
+                        Delete
                       </Button>
 
                       <Button
@@ -1142,6 +1209,94 @@ export default function GroupDetailPage({ params }: PageProps) {
                       </span>
                       <Button variant="primary" size="sm" onClick={() => setIsInviteOpen(false)}>
                         Done
+                      </Button>
+                    </div>
+                  </div>
+                </Dialog>
+
+                {/* Edit Group Modal */}
+                <Dialog
+                  isOpen={isEditGroupOpen}
+                  onClose={() => setIsEditGroupOpen(false)}
+                  title="Edit Group Settings"
+                  description="Update community group details and privacy."
+                >
+                  <form onSubmit={handleUpdateGroup} className="space-y-4 mt-2">
+                    <div>
+                      <label className="text-xs font-medium text-slate-300 block mb-1">Group Name</label>
+                      <Input
+                        value={editGroupName}
+                        onChange={(e) => setEditGroupName(e.target.value)}
+                        placeholder="Group Name"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-slate-300 block mb-1">Privacy Setting</label>
+                      <select
+                        value={editGroupPrivacy}
+                        onChange={(e) => setEditGroupPrivacy(e.target.value as "PUBLIC" | "PRIVATE")}
+                        className="w-full rounded-xl bg-[#0f172a] border border-[#1f2937] px-3 py-2 text-xs text-white focus:outline-hidden focus:border-blue-500"
+                      >
+                        <option value="PUBLIC">Public - Anyone can see who is in the group and what they post</option>
+                        <option value="PRIVATE">Private - Only members can see who is in the group and what they post</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-slate-300 block mb-1">Description</label>
+                      <textarea
+                        value={editGroupDescription}
+                        onChange={(e) => setEditGroupDescription(e.target.value)}
+                        placeholder="What is this group about?"
+                        rows={3}
+                        className="w-full rounded-xl bg-[#0f172a] border border-[#1f2937] px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-hidden focus:border-blue-500"
+                      />
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2 border-t border-[#1f2937]">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => setIsEditGroupOpen(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="submit"
+                        variant="primary"
+                        loading={updatingGroup}
+                      >
+                        Save Changes
+                      </Button>
+                    </div>
+                  </form>
+                </Dialog>
+
+                {/* Delete Group Modal */}
+                <Dialog
+                  isOpen={isDeleteGroupOpen}
+                  onClose={() => setIsDeleteGroupOpen(false)}
+                  title="Delete Group"
+                  description="Are you sure you want to permanently delete this group? All members and posts will be removed."
+                >
+                  <div className="pt-2">
+                    <p className="text-xs text-slate-400">
+                      Deleting <strong className="text-white">{group?.name}</strong> is irreversible and will remove all discussions, media, and member connections.
+                    </p>
+                    <div className="flex justify-end gap-2 mt-6">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => setIsDeleteGroupOpen(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="danger"
+                        loading={deletingGroup}
+                        onClick={handleDeleteGroup}
+                      >
+                        Delete Group
                       </Button>
                     </div>
                   </div>
