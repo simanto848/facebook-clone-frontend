@@ -1,16 +1,34 @@
 import { useAxios } from "@/lib/useAxios";
 
+export interface NotificationQueryParams {
+  page?: number;
+  pageSize?: number;
+  unreadOnly?: boolean;
+}
+
 export const notificationService = {
-  getNotifications: async (page = 1, limit = 20) => {
+  getNotifications: async (page = 1, pageSize = 20, unreadOnly = false) => {
     const axios = await useAxios();
-    const response = await axios.get(`/notifications?page=${page}&limit=${limit}`);
+    const query = new URLSearchParams({
+      page: page.toString(),
+      pageSize: pageSize.toString(),
+    });
+    if (unreadOnly) {
+      query.append("unreadOnly", "true");
+    }
+    const response = await axios.get(`/notifications?${query.toString()}`);
     return response.data;
   },
 
   getUnreadCount: async () => {
     const axios = await useAxios();
-    const response = await axios.get("/notifications/unread-count");
-    return response.data;
+    try {
+      const response = await axios.get("/notifications?unreadOnly=true&pageSize=1");
+      const total = response.data?.meta?.totalItems ?? response.data?.total ?? 0;
+      return { data: { count: total }, count: total };
+    } catch {
+      return { data: { count: 0 }, count: 0 };
+    }
   },
 
   markAsRead: async (notificationIds?: string[]) => {
