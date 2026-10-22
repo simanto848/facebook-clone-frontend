@@ -60,15 +60,15 @@ export const userService = {
     return response.data;
   },
 
-  searchUsers: async (q: string, limit = 10) => {
+  searchUsers: async (q: string, pageSize = 10, page = 1) => {
     const axios = await useAxios();
-    const response = await axios.get(`/users/search?q=${encodeURIComponent(q)}&limit=${limit}`);
+    const response = await axios.get(`/users/search?q=${encodeURIComponent(q)}&pageSize=${pageSize}&page=${page}`);
     return response.data;
   },
 
-  getSuggestions: async (limit = 5) => {
+  getSuggestions: async (pageSize = 5, page = 1) => {
     const axios = await useAxios();
-    const response = await axios.get(`/users/suggestions?limit=${limit}`);
+    const response = await axios.get(`/users/suggestions?pageSize=${pageSize}&page=${page}`);
     return response.data;
   },
 
