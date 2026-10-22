@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Users, Shield, ShieldAlert, LogOut, UserMinus, X, Edit3, Check, UserPlus, Search, Link as LinkIcon } from "lucide-react";
+import { Users, Shield, ShieldAlert, LogOut, UserMinus, X, Edit3, Check, UserPlus, Search, Link as LinkIcon, Loader2 } from "lucide-react";
 import { Dialog, Button, Avatar, Badge, Input } from "@/components/ui";
 import { useAuthStore } from "@/store/authStore";
 import { useChatStore } from "@/store/chatStore";
@@ -45,6 +45,8 @@ export function GroupInfoModal({
   const [loadingFriends, setLoadingFriends] = useState(false);
   const [addingId, setAddingId] = useState<string | null>(null);
   const [customInput, setCustomInput] = useState("");
+  const [roleUpdatingId, setRoleUpdatingId] = useState<string | null>(null);
+  const [roleError, setRoleError] = useState<string | null>(null);
 
   const isCurrentUserAdmin = participants.some(
     (p) => p.id === currentUser?.id && p.role === "ADMIN"
@@ -119,14 +121,20 @@ export function GroupInfoModal({
 
   const handleToggleRole = async (userId: string, currentRole: "ADMIN" | "MEMBER") => {
     const newRole = currentRole === "ADMIN" ? "MEMBER" : "ADMIN";
-    setParticipants((prev) =>
-      prev.map((p) => (p.id === userId ? { ...p, role: newRole } : p))
-    );
+    setRoleUpdatingId(userId);
+    setRoleError(null);
     try {
       await groupChatService.updateParticipantRole(groupId, userId, newRole);
+      setParticipants((prev) =>
+        prev.map((p) => (p.id === userId ? { ...p, role: newRole } : p))
+      );
       await fetchConversations();
-    } catch (e) {
+    } catch (e: any) {
       console.error("Failed to update participant role:", e);
+      setRoleError(e?.response?.data?.message || e?.message || "Failed to update member role");
+      setTimeout(() => setRoleError(null), 3500);
+    } finally {
+      setRoleUpdatingId(null);
     }
   };
 
@@ -241,6 +249,13 @@ export function GroupInfoModal({
               </Button>
             )}
           </div>
+
+          {roleError && (
+            <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center gap-2">
+              <ShieldAlert size={14} className="shrink-0" />
+              <span>{roleError}</span>
+            </div>
+          )}
 
           {/* Member Search Bar */}
           {participants.length > 2 && (
@@ -384,18 +399,20 @@ export function GroupInfoModal({
                         {isCurrentUserAdmin && !isSelf ? (
                           <button
                             type="button"
+                            disabled={roleUpdatingId === member.id}
                             onClick={() => handleToggleRole(member.id, member.role)}
-                            className="cursor-pointer transition hover:opacity-80"
+                            className="cursor-pointer transition hover:opacity-80 disabled:opacity-50"
                             title={`Click to ${member.role === "ADMIN" ? "demote to Member" : "promote to Admin"}`}
                           >
                             {member.role === "ADMIN" ? (
                               <Badge variant="primary" className="flex items-center gap-1 bg-blue-600/20 text-blue-400 border border-blue-500/30">
-                                <Shield size={10} />
+                                {roleUpdatingId === member.id ? <Loader2 size={10} className="animate-spin" /> : <Shield size={10} />}
                                 <span>Admin</span>
                               </Badge>
                             ) : (
-                              <Badge variant="secondary" className="hover:bg-slate-700">
-                                Member
+                              <Badge variant="secondary" className="flex items-center gap-1 hover:bg-slate-700">
+                                {roleUpdatingId === member.id && <Loader2 size={10} className="animate-spin" />}
+                                <span>Member</span>
                               </Badge>
                             )}
                           </button>
