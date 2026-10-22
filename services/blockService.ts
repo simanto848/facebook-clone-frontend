@@ -1,9 +1,9 @@
 import { useAxios } from "@/lib/useAxios";
 
 export const blockService = {
-  getBlockedUsers: async () => {
+  getBlockedUsers: async ({ page = 1, pageSize = 20 }: { page?: number; pageSize?: number } = {}) => {
     const axios = await useAxios();
-    const response = await axios.get("/blocks");
+    const response = await axios.get(`/blocks?page=${page}&pageSize=${pageSize}`);
     return response.data;
   },
 
