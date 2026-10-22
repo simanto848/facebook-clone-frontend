@@ -10,12 +10,14 @@ export interface StoryItem {
   author: {
     name: string;
     avatar: string;
+    id?: string;
   };
   type: "text" | "image" | "video";
   content: string;
   views?: number;
   likes?: number;
   hasLiked?: boolean;
+  isOwner?: boolean;
 }
 
 interface StoryViewerModalProps {
@@ -260,11 +262,12 @@ export function StoryViewerModal({
             </button>
 
             <Badge variant="glass">{currentStory.type.toUpperCase()}</Badge>
-            {onDelete && (
+            {onDelete && (currentStory.isOwner ?? true) && (
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
+                  setIsPaused(true);
                   onDelete(currentStory.id);
                 }}
                 className="p-1 text-white/70 hover:text-rose-400 hover:bg-white/10 rounded-full transition cursor-pointer"

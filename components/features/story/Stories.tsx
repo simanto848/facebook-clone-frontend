@@ -158,6 +158,10 @@ export default function Stories() {
     views: s.views,
     likes: s.likes,
     hasLiked: s.hasLiked,
+    isOwner:
+      s.author.name === (authUser?.displayName || authUser?.username) ||
+      (s.author as any).id === authUser?.id ||
+      s.id.startsWith("story_"),
   }));
 
   return (
