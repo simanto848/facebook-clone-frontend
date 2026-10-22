@@ -244,6 +244,7 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
   const handleRsvp = async (status: "going" | "interested" | "declined") => {
     const prevStatus = rsvpStatus;
     const isTogglingOff = prevStatus === status;
+    const targetStatus: "going" | "interested" | "declined" = isTogglingOff ? "declined" : status;
     const newStatus = isTogglingOff ? null : status;
     setRsvpStatus(newStatus);
 
@@ -316,11 +317,14 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
     }, 3500);
 
     try {
-      if (newStatus) {
-        await eventService.rsvpEvent(id, newStatus);
+      const res = await eventService.rsvpEvent(id, targetStatus);
+      if (res?.data?.status) {
+        const returnedStatus = res.data.status.toLowerCase();
+        setRsvpStatus(returnedStatus === "declined" ? null : (returnedStatus as any));
       }
     } catch (err) {
       console.error("RSVP update error:", err);
+      setRsvpStatus(prevStatus);
     }
   };
 
