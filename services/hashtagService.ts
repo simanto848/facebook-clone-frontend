@@ -13,9 +13,10 @@ export const hashtagService = {
     return response.data;
   },
 
-  getHashtagPosts: async (tag: string, page = 1, limit = 10) => {
+  getHashtagPosts: async (tag: string, page = 1, pageSize = 20) => {
     const axios = await useAxios();
-    const response = await axios.get(`/hashtags/${encodeURIComponent(tag)}/posts?page=${page}&limit=${limit}`);
+    const cleanTag = tag.replace(/^#/, "");
+    const response = await axios.get(`/feed?hashtag=${encodeURIComponent(cleanTag)}&page=${page}&pageSize=${pageSize}`);
     return response.data;
   },
 };
