@@ -1,9 +1,16 @@
 import { useAxios } from "@/lib/useAxios";
 
 export const activityLogService = {
-  getActivityLogs: async (page = 1, limit = 20) => {
+  getActivityLogs: async (page = 1, pageSize = 20, action?: string) => {
     const axios = await useAxios();
-    const response = await axios.get(`/activity-logs?page=${page}&limit=${limit}`);
+    const query = new URLSearchParams({
+      page: String(page),
+      pageSize: String(pageSize),
+    });
+    if (action) {
+      query.set("action", action);
+    }
+    const response = await axios.get(`/activity-logs?${query.toString()}`);
     return response.data;
   },
 
