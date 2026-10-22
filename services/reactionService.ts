@@ -21,9 +21,9 @@ export const reactionService = {
     return response.data;
   },
 
-  getReactions: async (targetId: string, targetType: "POST" | "COMMENT", page = 1, limit = 20) => {
+  getReactions: async (targetId: string, targetType: "POST" | "COMMENT", page = 1, pageSize = 20) => {
     const axios = await useAxios();
-    const response = await axios.get(`/reactions?targetId=${targetId}&targetType=${targetType}&page=${page}&limit=${limit}`);
+    const response = await axios.get(`/reactions?targetId=${targetId}&targetType=${targetType}&page=${page}&pageSize=${pageSize}`);
     return response.data;
   },
 
