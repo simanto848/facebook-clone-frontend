@@ -28,9 +28,9 @@ export const messageService = {
     return response.data;
   },
 
-  getMessages: async (conversationId: string, page = 1, limit = 50) => {
+  getMessages: async (conversationId: string, page = 1, pageSize = 50) => {
     const axios = await useAxios();
-    const response = await axios.get(`/messages/${conversationId}?page=${page}&limit=${limit}`);
+    const response = await axios.get(`/messages/${conversationId}?page=${page}&pageSize=${pageSize}`);
     return response.data;
   },
 
