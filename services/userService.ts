@@ -84,6 +84,18 @@ export const userService = {
     return response.data;
   },
 
+  followUser: async (id: string) => {
+    const axios = await useAxios();
+    const response = await axios.post(`/users/${id}/follow`);
+    return response.data;
+  },
+
+  unfollowUser: async (id: string) => {
+    const axios = await useAxios();
+    const response = await axios.post(`/users/${id}/unfollow`);
+    return response.data;
+  },
+
   changePassword: async (payload: ChangePasswordPayload) => {
     const axios = await useAxios();
     const response = await axios.post("/users/me/change-password", payload);
