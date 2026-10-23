@@ -87,12 +87,13 @@ export default function ConnectionsPage() {
     try {
       // Load pending requests
       const reqRes = await friendshipService.getPendingRequests();
-      const reqData = (reqRes.data || reqRes || []).map((item: any) => {
-        const u = item.requester || item;
+      const rawReqs = reqRes.data?.requests || reqRes.data || reqRes || [];
+      const reqData = (Array.isArray(rawReqs) ? rawReqs : []).map((item: any) => {
+        const u = item.user || item.requester || item;
         return {
-          id: u.id,
-          name: `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.username || "User",
-          avatar: u.avatarUrl || u.profilePicture || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
+          id: u.id || item.id,
+          name: u.name || `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.username || "User",
+          avatar: u.avatarUrl || u.avatar || u.profilePicture || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
           role: u.headline || u.bio || "Member",
           mutual: u.mutualFriendsCount || 0,
         };
@@ -104,11 +105,11 @@ export default function ConnectionsPage() {
         const sentRes = await friendshipService.getSentRequests();
         const sentRaw = sentRes.data?.requests || sentRes.data || sentRes || [];
         const sentData = (Array.isArray(sentRaw) ? sentRaw : []).map((item: any) => {
-          const u = item.addressee || item.recipient || item.user || item;
+          const u = item.user || item.addressee || item.recipient || item;
           return {
-            id: u.id,
-            name: `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.username || "User",
-            avatar: u.avatarUrl || u.profilePicture || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
+            id: u.id || item.id,
+            name: u.name || `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.username || "User",
+            avatar: u.avatarUrl || u.avatar || u.profilePicture || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
             role: u.headline || u.bio || "Member",
             mutual: u.mutualFriendsCount || 0,
           };
@@ -120,13 +121,17 @@ export default function ConnectionsPage() {
 
       // Load friends
       const friendsRes = await friendshipService.getFriends();
-      const friendsData = (friendsRes.data || friendsRes || []).map((u: any) => ({
-        id: u.id,
-        name: `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.username || "User",
-        avatar: u.avatarUrl || u.profilePicture || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
-        role: u.headline || u.bio || "Developer",
-        mutual: u.mutualFriendsCount || 0,
-      }));
+      const rawFriends = friendsRes.data?.friends || friendsRes.data || friendsRes || [];
+      const friendsData = (Array.isArray(rawFriends) ? rawFriends : []).map((item: any) => {
+        const u = item.user || item.friend || item;
+        return {
+          id: u.id || item.friendshipId || item.id,
+          name: u.name || `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.username || "Friend",
+          avatar: u.avatarUrl || u.avatar || u.profilePicture || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
+          role: u.headline || u.bio || "Developer",
+          mutual: u.mutualFriendsCount || 0,
+        };
+      });
       setConnections(friendsData);
 
       // Load suggestions
