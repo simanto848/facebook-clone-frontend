@@ -4,6 +4,8 @@ export interface CreatePostInput {
   content: string;
   mediaUrls?: string[];
   privacy?: "PUBLIC" | "FRIENDS" | "ONLY_ME";
+  visibility?: "PUBLIC" | "FRIENDS" | "ONLY_ME";
+  mediaIds?: string[];
   groupId?: string;
   pageId?: string;
 }
@@ -24,7 +26,16 @@ export const postService = {
 
   createPost: async (payload: CreatePostInput) => {
     const axios = await useAxios();
-    const response = await axios.post("/posts", payload);
+    const visibility = payload.visibility || payload.privacy || "PUBLIC";
+    const body: Record<string, any> = {
+      content: payload.content,
+      visibility,
+      ...(payload.mediaIds ? { mediaIds: payload.mediaIds } : {}),
+      ...(payload.groupId ? { groupId: payload.groupId } : {}),
+      ...(payload.pageId ? { pageId: payload.pageId } : {}),
+      ...(payload.mediaUrls ? { mediaUrls: payload.mediaUrls } : {}),
+    };
+    const response = await axios.post("/posts", body);
     return response.data;
   },
 
@@ -36,7 +47,11 @@ export const postService = {
 
   updatePost: async (id: string, payload: Partial<CreatePostInput>) => {
     const axios = await useAxios();
-    const response = await axios.patch(`/posts/${id}`, payload);
+    const body: Record<string, any> = { ...payload };
+    if (payload.privacy && !payload.visibility) {
+      body.visibility = payload.privacy;
+    }
+    const response = await axios.patch(`/posts/${id}`, body);
     return response.data;
   },
 
