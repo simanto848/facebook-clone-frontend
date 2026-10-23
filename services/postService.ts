@@ -9,9 +9,16 @@ export interface CreatePostInput {
 }
 
 export const postService = {
-  getFeed: async (page = 1, limit = 10) => {
+  getFeed: async (page = 1, pageSize = 20, hashtag?: string) => {
     const axios = await useAxios();
-    const response = await axios.get(`/posts/feed?page=${page}&limit=${limit}`);
+    const query = new URLSearchParams({
+      page: String(page),
+      pageSize: String(pageSize),
+    });
+    if (hashtag) {
+      query.set("hashtag", hashtag);
+    }
+    const response = await axios.get(`/posts/feed?${query.toString()}`);
     return response.data;
   },
 
