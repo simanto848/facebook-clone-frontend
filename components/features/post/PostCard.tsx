@@ -186,9 +186,15 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
 
     try {
       if (nextSaved) {
-        await bookmarkService.createBookmark(post.id);
+        const res = await bookmarkService.createBookmark(post.id);
+        const createdId = res?.data?.id || res?.id;
+        if (createdId) {
+          (post as any).bookmarkId = createdId;
+        }
       } else {
-        await bookmarkService.deleteBookmark((post as any).bookmarkId || post.id);
+        const bookmarkId = (post as any).bookmarkId || post.id;
+        await bookmarkService.deleteBookmark(bookmarkId);
+        delete (post as any).bookmarkId;
       }
     } catch (err) {
       console.warn("Backend bookmark toggle error, fallback to local store:", err);
