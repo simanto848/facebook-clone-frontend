@@ -15,15 +15,15 @@ export interface FriendUser {
 }
 
 export const friendshipService = {
-  getFriends: async (limit = 20, page = 1) => {
+  getFriends: async (page = 1, pageSize = 20) => {
     const axios = await useAxios();
-    const response = await axios.get(`/friendships/friends?limit=${limit}&page=${page}`);
+    const response = await axios.get(`/friendships/friends?page=${page}&pageSize=${pageSize}`);
     return response.data;
   },
 
-  getPendingRequests: async () => {
+  getPendingRequests: async (page = 1, pageSize = 20) => {
     const axios = await useAxios();
-    const response = await axios.get("/friendships/requests/pending");
+    const response = await axios.get(`/friendships/requests/pending?page=${page}&pageSize=${pageSize}`);
     return response.data;
   },
 
