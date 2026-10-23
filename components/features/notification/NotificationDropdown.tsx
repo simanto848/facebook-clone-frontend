@@ -57,10 +57,11 @@ export function NotificationDropdown({ isOpen, onClose }: NotificationDropdownPr
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = async (customTab?: string) => {
     setLoading(true);
     try {
-      const res = await notificationService.getNotifications();
+      const tab = typeof customTab === "string" ? customTab : activeTab;
+      const res = await notificationService.getNotifications(1, 20, tab === "unread");
       const items = res?.data || res || [];
       if (Array.isArray(items) && items.length > 0) {
         const parsed: NotificationItem[] = items.map((n: any) => ({
@@ -83,9 +84,9 @@ export function NotificationDropdown({ isOpen, onClose }: NotificationDropdownPr
 
   useEffect(() => {
     if (isOpen) {
-      fetchNotifications();
+      fetchNotifications(activeTab);
     }
-  }, [isOpen]);
+  }, [isOpen, activeTab]);
 
   const handleMarkAllRead = async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));

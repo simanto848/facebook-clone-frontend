@@ -147,10 +147,12 @@ export default function NotificationsPage() {
     }
   };
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = async (customTab?: string) => {
     setLoading(true);
     try {
-      const res = await notificationService.getNotifications(1, 50);
+      const tab = typeof customTab === "string" ? customTab : activeTab;
+      const unreadOnly = tab === "unread";
+      const res = await notificationService.getNotifications(1, 50, unreadOnly);
       const items = res?.data || res || [];
       if (Array.isArray(items) && items.length > 0) {
         const parsed: NotificationItem[] = items.map((n: any) => ({
@@ -175,8 +177,8 @@ export default function NotificationsPage() {
   };
 
   useEffect(() => {
-    fetchNotifications();
-  }, []);
+    fetchNotifications(activeTab);
+  }, [activeTab]);
 
   const handleMarkAllAsRead = async () => {
     setMarkingAll(true);
@@ -332,7 +334,7 @@ export default function NotificationsPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={fetchNotifications}
+            onClick={() => fetchNotifications()}
             disabled={loading}
             className="flex items-center gap-2 rounded-xl text-xs"
           >
