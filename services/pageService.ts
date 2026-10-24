@@ -12,15 +12,15 @@ export interface CreatePageInput {
 }
 
 export const pageService = {
-  getOwnedPages: async () => {
+  getOwnedPages: async (page = 1, pageSize = 10) => {
     const axios = await useAxios();
-    const response = await axios.get("/pages/user/owned");
+    const response = await axios.get(`/pages/user/owned?page=${page}&pageSize=${pageSize}`);
     return response.data;
   },
 
-  getLikedPages: async () => {
+  getLikedPages: async (page = 1, pageSize = 10) => {
     const axios = await useAxios();
-    const response = await axios.get("/pages/user/liked");
+    const response = await axios.get(`/pages/user/liked?page=${page}&pageSize=${pageSize}`);
     return response.data;
   },
 
@@ -52,9 +52,9 @@ export const pageService = {
     return response.data;
   },
 
-  getPagePosts: async (id: string) => {
+  getPagePosts: async (id: string, page = 1, pageSize = 10) => {
     const axios = await useAxios();
-    const response = await axios.get(`/pages/${id}/posts`);
+    const response = await axios.get(`/pages/${id}/posts?page=${page}&pageSize=${pageSize}`);
     return response.data;
   },
 
