@@ -1,11 +1,11 @@
 import { useAxios } from "@/lib/useAxios";
 
 export const mentionService = {
-  getSuggestions: async (query: string, limit = 5) => {
+  getSuggestions: async (query: string, pageSize = 5) => {
     const axios = await useAxios();
     const endpoint = query.trim()
-      ? `/users/search?q=${encodeURIComponent(query)}&limit=${limit}`
-      : `/users/suggestions?limit=${limit}`;
+      ? `/users/search?q=${encodeURIComponent(query)}&pageSize=${pageSize}`
+      : `/users/suggestions?pageSize=${pageSize}`;
     const response = await axios.get(endpoint);
     return response.data;
   },
