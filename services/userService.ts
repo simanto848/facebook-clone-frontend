@@ -70,9 +70,9 @@ export const userService = {
     return response.data;
   },
 
-  getUserPosts: async (id: string, page = 1, limit = 10) => {
+  getUserPosts: async (id: string, page = 1, pageSize = 20) => {
     const axios = await useAxios();
-    const response = await axios.get(`/users/${id}/posts?page=${page}&limit=${limit}`);
+    const response = await axios.get(`/users/${id}/posts?page=${page}&pageSize=${pageSize}`);
     return response.data;
   },
 
@@ -88,15 +88,15 @@ export const userService = {
     return response.data;
   },
 
-  getFollowers: async (id: string) => {
+  getFollowers: async (id: string, page = 1, pageSize = 20) => {
     const axios = await useAxios();
-    const response = await axios.get(`/users/${id}/followers`);
+    const response = await axios.get(`/users/${id}/followers?page=${page}&pageSize=${pageSize}`);
     return response.data;
   },
 
-  getFollowing: async (id: string) => {
+  getFollowing: async (id: string, page = 1, pageSize = 20) => {
     const axios = await useAxios();
-    const response = await axios.get(`/users/${id}/following`);
+    const response = await axios.get(`/users/${id}/following?page=${page}&pageSize=${pageSize}`);
     return response.data;
   },
 
