@@ -23,6 +23,9 @@ export default function ActivityLogSection() {
   const [logs, setLogs] = useState<LogEntry[]>(fallbackLogs);
   const [loading, setLoading] = useState(false);
 
+  const [filterCategory, setFilterCategory] = useState<string>("ALL");
+  const [timeFilter, setTimeFilter] = useState<"ALL" | "24H" | "7D">("ALL");
+
   const getActionBadgeColor = (action: string) => {
     const upper = action.toUpperCase();
     if (upper.includes("LOGIN") || upper.includes("AUTH")) return "bg-emerald-600/20 text-emerald-400 border-emerald-500/30";
@@ -31,10 +34,11 @@ export default function ActivityLogSection() {
     return "bg-blue-600/20 text-blue-400 border-blue-500/30";
   };
 
-  const fetchLogs = async () => {
+  const fetchLogs = async (category = filterCategory) => {
     setLoading(true);
     try {
-      const res = await activityLogService.getActivityLogs();
+      const action = category !== "ALL" ? category : undefined;
+      const res = await activityLogService.getActivityLogs(1, 50, action);
       const raw = res?.data?.logs || res?.logs || res?.data || res || [];
       const items = Array.isArray(raw) ? raw : [];
       if (items.length > 0) {
@@ -54,8 +58,8 @@ export default function ActivityLogSection() {
   };
 
   useEffect(() => {
-    fetchLogs();
-  }, []);
+    fetchLogs(filterCategory);
+  }, [filterCategory]);
 
   const [isClearing, setIsClearing] = useState(false);
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
@@ -161,8 +165,7 @@ export default function ActivityLogSection() {
     },
   ];
 
-  const [filterCategory, setFilterCategory] = useState<string>("ALL");
-  const [timeFilter, setTimeFilter] = useState<"ALL" | "24H" | "7D">("ALL");
+
 
   const categories = [
     { id: "ALL", label: "All Events" },
