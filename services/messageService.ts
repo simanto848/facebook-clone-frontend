@@ -1,8 +1,9 @@
 import { useAxios } from "@/lib/useAxios";
 
 export interface SendMessagePayload {
-  content: string;
+  content?: string;
   mediaUrl?: string;
+  mediaId?: string;
 }
 
 export const messageService = {
@@ -12,9 +13,13 @@ export const messageService = {
     return response.data;
   },
 
-  createConversation: async (recipientId: string) => {
+  createConversation: async (recipientId: string | string[]) => {
     const axios = await useAxios();
-    const response = await axios.post("/messages/conversations", { recipientId });
+    const recipientIds = Array.isArray(recipientId) ? recipientId : [recipientId];
+    const response = await axios.post("/messages/conversations", {
+      isGroup: recipientIds.length > 1,
+      recipientIds,
+    });
     return response.data;
   },
 
