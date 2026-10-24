@@ -5,7 +5,9 @@ export interface CreatePageInput {
   category: string;
   description?: string;
   avatar?: string;
+  avatarUrl?: string;
   cover?: string;
+  coverUrl?: string;
   website?: string;
 }
 
@@ -30,7 +32,17 @@ export const pageService = {
 
   createPage: async (data: CreatePageInput) => {
     const axios = await useAxios();
-    const response = await axios.post("/pages", data);
+    const payload: Record<string, any> = {
+      name: data.name,
+      category: data.category,
+    };
+    if (data.description !== undefined) payload.description = data.description;
+    const avatar = data.avatarUrl || data.avatar;
+    if (avatar) payload.avatarUrl = avatar;
+    const cover = data.coverUrl || data.cover;
+    if (cover) payload.coverUrl = cover;
+
+    const response = await axios.post("/pages", payload);
     return response.data;
   },
 
@@ -46,9 +58,13 @@ export const pageService = {
     return response.data;
   },
 
-  createPagePost: async (id: string, content: string) => {
+  createPagePost: async (id: string, content: string, mediaIds?: string[]) => {
     const axios = await useAxios();
-    const response = await axios.post(`/pages/${id}/posts`, { content });
+    const payload: Record<string, any> = { content };
+    if (mediaIds && mediaIds.length > 0) {
+      payload.mediaIds = mediaIds;
+    }
+    const response = await axios.post(`/pages/${id}/posts`, payload);
     return response.data;
   },
 
