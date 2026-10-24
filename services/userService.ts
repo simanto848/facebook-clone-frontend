@@ -118,6 +118,18 @@ export const userService = {
     return response.data;
   },
 
+  blockUser: async (id: string) => {
+    const axios = await useAxios();
+    const response = await axios.post(`/users/${id}/block`);
+    return response.data;
+  },
+
+  unblockUser: async (id: string) => {
+    const axios = await useAxios();
+    const response = await axios.post(`/users/${id}/unblock`);
+    return response.data;
+  },
+
   deleteAccount: async () => {
     const axios = await useAxios();
     const response = await axios.delete("/users/me");
