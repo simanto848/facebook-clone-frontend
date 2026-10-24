@@ -11,15 +11,15 @@ export interface CreateGroupInput {
 }
 
 export const groupService = {
-  getJoinedGroups: async () => {
+  getJoinedGroups: async (page = 1, pageSize = 10) => {
     const axios = await useAxios();
-    const response = await axios.get("/groups/user/joined");
+    const response = await axios.get(`/groups/user/joined?page=${page}&pageSize=${pageSize}`);
     return response.data;
   },
 
-  getOwnedGroups: async () => {
+  getOwnedGroups: async (page = 1, pageSize = 10) => {
     const axios = await useAxios();
-    const response = await axios.get("/groups/user/owned");
+    const response = await axios.get(`/groups/user/owned?page=${page}&pageSize=${pageSize}`);
     return response.data;
   },
 
@@ -53,15 +53,15 @@ export const groupService = {
     return response.data;
   },
 
-  getGroupPosts: async (id: string) => {
+  getGroupPosts: async (id: string, page = 1, pageSize = 10) => {
     const axios = await useAxios();
-    const response = await axios.get(`/groups/${id}/posts`);
+    const response = await axios.get(`/groups/${id}/posts?page=${page}&pageSize=${pageSize}`);
     return response.data;
   },
 
-  getGroupMembers: async (id: string, page = 1, limit = 20) => {
+  getGroupMembers: async (id: string, page = 1, pageSize = 20) => {
     const axios = await useAxios();
-    const response = await axios.get(`/groups/${id}/members?page=${page}&limit=${limit}`);
+    const response = await axios.get(`/groups/${id}/members?page=${page}&pageSize=${pageSize}`);
     return response.data;
   },
 
