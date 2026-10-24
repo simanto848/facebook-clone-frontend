@@ -65,9 +65,13 @@ export const groupService = {
     return response.data;
   },
 
-  createGroupPost: async (id: string, content: string) => {
+  createGroupPost: async (id: string, content: string, mediaIds?: string[]) => {
     const axios = await useAxios();
-    const response = await axios.post(`/groups/${id}/posts`, { content });
+    const payload: Record<string, any> = { content };
+    if (mediaIds && mediaIds.length > 0) {
+      payload.mediaIds = mediaIds;
+    }
+    const response = await axios.post(`/groups/${id}/posts`, payload);
     return response.data;
   },
 
