@@ -4,8 +4,12 @@ export interface UpdateProfilePayload {
   name?: string;
   displayName?: string;
   bio?: string;
+  dateOfBirth?: string | Date;
+  gender?: string;
   avatar?: string;
+  avatarUrl?: string;
   coverPhoto?: string;
+  coverUrl?: string;
   location?: string;
   website?: string;
   isPrivate?: boolean;
@@ -26,7 +30,19 @@ export const userService = {
 
   updateProfile: async (payload: UpdateProfilePayload) => {
     const axios = await useAxios();
-    const response = await axios.patch("/users/me", payload);
+    // Server updateProfileSchema is strict: only accepts displayName, bio, dateOfBirth, gender, avatarUrl, coverUrl
+    const body: Record<string, any> = {};
+    const displayName = payload.displayName || payload.name;
+    if (displayName) body.displayName = displayName;
+    if (payload.bio !== undefined) body.bio = payload.bio;
+    if (payload.dateOfBirth !== undefined) body.dateOfBirth = payload.dateOfBirth;
+    if (payload.gender !== undefined) body.gender = payload.gender;
+    const avatar = payload.avatarUrl || payload.avatar;
+    if (avatar !== undefined) body.avatarUrl = avatar;
+    const cover = payload.coverUrl || payload.coverPhoto;
+    if (cover !== undefined) body.coverUrl = cover;
+
+    const response = await axios.patch("/users/me", body);
     return response.data;
   },
 
