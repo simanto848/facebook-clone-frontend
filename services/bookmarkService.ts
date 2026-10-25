@@ -7,9 +7,16 @@ export interface CreateBookmarkInput {
 }
 
 export const bookmarkService = {
-  createBookmark: async (payload: CreateBookmarkInput | string, category?: string) => {
+  createBookmark: async (payload: CreateBookmarkInput | string) => {
     const axios = await useAxios();
-    const data: Record<string, any> = typeof payload === "string" ? { postId: payload } : { ...payload };
+    const data: { postId?: string; pageId?: string; groupId?: string } = {};
+    if (typeof payload === "string") {
+      data.postId = payload;
+    } else {
+      if (payload.postId) data.postId = payload.postId;
+      if (payload.pageId) data.pageId = payload.pageId;
+      if (payload.groupId) data.groupId = payload.groupId;
+    }
     const response = await axios.post("/bookmarks", data);
     return response.data;
   },
