@@ -14,10 +14,11 @@ export interface CallHistoryQuery {
 
 export const callService = {
   // Audio calls
-  initiateAudioCall: async (payload: InitiateCallInput | string) => {
+  initiateAudioCall: async (payload: InitiateCallInput | { conversationId?: string; receiverId: string } | string) => {
     const axios = await useAxios();
-    const data = typeof payload === "string" ? { receiverId: payload } : payload;
-    const response = await axios.post("/audio-calls/initiate", data);
+    const receiverId = typeof payload === "string" ? payload : payload.receiverId;
+    const conversationId = typeof payload === "object" && payload.conversationId ? payload.conversationId : receiverId;
+    const response = await axios.post("/audio-calls/initiate", { conversationId, receiverId });
     return response.data;
   },
 
@@ -40,10 +41,11 @@ export const callService = {
   },
 
   // Video calls
-  initiateVideoCall: async (payload: InitiateCallInput | string) => {
+  initiateVideoCall: async (payload: InitiateCallInput | { conversationId?: string; receiverId: string } | string) => {
     const axios = await useAxios();
-    const data = typeof payload === "string" ? { receiverId: payload } : payload;
-    const response = await axios.post("/video-calls/initiate", data);
+    const receiverId = typeof payload === "string" ? payload : payload.receiverId;
+    const conversationId = typeof payload === "object" && payload.conversationId ? payload.conversationId : receiverId;
+    const response = await axios.post("/video-calls/initiate", { conversationId, receiverId });
     return response.data;
   },
 
