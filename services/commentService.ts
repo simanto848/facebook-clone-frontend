@@ -10,7 +10,14 @@ export interface CreateCommentInput {
 export const commentService = {
   createComment: async (payload: CreateCommentInput) => {
     const axios = await useAxios();
-    const response = await axios.post("/comments", payload);
+    const data: { postId: string; content: string; parentId?: string } = {
+      postId: payload.postId,
+      content: payload.content.trim().slice(0, 2000),
+    };
+    if (payload.parentId) {
+      data.parentId = payload.parentId;
+    }
+    const response = await axios.post("/comments", data);
     return response.data;
   },
 
