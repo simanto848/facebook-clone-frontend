@@ -26,14 +26,25 @@ export const postService = {
 
   createPost: async (payload: CreatePostInput) => {
     const axios = await useAxios();
+    if (payload.groupId) {
+      const response = await axios.post(`/groups/${payload.groupId}/posts`, {
+        content: payload.content,
+        ...(payload.mediaIds && payload.mediaIds.length > 0 ? { mediaIds: payload.mediaIds } : {}),
+      });
+      return response.data;
+    }
+    if (payload.pageId) {
+      const response = await axios.post(`/pages/${payload.pageId}/posts`, {
+        content: payload.content,
+        ...(payload.mediaIds && payload.mediaIds.length > 0 ? { mediaIds: payload.mediaIds } : {}),
+      });
+      return response.data;
+    }
     const visibility = payload.visibility || payload.privacy || "PUBLIC";
     const body: Record<string, any> = {
       content: payload.content,
       visibility,
-      ...(payload.mediaIds ? { mediaIds: payload.mediaIds } : {}),
-      ...(payload.groupId ? { groupId: payload.groupId } : {}),
-      ...(payload.pageId ? { pageId: payload.pageId } : {}),
-      ...(payload.mediaUrls ? { mediaUrls: payload.mediaUrls } : {}),
+      ...(payload.mediaIds && payload.mediaIds.length > 0 ? { mediaIds: payload.mediaIds } : {}),
     };
     const response = await axios.post("/posts", body);
     return response.data;
