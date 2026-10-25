@@ -72,14 +72,22 @@ export const eventService = {
   updateEvent: async (id: string, data: Partial<CreateEventInput>) => {
     const axios = await useAxios();
     const payload: Record<string, any> = {};
-    if (data.title !== undefined) payload.title = data.title;
-    if (data.description !== undefined) payload.description = data.description;
-    if (data.location !== undefined) payload.location = data.location;
+    if (data.title !== undefined) payload.title = data.title.trim().slice(0, 150);
+    if (data.description !== undefined) payload.description = data.description.trim().slice(0, 1000);
+    if (data.location !== undefined) payload.location = data.location.trim().slice(0, 255);
     if (data.startTime || data.startDate) {
-      payload.startTime = data.startTime || new Date(data.startDate!).toISOString();
+      const rawStart = data.startDate && data.startTime && !data.startTime.includes("T")
+        ? `${data.startDate}T${data.startTime}`
+        : data.startTime || data.startDate;
+      const startTime = toIsoString(rawStart);
+      if (startTime) payload.startTime = startTime;
     }
     if (data.endTime || data.endDate) {
-      payload.endTime = data.endTime || new Date(data.endDate!).toISOString();
+      const rawEnd = data.endDate && data.endTime && !data.endTime.includes("T")
+        ? `${data.endDate}T${data.endTime}`
+        : data.endTime || data.endDate;
+      const endTime = toIsoString(rawEnd);
+      if (endTime) payload.endTime = endTime;
     }
     if (data.coverUrl || data.coverImage) {
       payload.coverUrl = data.coverUrl || data.coverImage;
