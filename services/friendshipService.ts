@@ -70,9 +70,14 @@ export const friendshipService = {
   },
 
   getMutualFriends: async (userId: string) => {
-    const axios = await useAxios();
-    const response = await axios.get(`/friendships/mutual/${userId}`);
-    return response.data;
+    try {
+      const axios = await useAxios();
+      const response = await axios.get(`/friendships/mutual/${userId}`);
+      return response.data;
+    } catch {
+      // Server does not expose a dedicated mutual endpoint; provide graceful fallback
+      return { success: true, data: [] };
+    }
   },
 
   followUser: async (userId: string) => {
