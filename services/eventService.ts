@@ -13,6 +13,12 @@ export interface CreateEventInput {
   coverUrl?: string;
 }
 
+const toIsoString = (val?: string): string | undefined => {
+  if (!val) return undefined;
+  const d = new Date(val);
+  return isNaN(d.getTime()) ? undefined : d.toISOString();
+};
+
 export const eventService = {
   getEvents: async (page = 1, pageSize = 20) => {
     const axios = await useAxios();
@@ -28,18 +34,31 @@ export const eventService = {
 
   createEvent: async (data: CreateEventInput) => {
     const axios = await useAxios();
+    const rawStart = data.startDate && data.startTime && !data.startTime.includes("T")
+      ? `${data.startDate}T${data.startTime}`
+      : data.startTime || data.startDate || new Date().toISOString();
+    const startTime = toIsoString(rawStart) || new Date().toISOString();
+
     const payload: Record<string, any> = {
-      title: data.title,
-      description: data.description,
-      location: data.location,
-      startTime: data.startTime || (data.startDate ? new Date(data.startDate).toISOString() : new Date().toISOString()),
+      title: data.title.trim().slice(0, 150),
+      startTime,
     };
-    if (data.endTime || data.endDate) {
-      payload.endTime = data.endTime || new Date(data.endDate!).toISOString();
+    if (data.description) payload.description = data.description.trim().slice(0, 1000);
+    if (data.location) payload.location = data.location.trim().slice(0, 255);
+
+    const rawEnd = data.endDate && data.endTime && !data.endTime.includes("T")
+      ? `${data.endDate}T${data.endTime}`
+      : data.endTime || data.endDate;
+    const endTime = toIsoString(rawEnd);
+    if (endTime) {
+      payload.endTime = endTime;
     }
-    if (data.coverUrl || data.coverImage) {
-      payload.coverUrl = data.coverUrl || data.coverImage;
+
+    const cover = data.coverUrl || data.coverImage;
+    if (cover) {
+      payload.coverUrl = cover;
     }
+
     const response = await axios.post("/events", payload);
     return response.data;
   },
