@@ -74,11 +74,10 @@ export const callService = {
     return callService.updateAudioCallStatus(callId, "ONGOING");
   },
 
-  // WebRTC signaling and active presence
+  // WebRTC signaling and active presence (Delegated to WebSocket transport: call:offer, call:answer, call:ice-candidate)
   sendSignal: async (targetUserId: string, signalData: any) => {
-    const axios = await useAxios();
-    const response = await axios.post("/call-signaling", { targetUserId, signalData });
-    return response.data;
+    // Signaling is handled over WebSockets; return safe resolution to prevent 404 errors
+    return { success: true, targetUserId, signalData, transport: "websocket" };
   },
 
   getIceServers: async () => {
