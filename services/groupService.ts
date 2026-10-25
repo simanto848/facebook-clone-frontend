@@ -78,9 +78,11 @@ export const groupService = {
   updateGroup: async (id: string, data: Partial<CreateGroupInput>) => {
     const axios = await useAxios();
     const payload: Record<string, any> = {};
-    if (data.name !== undefined) payload.name = data.name;
-    if (data.description !== undefined) payload.description = data.description;
-    if (data.privacy !== undefined) payload.privacy = data.privacy;
+    if (data.name !== undefined) payload.name = data.name.trim();
+    if (data.description !== undefined) payload.description = data.description.trim();
+    if (data.privacy !== undefined) {
+      payload.privacy = data.privacy.toUpperCase() as "PUBLIC" | "PRIVATE";
+    }
     if (data.coverUrl !== undefined || data.cover !== undefined) {
       payload.coverUrl = data.coverUrl || data.cover || "";
     }
