@@ -21,7 +21,13 @@ export const storyService = {
 
   createStory: async (data: CreateStoryInput) => {
     const axios = await useAxios();
-    const response = await axios.post("/stories", data);
+    const payload: { mediaUrl: string; caption?: string } = {
+      mediaUrl: data.mediaUrl,
+    };
+    if (data.caption) {
+      payload.caption = data.caption.trim().slice(0, 255);
+    }
+    const response = await axios.post("/stories", payload);
     return response.data;
   },
 
