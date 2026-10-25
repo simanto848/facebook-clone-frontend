@@ -71,9 +71,9 @@ export const pageService = {
   updatePage: async (id: string, data: Partial<CreatePageInput> & { avatarUrl?: string; coverUrl?: string }) => {
     const axios = await useAxios();
     const payload: Record<string, any> = {};
-    if (data.name !== undefined) payload.name = data.name;
-    if (data.category !== undefined) payload.category = data.category;
-    if (data.description !== undefined) payload.description = data.description;
+    if (data.name !== undefined) payload.name = data.name.trim();
+    if (data.category !== undefined) payload.category = data.category.trim();
+    if (data.description !== undefined) payload.description = data.description.trim();
     if (data.avatarUrl !== undefined || data.avatar !== undefined) {
       payload.avatarUrl = data.avatarUrl || data.avatar || "";
     }
