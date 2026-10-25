@@ -7,9 +7,10 @@ export const hashtagService = {
     return response.data;
   },
 
-  searchHashtags: async (q: string) => {
+  searchHashtags: async (q: string, limit = 10) => {
     const axios = await useAxios();
-    const response = await axios.get(`/hashtags?q=${encodeURIComponent(q)}`);
+    const cleanQ = q.trim();
+    const response = await axios.get(`/hashtags?q=${encodeURIComponent(cleanQ)}&limit=${limit}`);
     return response.data;
   },
 
