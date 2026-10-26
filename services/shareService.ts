@@ -12,8 +12,10 @@ export interface SharePostInput {
 export const shareService = {
   sharePost: async (payload: SharePostInput) => {
     const axios = await useAxios();
+    const rawContent = payload.content || payload.caption || "";
+    const cleanContent = rawContent.trim().slice(0, 2000);
     const response = await axios.post(`/posts/${payload.postId}/share`, {
-      content: payload.content || payload.caption || "",
+      content: cleanContent,
       visibility: payload.visibility || "FRIENDS",
     });
     return response.data;
@@ -21,7 +23,9 @@ export const shareService = {
 
   getPostShares: async (postId: string, page = 1, pageSize = 20) => {
     const axios = await useAxios();
-    const response = await axios.get(`/shares/post/${postId}?page=${page}&pageSize=${pageSize}`);
+    const validPage = Math.max(1, page);
+    const validPageSize = Math.max(1, Math.min(pageSize, 50));
+    const response = await axios.get(`/shares/post/${postId}?page=${validPage}&pageSize=${validPageSize}`);
     return response.data;
   },
 
@@ -33,7 +37,9 @@ export const shareService = {
 
   getUserShares: async (userId: string, page = 1, pageSize = 20) => {
     const axios = await useAxios();
-    const response = await axios.get(`/shares/user/${userId}?page=${page}&pageSize=${pageSize}`);
+    const validPage = Math.max(1, page);
+    const validPageSize = Math.max(1, Math.min(pageSize, 50));
+    const response = await axios.get(`/shares/user/${userId}?page=${validPage}&pageSize=${validPageSize}`);
     return response.data;
   },
 };
