@@ -41,7 +41,14 @@ export const messageService = {
 
   sendMessage: async (conversationId: string, payload: SendMessagePayload) => {
     const axios = await useAxios();
-    const response = await axios.post(`/messages/${conversationId}`, payload);
+    const body: { content?: string; mediaId?: string } = {};
+    if (payload.content) {
+      body.content = payload.content.trim().slice(0, 5000);
+    }
+    if (payload.mediaId) {
+      body.mediaId = payload.mediaId;
+    }
+    const response = await axios.post(`/messages/${conversationId}`, body);
     return response.data;
   },
 
