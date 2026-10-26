@@ -76,6 +76,20 @@ export const callService = {
     return callService.updateAudioCallStatus(callId, "ONGOING");
   },
 
+  endVideoCall: async (callId: string, duration = 0) => {
+    return callService.updateVideoCallStatus(callId, "COMPLETED", duration);
+  },
+
+  answerVideoCall: async (callId: string) => {
+    return callService.updateVideoCallStatus(callId, "ONGOING");
+  },
+
+  rejectCall: async (callId: string, isVideo = false) => {
+    return isVideo
+      ? callService.updateVideoCallStatus(callId, "REJECTED")
+      : callService.updateAudioCallStatus(callId, "REJECTED");
+  },
+
   // WebRTC signaling and active presence (Delegated to WebSocket transport: call:offer, call:answer, call:ice-candidate)
   sendSignal: async (targetUserId: string, signalData: any) => {
     // Signaling is handled over WebSockets; return safe resolution to prevent 404 errors
