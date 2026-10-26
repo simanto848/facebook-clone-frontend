@@ -35,7 +35,8 @@ export const commentService = {
 
   updateComment: async (commentId: string, content: string) => {
     const axios = await useAxios();
-    const response = await axios.patch(`/comments/${commentId}`, { content });
+    const cleanContent = content.trim().slice(0, 2000);
+    const response = await axios.patch(`/comments/${commentId}`, { content: cleanContent });
     return response.data;
   },
 
