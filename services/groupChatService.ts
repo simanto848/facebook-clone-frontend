@@ -18,7 +18,8 @@ export const groupChatService = {
 
   updateGroupChatTitle: async (conversationId: string, title: string) => {
     const axios = await useAxios();
-    const response = await axios.patch(`/group-chats/${conversationId}`, { title });
+    const cleanTitle = title.trim().slice(0, 120);
+    const response = await axios.patch(`/group-chats/${conversationId}`, { title: cleanTitle });
     return response.data;
   },
 
@@ -42,7 +43,9 @@ export const groupChatService = {
 
   updateParticipantRole: async (conversationId: string, userId: string, role: string) => {
     const axios = await useAxios();
-    const response = await axios.patch(`/group-chats/${conversationId}/participants/${userId}/role`, { role });
+    const upperRole = role.toUpperCase().trim();
+    const validRole = upperRole === "ADMIN" ? "ADMIN" : "MEMBER";
+    const response = await axios.patch(`/group-chats/${conversationId}/participants/${userId}/role`, { role: validRole });
     return response.data;
   },
 };
