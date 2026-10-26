@@ -65,7 +65,13 @@ export const eventService = {
 
   rsvpEvent: async (id: string, status: "going" | "interested" | "declined" | string) => {
     const axios = await useAxios();
-    const response = await axios.post(`/events/${id}/rsvp`, { status: status.toLowerCase() });
+    const lower = (status || "").toLowerCase().trim();
+    const validStatus = lower === "going" || lower === "attending"
+      ? "going"
+      : lower === "declined" || lower === "not_going"
+      ? "declined"
+      : "interested";
+    const response = await axios.post(`/events/${id}/rsvp`, { status: validStatus });
     return response.data;
   },
 
