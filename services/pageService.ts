@@ -14,13 +14,17 @@ export interface CreatePageInput {
 export const pageService = {
   getOwnedPages: async (page = 1, pageSize = 10) => {
     const axios = await useAxios();
-    const response = await axios.get(`/pages/user/owned?page=${page}&pageSize=${pageSize}`);
+    const validPage = Math.max(1, page);
+    const validPageSize = Math.max(1, Math.min(pageSize, 50));
+    const response = await axios.get(`/pages/user/owned?page=${validPage}&pageSize=${validPageSize}`);
     return response.data;
   },
 
   getLikedPages: async (page = 1, pageSize = 10) => {
     const axios = await useAxios();
-    const response = await axios.get(`/pages/user/liked?page=${page}&pageSize=${pageSize}`);
+    const validPage = Math.max(1, page);
+    const validPageSize = Math.max(1, Math.min(pageSize, 50));
+    const response = await axios.get(`/pages/user/liked?page=${validPage}&pageSize=${validPageSize}`);
     return response.data;
   },
 
@@ -33,10 +37,12 @@ export const pageService = {
   createPage: async (data: CreatePageInput) => {
     const axios = await useAxios();
     const payload: Record<string, any> = {
-      name: data.name,
-      category: data.category,
+      name: data.name.trim().slice(0, 100),
+      category: data.category.trim().slice(0, 50),
     };
-    if (data.description !== undefined) payload.description = data.description;
+    if (data.description !== undefined) {
+      payload.description = data.description.trim().slice(0, 1000);
+    }
     const avatar = data.avatarUrl || data.avatar;
     if (avatar) payload.avatarUrl = avatar;
     const cover = data.coverUrl || data.cover;
@@ -54,7 +60,9 @@ export const pageService = {
 
   getPagePosts: async (id: string, page = 1, pageSize = 10) => {
     const axios = await useAxios();
-    const response = await axios.get(`/pages/${id}/posts?page=${page}&pageSize=${pageSize}`);
+    const validPage = Math.max(1, page);
+    const validPageSize = Math.max(1, Math.min(pageSize, 50));
+    const response = await axios.get(`/pages/${id}/posts?page=${validPage}&pageSize=${validPageSize}`);
     return response.data;
   },
 
