@@ -19,7 +19,15 @@ export interface LoginPayload {
 export const authService = {
   register: async (payload: RegisterPayload) => {
     const axios = await useAxios();
-    const response = await axios.post("/auth/register", payload);
+    const cleanPayload: RegisterPayload = {
+      email: payload.email.trim(),
+      username: payload.username.trim(),
+      password: payload.password,
+      displayName: payload.displayName.trim(),
+      dateOfBirth: payload.dateOfBirth,
+      gender: payload.gender.trim(),
+    };
+    const response = await axios.post("/auth/register", cleanPayload);
     return response.data;
   },
 
@@ -30,13 +38,13 @@ export const authService = {
       password: payload.password,
     };
     if (payload.emailOrUsername) {
-      body.emailOrUsername = payload.emailOrUsername;
+      body.emailOrUsername = payload.emailOrUsername.trim();
     } else if (payload.username && !payload.email) {
-      body.username = payload.username;
+      body.username = payload.username.trim();
     } else if (payload.email && payload.email.includes("@")) {
-      body.email = payload.email;
+      body.email = payload.email.trim();
     } else if (identifier) {
-      body.emailOrUsername = identifier;
+      body.emailOrUsername = identifier.trim();
     }
     const response = await axios.post("/auth/login", body);
     return response.data;
@@ -44,19 +52,22 @@ export const authService = {
 
   verifyEmail: async (token: string) => {
     const axios = await useAxios();
-    const response = await axios.post("/auth/verify-email", { token });
+    const cleanToken = (token || "").trim();
+    const response = await axios.post("/auth/verify-email", { token: cleanToken });
     return response.data;
   },
 
   forgotPassword: async (email: string) => {
     const axios = await useAxios();
-    const response = await axios.post("/auth/forgot-password", { email });
+    const cleanEmail = (email || "").trim();
+    const response = await axios.post("/auth/forgot-password", { email: cleanEmail });
     return response.data;
   },
 
   resetPassword: async (token: string, newPassword: string) => {
     const axios = await useAxios();
-    const response = await axios.post("/auth/reset-password", { token, newPassword });
+    const cleanToken = (token || "").trim();
+    const response = await axios.post("/auth/reset-password", { token: cleanToken, newPassword });
     return response.data;
   },
 
