@@ -72,31 +72,42 @@ export const userService = {
 
   getUserPosts: async (id: string, page = 1, pageSize = 20) => {
     const axios = await useAxios();
-    const response = await axios.get(`/users/${id}/posts?page=${page}&pageSize=${pageSize}`);
+    const validPage = Math.max(1, page);
+    const validPageSize = Math.max(1, Math.min(pageSize, 50));
+    const response = await axios.get(`/users/${id}/posts?page=${validPage}&pageSize=${validPageSize}`);
     return response.data;
   },
 
   searchUsers: async (q: string, pageSize = 10, page = 1) => {
     const axios = await useAxios();
-    const response = await axios.get(`/users/search?q=${encodeURIComponent(q)}&pageSize=${pageSize}&page=${page}`);
+    const cleanQ = (q || "").trim();
+    const validPage = Math.max(1, page);
+    const validPageSize = Math.max(1, Math.min(pageSize, 50));
+    const response = await axios.get(`/users/search?q=${encodeURIComponent(cleanQ)}&pageSize=${validPageSize}&page=${validPage}`);
     return response.data;
   },
 
   getSuggestions: async (pageSize = 5, page = 1) => {
     const axios = await useAxios();
-    const response = await axios.get(`/users/suggestions?pageSize=${pageSize}&page=${page}`);
+    const validPage = Math.max(1, page);
+    const validPageSize = Math.max(1, Math.min(pageSize, 50));
+    const response = await axios.get(`/users/suggestions?pageSize=${validPageSize}&page=${validPage}`);
     return response.data;
   },
 
   getFollowers: async (id: string, page = 1, pageSize = 20) => {
     const axios = await useAxios();
-    const response = await axios.get(`/users/${id}/followers?page=${page}&pageSize=${pageSize}`);
+    const validPage = Math.max(1, page);
+    const validPageSize = Math.max(1, Math.min(pageSize, 50));
+    const response = await axios.get(`/users/${id}/followers?page=${validPage}&pageSize=${validPageSize}`);
     return response.data;
   },
 
   getFollowing: async (id: string, page = 1, pageSize = 20) => {
     const axios = await useAxios();
-    const response = await axios.get(`/users/${id}/following?page=${page}&pageSize=${pageSize}`);
+    const validPage = Math.max(1, page);
+    const validPageSize = Math.max(1, Math.min(pageSize, 50));
+    const response = await axios.get(`/users/${id}/following?page=${validPage}&pageSize=${validPageSize}`);
     return response.data;
   },
 
