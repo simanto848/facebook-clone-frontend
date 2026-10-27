@@ -17,31 +17,40 @@ export interface FriendUser {
 export const friendshipService = {
   getFriends: async (page = 1, pageSize = 20) => {
     const axios = await useAxios();
-    const response = await axios.get(`/friendships/friends?page=${page}&pageSize=${pageSize}`);
+    const validPage = Math.max(1, page);
+    const validPageSize = Math.max(1, Math.min(pageSize, 50));
+    const response = await axios.get(`/friendships/friends?page=${validPage}&pageSize=${validPageSize}`);
     return response.data;
   },
 
   getPendingRequests: async (page = 1, pageSize = 20) => {
     const axios = await useAxios();
-    const response = await axios.get(`/friendships/requests/pending?page=${page}&pageSize=${pageSize}`);
+    const validPage = Math.max(1, page);
+    const validPageSize = Math.max(1, Math.min(pageSize, 50));
+    const response = await axios.get(`/friendships/requests/pending?page=${validPage}&pageSize=${validPageSize}`);
     return response.data;
   },
 
   getSentRequests: async (page = 1, pageSize = 20) => {
     const axios = await useAxios();
-    const response = await axios.get(`/friendships/requests/sent?page=${page}&pageSize=${pageSize}`);
+    const validPage = Math.max(1, page);
+    const validPageSize = Math.max(1, Math.min(pageSize, 50));
+    const response = await axios.get(`/friendships/requests/sent?page=${validPage}&pageSize=${validPageSize}`);
     return response.data;
   },
 
   cancelFriendRequest: async (userId: string) => {
     const axios = await useAxios();
-    const response = await axios.post(`/friendships/cancel/${userId}`);
+    const cleanId = (userId || "").trim();
+    const response = await axios.post(`/friendships/cancel/${cleanId}`);
     return response.data;
   },
 
-  getSuggestions: async () => {
+  getSuggestions: async (page = 1, pageSize = 20) => {
     const axios = await useAxios();
-    const response = await axios.get("/users/suggestions");
+    const validPage = Math.max(1, page);
+    const validPageSize = Math.max(1, Math.min(pageSize, 50));
+    const response = await axios.get(`/users/suggestions?page=${validPage}&pageSize=${validPageSize}`);
     return response.data;
   },
 
