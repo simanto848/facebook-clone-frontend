@@ -13,13 +13,17 @@ export interface CreateGroupInput {
 export const groupService = {
   getJoinedGroups: async (page = 1, pageSize = 10) => {
     const axios = await useAxios();
-    const response = await axios.get(`/groups/user/joined?page=${page}&pageSize=${pageSize}`);
+    const validPage = Math.max(1, page);
+    const validPageSize = Math.max(1, Math.min(pageSize, 50));
+    const response = await axios.get(`/groups/user/joined?page=${validPage}&pageSize=${validPageSize}`);
     return response.data;
   },
 
   getOwnedGroups: async (page = 1, pageSize = 10) => {
     const axios = await useAxios();
-    const response = await axios.get(`/groups/user/owned?page=${page}&pageSize=${pageSize}`);
+    const validPage = Math.max(1, page);
+    const validPageSize = Math.max(1, Math.min(pageSize, 50));
+    const response = await axios.get(`/groups/user/owned?page=${validPage}&pageSize=${validPageSize}`);
     return response.data;
   },
 
@@ -32,9 +36,9 @@ export const groupService = {
   createGroup: async (data: CreateGroupInput) => {
     const axios = await useAxios();
     const payload = {
-      name: data.name,
-      description: data.description,
-      privacy: data.privacy || "PUBLIC",
+      name: data.name.trim().slice(0, 100),
+      description: data.description ? data.description.trim().slice(0, 1000) : undefined,
+      privacy: data.privacy ? (data.privacy.toUpperCase() as "PUBLIC" | "PRIVATE") : "PUBLIC",
       coverUrl: data.coverUrl || data.cover || "",
     };
     const response = await axios.post("/groups", payload);
@@ -55,13 +59,17 @@ export const groupService = {
 
   getGroupPosts: async (id: string, page = 1, pageSize = 10) => {
     const axios = await useAxios();
-    const response = await axios.get(`/groups/${id}/posts?page=${page}&pageSize=${pageSize}`);
+    const validPage = Math.max(1, page);
+    const validPageSize = Math.max(1, Math.min(pageSize, 50));
+    const response = await axios.get(`/groups/${id}/posts?page=${validPage}&pageSize=${validPageSize}`);
     return response.data;
   },
 
   getGroupMembers: async (id: string, page = 1, pageSize = 20) => {
     const axios = await useAxios();
-    const response = await axios.get(`/groups/${id}/members?page=${page}&pageSize=${pageSize}`);
+    const validPage = Math.max(1, page);
+    const validPageSize = Math.max(1, Math.min(pageSize, 50));
+    const response = await axios.get(`/groups/${id}/members?page=${validPage}&pageSize=${validPageSize}`);
     return response.data;
   },
 
