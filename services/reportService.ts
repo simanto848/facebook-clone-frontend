@@ -27,7 +27,8 @@ export const reportService = {
     const payload = {
       ...data,
       targetType: normalizedType,
-      reason: data.reason ? data.reason.slice(0, 50) : "SPAM",
+      reason: data.reason ? data.reason.trim().slice(0, 50) : "SPAM",
+      ...(data.details ? { details: data.details.trim() } : {}),
     };
     const response = await axios.post("/reports", payload);
     return response.data;
@@ -42,9 +43,11 @@ export const reportService = {
         rawType === "COMMENT" ? "COMMENT" : rawType === "USER" ? "USER" : "POST";
       query.append("targetType", normalizedType);
     }
-    if (params?.status) query.append("status", params.status);
-    if (params?.page) query.append("page", params.page.toString());
-    if (params?.pageSize) query.append("pageSize", params.pageSize.toString());
+    if (params?.status) query.append("status", params.status.toUpperCase());
+    const validPage = Math.max(1, params?.page ?? 1);
+    const validPageSize = Math.max(1, Math.min(params?.pageSize ?? 20, 50));
+    query.append("page", validPage.toString());
+    query.append("pageSize", validPageSize.toString());
     const queryString = query.toString();
     const response = await axios.get(`/reports${queryString ? `?${queryString}` : ""}`);
     return response.data;
@@ -58,7 +61,8 @@ export const reportService = {
 
   updateReportStatus: async (id: string, status: ReportStatus) => {
     const axios = await useAxios();
-    const response = await axios.patch(`/reports/${id}/status`, { status });
+    const upperStatus = status.toUpperCase() as ReportStatus;
+    const response = await axios.patch(`/reports/${id}/status`, { status: upperStatus });
     return response.data;
   },
 };
