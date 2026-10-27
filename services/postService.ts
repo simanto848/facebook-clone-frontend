@@ -13,12 +13,17 @@ export interface CreatePostInput {
 export const postService = {
   getFeed: async (page = 1, pageSize = 20, hashtag?: string) => {
     const axios = await useAxios();
+    const validPage = Math.max(1, page);
+    const validPageSize = Math.max(1, Math.min(pageSize, 50));
     const query = new URLSearchParams({
-      page: String(page),
-      pageSize: String(pageSize),
+      page: String(validPage),
+      pageSize: String(validPageSize),
     });
     if (hashtag) {
-      query.set("hashtag", hashtag);
+      const cleanTag = hashtag.replace(/^#+/, "").trim();
+      if (cleanTag) {
+        query.set("hashtag", cleanTag);
+      }
     }
     const response = await axios.get(`/posts/feed?${query.toString()}`);
     return response.data;
@@ -58,9 +63,16 @@ export const postService = {
 
   updatePost: async (id: string, payload: Partial<CreatePostInput>) => {
     const axios = await useAxios();
-    const body: Record<string, any> = { ...payload };
-    if (payload.privacy && !payload.visibility) {
-      body.visibility = payload.privacy;
+    const body: Record<string, any> = {};
+    if (payload.content !== undefined) {
+      body.content = payload.content.trim().slice(0, 5000);
+    }
+    const visibility = payload.visibility || payload.privacy;
+    if (visibility) {
+      body.visibility = visibility;
+    }
+    if (payload.mediaIds && payload.mediaIds.length > 0) {
+      body.mediaIds = payload.mediaIds;
     }
     const response = await axios.patch(`/posts/${id}`, body);
     return response.data;
