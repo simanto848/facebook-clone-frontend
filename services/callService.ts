@@ -16,54 +16,74 @@ export const callService = {
   // Audio calls
   initiateAudioCall: async (payload: InitiateCallInput | { conversationId?: string; receiverId: string } | string) => {
     const axios = await useAxios();
-    const receiverId = typeof payload === "string" ? payload : payload.receiverId;
-    const conversationId = typeof payload === "object" && payload.conversationId ? payload.conversationId : receiverId;
+    const rawReceiverId = typeof payload === "string" ? payload : payload.receiverId;
+    const receiverId = (rawReceiverId || "").trim();
+    const rawConvId = typeof payload === "object" && payload.conversationId ? payload.conversationId : receiverId;
+    const conversationId = (rawConvId || "").trim();
     const response = await axios.post("/audio-calls/initiate", { conversationId, receiverId });
     return response.data;
   },
 
   getAudioCallHistory: async (page = 1, pageSize = 20) => {
     const axios = await useAxios();
-    const response = await axios.get(`/audio-calls/history?page=${page}&pageSize=${pageSize}`);
+    const validPage = Math.max(1, page);
+    const validPageSize = Math.max(1, Math.min(pageSize, 50));
+    const response = await axios.get(`/audio-calls/history?page=${validPage}&pageSize=${validPageSize}`);
     return response.data;
   },
 
   getAudioCallDetails: async (callId: string) => {
+    const cleanId = (callId || "").trim();
     const axios = await useAxios();
-    const response = await axios.get(`/audio-calls/${callId}`);
+    const response = await axios.get(`/audio-calls/${cleanId}`);
     return response.data;
   },
 
   updateAudioCallStatus: async (callId: string, status: CallStatus, duration?: number) => {
+    const cleanId = (callId || "").trim();
     const axios = await useAxios();
-    const response = await axios.patch(`/audio-calls/${callId}/status`, { status, duration });
+    const payload: { status: CallStatus; duration?: number } = { status };
+    if (typeof duration === "number" && !isNaN(duration)) {
+      payload.duration = Math.max(0, Math.round(duration));
+    }
+    const response = await axios.patch(`/audio-calls/${cleanId}/status`, payload);
     return response.data;
   },
 
   // Video calls
   initiateVideoCall: async (payload: InitiateCallInput | { conversationId?: string; receiverId: string } | string) => {
     const axios = await useAxios();
-    const receiverId = typeof payload === "string" ? payload : payload.receiverId;
-    const conversationId = typeof payload === "object" && payload.conversationId ? payload.conversationId : receiverId;
+    const rawReceiverId = typeof payload === "string" ? payload : payload.receiverId;
+    const receiverId = (rawReceiverId || "").trim();
+    const rawConvId = typeof payload === "object" && payload.conversationId ? payload.conversationId : receiverId;
+    const conversationId = (rawConvId || "").trim();
     const response = await axios.post("/video-calls/initiate", { conversationId, receiverId });
     return response.data;
   },
 
   getVideoCallHistory: async (page = 1, pageSize = 20) => {
     const axios = await useAxios();
-    const response = await axios.get(`/video-calls/history?page=${page}&pageSize=${pageSize}`);
+    const validPage = Math.max(1, page);
+    const validPageSize = Math.max(1, Math.min(pageSize, 50));
+    const response = await axios.get(`/video-calls/history?page=${validPage}&pageSize=${validPageSize}`);
     return response.data;
   },
 
   getVideoCallDetails: async (callId: string) => {
+    const cleanId = (callId || "").trim();
     const axios = await useAxios();
-    const response = await axios.get(`/video-calls/${callId}`);
+    const response = await axios.get(`/video-calls/${cleanId}`);
     return response.data;
   },
 
   updateVideoCallStatus: async (callId: string, status: CallStatus, duration?: number) => {
+    const cleanId = (callId || "").trim();
     const axios = await useAxios();
-    const response = await axios.patch(`/video-calls/${callId}/status`, { status, duration });
+    const payload: { status: CallStatus; duration?: number } = { status };
+    if (typeof duration === "number" && !isNaN(duration)) {
+      payload.duration = Math.max(0, Math.round(duration));
+    }
+    const response = await axios.patch(`/video-calls/${cleanId}/status`, payload);
     return response.data;
   },
 
