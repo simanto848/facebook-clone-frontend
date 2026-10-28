@@ -32,15 +32,33 @@ export const userService = {
     const axios = await useAxios();
     // Server updateProfileSchema is strict: only accepts displayName, bio, dateOfBirth, gender, avatarUrl, coverUrl
     const body: Record<string, any> = {};
-    const displayName = payload.displayName || payload.name;
-    if (displayName) body.displayName = displayName;
-    if (payload.bio !== undefined) body.bio = payload.bio;
-    if (payload.dateOfBirth !== undefined) body.dateOfBirth = payload.dateOfBirth;
-    if (payload.gender !== undefined) body.gender = payload.gender;
+    const rawDisplayName = payload.displayName || payload.name;
+    if (typeof rawDisplayName === "string" && rawDisplayName.trim()) {
+      body.displayName = rawDisplayName.trim().slice(0, 100);
+    }
+    if (payload.bio !== undefined) {
+      body.bio = typeof payload.bio === "string" ? payload.bio.trim().slice(0, 500) : payload.bio;
+    }
+    if (payload.dateOfBirth !== undefined && payload.dateOfBirth !== null) {
+      body.dateOfBirth = payload.dateOfBirth;
+    }
+    if (payload.gender !== undefined) {
+      body.gender = typeof payload.gender === "string" ? payload.gender.trim().slice(0, 20) : payload.gender;
+    }
     const avatar = payload.avatarUrl || payload.avatar;
-    if (avatar !== undefined) body.avatarUrl = avatar;
+    if (avatar !== undefined) {
+      const trimmed = typeof avatar === "string" ? avatar.trim() : "";
+      if (!trimmed || /^https?:\/\/.+/.test(trimmed)) {
+        body.avatarUrl = trimmed;
+      }
+    }
     const cover = payload.coverUrl || payload.coverPhoto;
-    if (cover !== undefined) body.coverUrl = cover;
+    if (cover !== undefined) {
+      const trimmed = typeof cover === "string" ? cover.trim() : "";
+      if (!trimmed || /^https?:\/\/.+/.test(trimmed)) {
+        body.coverUrl = trimmed;
+      }
+    }
 
     const response = await axios.patch("/users/me", body);
     return response.data;
