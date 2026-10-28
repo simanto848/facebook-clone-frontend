@@ -30,57 +30,75 @@ export const postService = {
   },
 
   createPost: async (payload: CreatePostInput) => {
+    const cleanContent = (payload.content || "").trim().slice(0, 5000);
+    if (!cleanContent) {
+      throw new Error("Post content cannot be empty");
+    }
+    const cleanMediaIds = Array.isArray(payload.mediaIds)
+      ? payload.mediaIds.filter((mid) => typeof mid === "string" && mid.trim().length > 0)
+      : undefined;
+
     const axios = await useAxios();
     if (payload.groupId) {
-      const response = await axios.post(`/groups/${payload.groupId}/posts`, {
-        content: payload.content,
-        ...(payload.mediaIds && payload.mediaIds.length > 0 ? { mediaIds: payload.mediaIds } : {}),
+      const cleanGroupId = payload.groupId.trim();
+      const response = await axios.post(`/groups/${cleanGroupId}/posts`, {
+        content: cleanContent,
+        ...(cleanMediaIds && cleanMediaIds.length > 0 ? { mediaIds: cleanMediaIds } : {}),
       });
       return response.data;
     }
     if (payload.pageId) {
-      const response = await axios.post(`/pages/${payload.pageId}/posts`, {
-        content: payload.content,
-        ...(payload.mediaIds && payload.mediaIds.length > 0 ? { mediaIds: payload.mediaIds } : {}),
+      const cleanPageId = payload.pageId.trim();
+      const response = await axios.post(`/pages/${cleanPageId}/posts`, {
+        content: cleanContent,
+        ...(cleanMediaIds && cleanMediaIds.length > 0 ? { mediaIds: cleanMediaIds } : {}),
       });
       return response.data;
     }
-    const visibility = payload.visibility || payload.privacy || "PUBLIC";
+    const rawVisibility = (payload.visibility || payload.privacy || "FRIENDS").toUpperCase();
+    const visibility = rawVisibility === "PUBLIC" || rawVisibility === "ONLY_ME" ? rawVisibility : "FRIENDS";
     const body: Record<string, any> = {
-      content: payload.content,
+      content: cleanContent,
       visibility,
-      ...(payload.mediaIds && payload.mediaIds.length > 0 ? { mediaIds: payload.mediaIds } : {}),
+      ...(cleanMediaIds && cleanMediaIds.length > 0 ? { mediaIds: cleanMediaIds } : {}),
     };
     const response = await axios.post("/posts", body);
     return response.data;
   },
 
   getPost: async (id: string) => {
+    const cleanId = (id || "").trim();
     const axios = await useAxios();
-    const response = await axios.get(`/posts/${id}`);
+    const response = await axios.get(`/posts/${cleanId}`);
     return response.data;
   },
 
   updatePost: async (id: string, payload: Partial<CreatePostInput>) => {
+    const cleanId = (id || "").trim();
     const axios = await useAxios();
     const body: Record<string, any> = {};
     if (payload.content !== undefined) {
       body.content = payload.content.trim().slice(0, 5000);
     }
-    const visibility = payload.visibility || payload.privacy;
-    if (visibility) {
-      body.visibility = visibility;
+    const rawVisibility = payload.visibility || payload.privacy;
+    if (rawVisibility) {
+      const upper = rawVisibility.toUpperCase();
+      body.visibility = upper === "PUBLIC" || upper === "ONLY_ME" ? upper : "FRIENDS";
     }
-    if (payload.mediaIds && payload.mediaIds.length > 0) {
-      body.mediaIds = payload.mediaIds;
+    if (Array.isArray(payload.mediaIds) && payload.mediaIds.length > 0) {
+      const cleanMediaIds = payload.mediaIds.filter((mid) => typeof mid === "string" && mid.trim().length > 0);
+      if (cleanMediaIds.length > 0) {
+        body.mediaIds = cleanMediaIds;
+      }
     }
-    const response = await axios.patch(`/posts/${id}`, body);
+    const response = await axios.patch(`/posts/${cleanId}`, body);
     return response.data;
   },
 
   deletePost: async (id: string) => {
+    const cleanId = (id || "").trim();
     const axios = await useAxios();
-    const response = await axios.delete(`/posts/${id}`);
+    const response = await axios.delete(`/posts/${cleanId}`);
     return response.data;
   },
 
