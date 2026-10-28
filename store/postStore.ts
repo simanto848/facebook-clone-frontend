@@ -407,8 +407,10 @@ export const usePostStore = create<PostState>((set) => ({
   setPosts: (posts) => set({ posts }),
   createPost: (post) =>
     set((state) => {
+      const sanitizedContent = typeof post.content === "string" ? post.content.trim().slice(0, 5000) : post.content;
       const newPost: PostType = {
         ...post,
+        content: sanitizedContent,
         id: Math.random().toString(36).substring(7),
         createdAt: "Just now",
         reactions: { like: 0, love: 0, haha: 0, wow: 0, sad: 0, angry: 0 },
