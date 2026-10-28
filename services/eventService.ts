@@ -22,13 +22,16 @@ const toIsoString = (val?: string): string | undefined => {
 export const eventService = {
   getEvents: async (page = 1, pageSize = 20) => {
     const axios = await useAxios();
-    const response = await axios.get(`/events?page=${page}&pageSize=${pageSize}`);
+    const validPage = Math.max(1, page);
+    const validPageSize = Math.max(1, Math.min(pageSize, 50));
+    const response = await axios.get(`/events?page=${validPage}&pageSize=${validPageSize}`);
     return response.data;
   },
 
   getEventById: async (id: string) => {
+    const cleanId = (id || "").trim();
     const axios = await useAxios();
-    const response = await axios.get(`/events/${id}`);
+    const response = await axios.get(`/events/${cleanId}`);
     return response.data;
   },
 
@@ -54,8 +57,8 @@ export const eventService = {
       payload.endTime = endTime;
     }
 
-    const cover = data.coverUrl || data.coverImage;
-    if (cover) {
+    const cover = (data.coverUrl || data.coverImage || "").trim();
+    if (cover && /^https?:\/\/.+/.test(cover)) {
       payload.coverUrl = cover;
     }
 
@@ -64,6 +67,7 @@ export const eventService = {
   },
 
   rsvpEvent: async (id: string, status: "going" | "interested" | "declined" | string) => {
+    const cleanId = (id || "").trim();
     const axios = await useAxios();
     const lower = (status || "").toLowerCase().trim();
     const validStatus = lower === "going" || lower === "attending"
@@ -71,11 +75,12 @@ export const eventService = {
       : lower === "declined" || lower === "not_going"
       ? "declined"
       : "interested";
-    const response = await axios.post(`/events/${id}/rsvp`, { status: validStatus });
+    const response = await axios.post(`/events/${cleanId}/rsvp`, { status: validStatus });
     return response.data;
   },
 
   updateEvent: async (id: string, data: Partial<CreateEventInput>) => {
+    const cleanId = (id || "").trim();
     const axios = await useAxios();
     const payload: Record<string, any> = {};
     if (data.title !== undefined) payload.title = data.title.trim().slice(0, 150);
@@ -95,16 +100,18 @@ export const eventService = {
       const endTime = toIsoString(rawEnd);
       if (endTime) payload.endTime = endTime;
     }
-    if (data.coverUrl || data.coverImage) {
-      payload.coverUrl = data.coverUrl || data.coverImage;
+    const cover = (data.coverUrl || data.coverImage || "").trim();
+    if (cover && /^https?:\/\/.+/.test(cover)) {
+      payload.coverUrl = cover;
     }
-    const response = await axios.patch(`/events/${id}`, payload);
+    const response = await axios.patch(`/events/${cleanId}`, payload);
     return response.data;
   },
 
   deleteEvent: async (id: string) => {
+    const cleanId = (id || "").trim();
     const axios = await useAxios();
-    const response = await axios.delete(`/events/${id}`);
+    const response = await axios.delete(`/events/${cleanId}`);
     return response.data;
   },
 };
