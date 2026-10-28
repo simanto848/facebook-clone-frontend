@@ -85,8 +85,13 @@ export const postService = {
   },
 
   sharePost: async (id: string, content?: string, visibility?: "PUBLIC" | "FRIENDS" | "ONLY_ME") => {
+    const cleanId = (id || "").trim();
+    const cleanContent = typeof content === "string" ? content.trim().slice(0, 2000) : undefined;
     const axios = await useAxios();
-    const response = await axios.post(`/posts/${id}/share`, { content, visibility });
+    const payload: { content?: string; visibility?: "PUBLIC" | "FRIENDS" | "ONLY_ME" } = {};
+    if (cleanContent !== undefined) payload.content = cleanContent;
+    if (visibility) payload.visibility = visibility;
+    const response = await axios.post(`/posts/${cleanId}/share`, payload);
     return response.data;
   },
 };
