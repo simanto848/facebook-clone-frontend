@@ -29,8 +29,9 @@ export const pageService = {
   },
 
   getPageById: async (id: string) => {
+    const cleanId = (id || "").trim();
     const axios = await useAxios();
-    const response = await axios.get(`/pages/${id}`);
+    const response = await axios.get(`/pages/${cleanId}`);
     return response.data;
   },
 
@@ -43,26 +44,32 @@ export const pageService = {
     if (data.description !== undefined) {
       payload.description = data.description.trim().slice(0, 1000);
     }
-    const avatar = data.avatarUrl || data.avatar;
-    if (avatar) payload.avatarUrl = avatar;
-    const cover = data.coverUrl || data.cover;
-    if (cover) payload.coverUrl = cover;
+    const rawAvatar = (data.avatarUrl || data.avatar || "").trim();
+    if (rawAvatar) {
+      payload.avatarUrl = /^https?:\/\/.+/.test(rawAvatar) ? rawAvatar : "";
+    }
+    const rawCover = (data.coverUrl || data.cover || "").trim();
+    if (rawCover) {
+      payload.coverUrl = /^https?:\/\/.+/.test(rawCover) ? rawCover : "";
+    }
 
     const response = await axios.post("/pages", payload);
     return response.data;
   },
 
   toggleLike: async (id: string) => {
+    const cleanId = (id || "").trim();
     const axios = await useAxios();
-    const response = await axios.post(`/pages/${id}/like`);
+    const response = await axios.post(`/pages/${cleanId}/like`);
     return response.data;
   },
 
   getPagePosts: async (id: string, page = 1, pageSize = 10) => {
+    const cleanId = (id || "").trim();
     const axios = await useAxios();
     const validPage = Math.max(1, page);
     const validPageSize = Math.max(1, Math.min(pageSize, 50));
-    const response = await axios.get(`/pages/${id}/posts?page=${validPage}&pageSize=${validPageSize}`);
+    const response = await axios.get(`/pages/${cleanId}/posts?page=${validPage}&pageSize=${validPageSize}`);
     return response.data;
   },
 
@@ -85,24 +92,28 @@ export const pageService = {
   },
 
   updatePage: async (id: string, data: Partial<CreatePageInput> & { avatarUrl?: string; coverUrl?: string }) => {
+    const cleanId = (id || "").trim();
     const axios = await useAxios();
     const payload: Record<string, any> = {};
-    if (data.name !== undefined) payload.name = data.name.trim();
-    if (data.category !== undefined) payload.category = data.category.trim();
-    if (data.description !== undefined) payload.description = data.description.trim();
+    if (data.name !== undefined) payload.name = data.name.trim().slice(0, 100);
+    if (data.category !== undefined) payload.category = data.category.trim().slice(0, 50);
+    if (data.description !== undefined) payload.description = data.description.trim().slice(0, 1000);
     if (data.avatarUrl !== undefined || data.avatar !== undefined) {
-      payload.avatarUrl = data.avatarUrl || data.avatar || "";
+      const rawAvatar = (data.avatarUrl || data.avatar || "").trim();
+      payload.avatarUrl = /^https?:\/\/.+/.test(rawAvatar) ? rawAvatar : "";
     }
     if (data.coverUrl !== undefined || data.cover !== undefined) {
-      payload.coverUrl = data.coverUrl || data.cover || "";
+      const rawCover = (data.coverUrl || data.cover || "").trim();
+      payload.coverUrl = /^https?:\/\/.+/.test(rawCover) ? rawCover : "";
     }
-    const response = await axios.patch(`/pages/${id}`, payload);
+    const response = await axios.patch(`/pages/${cleanId}`, payload);
     return response.data;
   },
 
   deletePage: async (id: string) => {
+    const cleanId = (id || "").trim();
     const axios = await useAxios();
-    const response = await axios.delete(`/pages/${id}`);
+    const response = await axios.delete(`/pages/${cleanId}`);
     return response.data;
   },
 };
