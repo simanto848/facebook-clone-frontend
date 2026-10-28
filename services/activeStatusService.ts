@@ -7,7 +7,7 @@ export interface ActiveStatusResponse {
 }
 
 const UUID_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export const activeStatusService = {
   sendHeartbeat: async () => {
@@ -18,7 +18,10 @@ export const activeStatusService = {
 
   getBatchStatus: async (userIds: string[]) => {
     const validIds = Array.isArray(userIds)
-      ? userIds.filter((id) => typeof id === "string" && UUID_REGEX.test(id))
+      ? userIds
+          .map((id) => (typeof id === "string" ? id.trim() : ""))
+          .filter((id) => UUID_REGEX.test(id))
+          .slice(0, 100)
       : [];
     if (validIds.length === 0) {
       return { success: true, data: [] };
@@ -29,11 +32,12 @@ export const activeStatusService = {
   },
 
   getUserStatus: async (userId: string) => {
-    if (!userId || typeof userId !== "string" || !UUID_REGEX.test(userId)) {
+    const cleanId = typeof userId === "string" ? userId.trim() : "";
+    if (!cleanId || !UUID_REGEX.test(cleanId)) {
       return { success: false, data: null };
     }
     const axios = await useAxios();
-    const response = await axios.get(`/active-status/${userId}`);
+    const response = await axios.get(`/active-status/${cleanId}`);
     return response.data;
   },
 };
