@@ -85,28 +85,31 @@ export const userService = {
   },
 
   getUserByUsername: async (username: string) => {
+    const cleanUsername = (username || "").trim();
     const axios = await useAxios();
-    const response = await axios.get(`/users/username/${username}`);
+    const response = await axios.get(`/users/username/${encodeURIComponent(cleanUsername)}`);
     return response.data;
   },
 
   getUserById: async (id: string) => {
+    const cleanId = (id || "").trim();
     const axios = await useAxios();
-    const response = await axios.get(`/users/${id}`);
+    const response = await axios.get(`/users/${cleanId}`);
     return response.data;
   },
 
   getUserPosts: async (id: string, page = 1, pageSize = 20) => {
+    const cleanId = (id || "").trim();
     const axios = await useAxios();
     const validPage = Math.max(1, page);
     const validPageSize = Math.max(1, Math.min(pageSize, 50));
-    const response = await axios.get(`/users/${id}/posts?page=${validPage}&pageSize=${validPageSize}`);
+    const response = await axios.get(`/users/${cleanId}/posts?page=${validPage}&pageSize=${validPageSize}`);
     return response.data;
   },
 
   searchUsers: async (q: string, pageSize = 10, page = 1) => {
     const axios = await useAxios();
-    const cleanQ = (q || "").trim();
+    const cleanQ = (q || "").trim().slice(0, 100);
     const validPage = Math.max(1, page);
     const validPageSize = Math.max(1, Math.min(pageSize, 50));
     const response = await axios.get(`/users/search?q=${encodeURIComponent(cleanQ)}&pageSize=${validPageSize}&page=${validPage}`);
@@ -122,48 +125,57 @@ export const userService = {
   },
 
   getFollowers: async (id: string, page = 1, pageSize = 20) => {
+    const cleanId = (id || "").trim();
     const axios = await useAxios();
     const validPage = Math.max(1, page);
     const validPageSize = Math.max(1, Math.min(pageSize, 50));
-    const response = await axios.get(`/users/${id}/followers?page=${validPage}&pageSize=${validPageSize}`);
+    const response = await axios.get(`/users/${cleanId}/followers?page=${validPage}&pageSize=${validPageSize}`);
     return response.data;
   },
 
   getFollowing: async (id: string, page = 1, pageSize = 20) => {
+    const cleanId = (id || "").trim();
     const axios = await useAxios();
     const validPage = Math.max(1, page);
     const validPageSize = Math.max(1, Math.min(pageSize, 50));
-    const response = await axios.get(`/users/${id}/following?page=${validPage}&pageSize=${validPageSize}`);
+    const response = await axios.get(`/users/${cleanId}/following?page=${validPage}&pageSize=${validPageSize}`);
     return response.data;
   },
 
   followUser: async (id: string) => {
+    const cleanId = (id || "").trim();
     const axios = await useAxios();
-    const response = await axios.post(`/users/${id}/follow`);
+    const response = await axios.post(`/users/${cleanId}/follow`);
     return response.data;
   },
 
   unfollowUser: async (id: string) => {
+    const cleanId = (id || "").trim();
     const axios = await useAxios();
-    const response = await axios.post(`/users/${id}/unfollow`);
+    const response = await axios.post(`/users/${cleanId}/unfollow`);
     return response.data;
   },
 
   changePassword: async (payload: ChangePasswordPayload) => {
     const axios = await useAxios();
-    const response = await axios.post("/users/me/change-password", payload);
+    const response = await axios.post("/users/me/change-password", {
+      currentPassword: payload.currentPassword,
+      newPassword: payload.newPassword,
+    });
     return response.data;
   },
 
   blockUser: async (id: string) => {
+    const cleanId = (id || "").trim();
     const axios = await useAxios();
-    const response = await axios.post(`/users/${id}/block`);
+    const response = await axios.post(`/users/${cleanId}/block`);
     return response.data;
   },
 
   unblockUser: async (id: string) => {
+    const cleanId = (id || "").trim();
     const axios = await useAxios();
-    const response = await axios.post(`/users/${id}/unblock`);
+    const response = await axios.post(`/users/${cleanId}/unblock`);
     return response.data;
   },
 
