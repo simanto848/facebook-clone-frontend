@@ -40,7 +40,7 @@ interface ChatState {
   activeConversationId: string | null;
   activeCall: ActiveCallState | null;
   fetchConversations: () => Promise<void>;
-  fetchMessagesForUser: (userId: string) => Promise<void>;
+  fetchMessagesForUser: (userId: string, page?: number, pageSize?: number) => Promise<void>;
   openChat: (person: { id: string; name: string; avatar: string }) => void;
   closeChat: (id: string) => void;
   toggleCollapse: (id: string) => void;
@@ -157,9 +157,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
     return activeFetchPromise;
   },
 
-  fetchMessagesForUser: async (userId: string) => {
+  fetchMessagesForUser: async (userId: string, page = 1, pageSize = 50) => {
     try {
-      const res = await messageService.getMessages(userId);
+      const validPage = Math.max(1, page);
+      const validPageSize = Math.max(1, Math.min(pageSize, 50));
+      const res = await messageService.getMessages(userId, validPage, validPageSize);
       const dataObj = res?.data || res || {};
       const rawList = Array.isArray(dataObj)
         ? dataObj
