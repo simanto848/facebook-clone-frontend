@@ -47,14 +47,22 @@ export const userService = {
   },
 
   updateAvatar: async (url: string) => {
+    const trimmed = typeof url === "string" ? url.trim() : "";
+    if (!trimmed || !/^https?:\/\/.+/.test(trimmed)) {
+      throw new Error("A valid HTTP or HTTPS media URL is required.");
+    }
     const axios = await useAxios();
-    const response = await axios.put("/users/me/avatar", { url });
+    const response = await axios.put("/users/me/avatar", { url: trimmed });
     return response.data;
   },
 
   updateCover: async (url: string) => {
+    const trimmed = typeof url === "string" ? url.trim() : "";
+    if (!trimmed || !/^https?:\/\/.+/.test(trimmed)) {
+      throw new Error("A valid HTTP or HTTPS media URL is required.");
+    }
     const axios = await useAxios();
-    const response = await axios.put("/users/me/cover", { url });
+    const response = await axios.put("/users/me/cover", { url: trimmed });
     return response.data;
   },
 
