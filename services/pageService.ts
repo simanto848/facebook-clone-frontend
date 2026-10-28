@@ -67,12 +67,20 @@ export const pageService = {
   },
 
   createPagePost: async (id: string, content: string, mediaIds?: string[]) => {
-    const axios = await useAxios();
-    const payload: Record<string, any> = { content };
-    if (mediaIds && mediaIds.length > 0) {
-      payload.mediaIds = mediaIds;
+    const cleanId = (id || "").trim();
+    const cleanContent = (content || "").trim();
+    if (!cleanContent) {
+      throw new Error("Post content cannot be empty");
     }
-    const response = await axios.post(`/pages/${id}/posts`, payload);
+    const axios = await useAxios();
+    const payload: { content: string; mediaIds?: string[] } = { content: cleanContent };
+    if (Array.isArray(mediaIds) && mediaIds.length > 0) {
+      const validMediaIds = mediaIds.filter((mid) => typeof mid === "string" && mid.trim().length > 0);
+      if (validMediaIds.length > 0) {
+        payload.mediaIds = validMediaIds;
+      }
+    }
+    const response = await axios.post(`/pages/${cleanId}/posts`, payload);
     return response.data;
   },
 
