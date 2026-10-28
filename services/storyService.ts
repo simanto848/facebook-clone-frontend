@@ -20,11 +20,15 @@ export const storyService = {
   },
 
   createStory: async (data: CreateStoryInput) => {
+    const trimmedMediaUrl = (data.mediaUrl || "").trim();
+    if (!trimmedMediaUrl || !/^https?:\/\/.+/.test(trimmedMediaUrl)) {
+      throw new Error("Valid media URL starting with http:// or https:// is required");
+    }
     const axios = await useAxios();
     const payload: { mediaUrl: string; caption?: string } = {
-      mediaUrl: data.mediaUrl,
+      mediaUrl: trimmedMediaUrl,
     };
-    if (data.caption) {
+    if (data.caption && data.caption.trim()) {
       payload.caption = data.caption.trim().slice(0, 255);
     }
     const response = await axios.post("/stories", payload);
@@ -32,8 +36,9 @@ export const storyService = {
   },
 
   deleteStory: async (id: string) => {
+    const cleanId = (id || "").trim();
     const axios = await useAxios();
-    const response = await axios.delete(`/stories/${id}`);
+    const response = await axios.delete(`/stories/${cleanId}`);
     return response.data;
   },
 };
