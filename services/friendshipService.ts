@@ -55,33 +55,38 @@ export const friendshipService = {
   },
 
   sendFriendRequest: async (userId: string) => {
+    const cleanId = (userId || "").trim();
     const axios = await useAxios();
-    const response = await axios.post(`/friendships/request/${userId}`);
+    const response = await axios.post(`/friendships/request/${cleanId}`);
     return response.data;
   },
 
   acceptFriendRequest: async (userId: string) => {
+    const cleanId = (userId || "").trim();
     const axios = await useAxios();
-    const response = await axios.post(`/friendships/accept/${userId}`);
+    const response = await axios.post(`/friendships/accept/${cleanId}`);
     return response.data;
   },
 
   declineFriendRequest: async (userId: string) => {
+    const cleanId = (userId || "").trim();
     const axios = await useAxios();
-    const response = await axios.post(`/friendships/decline/${userId}`);
+    const response = await axios.post(`/friendships/decline/${cleanId}`);
     return response.data;
   },
 
   unfriend: async (userId: string) => {
+    const cleanId = (userId || "").trim();
     const axios = await useAxios();
-    const response = await axios.delete(`/friendships/${userId}`);
+    const response = await axios.delete(`/friendships/${cleanId}`);
     return response.data;
   },
 
   getMutualFriends: async (userId: string) => {
     try {
+      const cleanId = (userId || "").trim();
       const axios = await useAxios();
-      const response = await axios.get(`/friendships/mutual/${userId}`);
+      const response = await axios.get(`/friendships/mutual/${cleanId}`);
       return response.data;
     } catch {
       // Server does not expose a dedicated mutual endpoint; provide graceful fallback
