@@ -129,8 +129,9 @@ export const callService = {
   },
 
   getUserActiveStatus: async (userId: string) => {
+    const cleanId = (userId || "").trim();
     const axios = await useAxios();
-    const response = await axios.get(`/active-status/${userId}`);
+    const response = await axios.get(`/active-status/${cleanId}`);
     return response.data;
   },
 };
