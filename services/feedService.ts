@@ -49,7 +49,7 @@ export const feedService = {
     const axios = await useAxios();
     const validLimit = Math.max(1, Math.min(limit, 50));
     const validPage = Math.max(1, page);
-    if (filter === "TRENDING") {
+    if (filter === "TRENDING" || filter === "POPULAR") {
       const response = await axios.get(`/feed/trending?page=${validPage}&pageSize=${validLimit}`);
       return response.data;
     }
