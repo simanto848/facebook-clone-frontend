@@ -28,8 +28,11 @@ export const storyService = {
     const payload: { mediaUrl: string; caption?: string } = {
       mediaUrl: trimmedMediaUrl,
     };
-    if (data.caption && data.caption.trim()) {
-      payload.caption = data.caption.trim().slice(0, 255);
+    if (data.caption !== undefined) {
+      const cleanCaption = data.caption.trim().slice(0, 255);
+      if (cleanCaption) {
+        payload.caption = cleanCaption;
+      }
     }
     const response = await axios.post("/stories", payload);
     return response.data;
