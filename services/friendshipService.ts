@@ -95,14 +95,16 @@ export const friendshipService = {
   },
 
   followUser: async (userId: string) => {
+    const cleanId = (userId || "").trim();
     const axios = await useAxios();
-    const response = await axios.post(`/follows/${userId}`);
+    const response = await axios.post(`/follows/${cleanId}`);
     return response.data;
   },
 
   unfollowUser: async (userId: string) => {
+    const cleanId = (userId || "").trim();
     const axios = await useAxios();
-    const response = await axios.delete(`/follows/${userId}`);
+    const response = await axios.delete(`/follows/${cleanId}`);
     return response.data;
   },
 };
