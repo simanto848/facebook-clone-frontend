@@ -36,6 +36,10 @@ export const eventService = {
   },
 
   createEvent: async (data: CreateEventInput) => {
+    const cleanTitle = (data.title || "").trim().slice(0, 150);
+    if (!cleanTitle) {
+      throw new Error("Title is required");
+    }
     const axios = await useAxios();
     const rawStart = data.startDate && data.startTime && !data.startTime.includes("T")
       ? `${data.startDate}T${data.startTime}`
@@ -43,11 +47,15 @@ export const eventService = {
     const startTime = toIsoString(rawStart) || new Date().toISOString();
 
     const payload: Record<string, any> = {
-      title: data.title.trim().slice(0, 150),
+      title: cleanTitle,
       startTime,
     };
-    if (data.description) payload.description = data.description.trim().slice(0, 1000);
-    if (data.location) payload.location = data.location.trim().slice(0, 255);
+    if (data.description && data.description.trim()) {
+      payload.description = data.description.trim().slice(0, 1000);
+    }
+    if (data.location && data.location.trim()) {
+      payload.location = data.location.trim().slice(0, 255);
+    }
 
     const rawEnd = data.endDate && data.endTime && !data.endTime.includes("T")
       ? `${data.endDate}T${data.endTime}`
