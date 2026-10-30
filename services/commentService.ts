@@ -40,15 +40,17 @@ export const commentService = {
   },
 
   updateComment: async (commentId: string, content: string) => {
+    const cleanId = (commentId || "").trim();
     const axios = await useAxios();
     const cleanContent = content.trim().slice(0, 2000);
-    const response = await axios.patch(`/comments/${commentId}`, { content: cleanContent });
+    const response = await axios.patch(`/comments/${cleanId}`, { content: cleanContent });
     return response.data;
   },
 
   deleteComment: async (commentId: string) => {
+    const cleanId = (commentId || "").trim();
     const axios = await useAxios();
-    const response = await axios.delete(`/comments/${commentId}`);
+    const response = await axios.delete(`/comments/${cleanId}`);
     return response.data;
   },
 };
