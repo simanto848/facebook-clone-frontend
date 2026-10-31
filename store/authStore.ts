@@ -65,7 +65,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   register: async (data) => {
     set({ loading: true, error: null });
     try {
-      const response = await axios.post(`${apiBaseUrl}/auth/register`, data);
+      const cleanData = {
+        ...data,
+        email: typeof data.email === "string" ? data.email.trim() : data.email,
+        username: typeof data.username === "string" ? data.username.trim() : data.username,
+        displayName: typeof data.displayName === "string" ? data.displayName.trim() : data.displayName,
+        gender: typeof data.gender === "string" ? data.gender.trim() : data.gender,
+      };
+      const response = await axios.post(`${apiBaseUrl}/auth/register`, cleanData);
       set({ loading: false });
       return { success: true, message: response.data.message || "Registration successful." };
     } catch (err: any) {
