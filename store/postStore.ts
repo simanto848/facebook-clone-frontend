@@ -598,9 +598,11 @@ export const usePostStore = create<PostState>((set) => ({
     })),
   addStory: (story) =>
     set((state) => {
+      const trimmedContent = typeof story.content === "string" ? story.content.trim() : story.content;
       const newStory: StoryType = {
         id: story.id || Math.random().toString(36).substring(7),
         ...story,
+        content: trimmedContent,
         createdAt: "Just now",
         views: 0,
         reactions: 0,
