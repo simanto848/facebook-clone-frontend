@@ -585,9 +585,10 @@ export const usePostStore = create<PostState>((set) => ({
     set((state) => ({
       posts: state.posts.map((p) => {
         if (p.id !== postId) return p;
+        const cleanText = typeof newText === "string" ? newText.trim().slice(0, 2000) : newText;
         const updatedComments = updateCommentInList(p.comments, commentId, (comment) => ({
           ...comment,
-          content: newText,
+          content: cleanText,
         }));
         return {
           ...p,
