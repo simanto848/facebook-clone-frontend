@@ -365,6 +365,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   deleteMessage: (convId: string, msgIndex: number) => {
     set((state) => {
+      const cleanConvId = (convId || "").trim();
       const updateMsgs = (msgs: Message[]) =>
         msgs.map((m, idx) => {
           if (idx !== msgIndex) return m;
@@ -373,22 +374,23 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
       return {
         conversations: state.conversations.map((c) =>
-          c.id === convId ? { ...c, messages: updateMsgs(c.messages) } : c
+          c.id === cleanConvId ? { ...c, messages: updateMsgs(c.messages) } : c
         ),
         openChatBoxes: state.openChatBoxes.map((b) =>
-          b.id === convId ? { ...b, messages: updateMsgs(b.messages) } : b
+          b.id === cleanConvId ? { ...b, messages: updateMsgs(b.messages) } : b
         ),
       };
     });
   },
 
   clearConversationMessages: (convId: string) => {
+    const cleanConvId = (convId || "").trim();
     set((state) => ({
       conversations: state.conversations.map((c) =>
-        c.id === convId ? { ...c, messages: [] } : c
+        c.id === cleanConvId ? { ...c, messages: [] } : c
       ),
       openChatBoxes: state.openChatBoxes.map((b) =>
-        b.id === convId ? { ...b, messages: [] } : b
+        b.id === cleanConvId ? { ...b, messages: [] } : b
       ),
     }));
   },
