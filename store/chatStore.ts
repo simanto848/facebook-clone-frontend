@@ -287,25 +287,27 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   sendDirectMessage: (id, text) => {
-    if (!text.trim()) return;
+    const cleanId = (id || "").trim();
+    const cleanText = (text || "").trim().slice(0, 5000);
+    if (!cleanText) return;
     const timeString = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-    messageService.sendMessage(id, { content: text }).catch(() => {});
+    messageService.sendMessage(cleanId, { content: cleanText }).catch(() => {});
 
     set((state) => ({
       conversations: state.conversations.map((conv) => {
-        if (conv.id !== id) return conv;
+        if (conv.id !== cleanId) return conv;
         return {
           ...conv,
           hasUnread: false,
-          messages: [...conv.messages, { sender: "me", text, time: timeString }],
+          messages: [...conv.messages, { sender: "me", text: cleanText, time: timeString }],
         };
       }),
       openChatBoxes: state.openChatBoxes.map((box) => {
-        if (box.id !== id) return box;
+        if (box.id !== cleanId) return box;
         return {
           ...box,
-          messages: [...box.messages, { sender: "me", text, time: timeString }],
+          messages: [...box.messages, { sender: "me", text: cleanText, time: timeString }],
         };
       }),
     }));
