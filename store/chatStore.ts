@@ -322,6 +322,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   addReaction: (convId: string, msgIndex: number, emoji: string) => {
+    const cleanConvId = (convId || "").trim();
     set((state) => {
       const updateMsgs = (msgs: Message[]) =>
         msgs.map((m, idx) => {
@@ -333,10 +334,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
       return {
         conversations: state.conversations.map((c) =>
-          c.id === convId ? { ...c, messages: updateMsgs(c.messages) } : c
+          c.id === cleanConvId ? { ...c, messages: updateMsgs(c.messages) } : c
         ),
         openChatBoxes: state.openChatBoxes.map((b) =>
-          b.id === convId ? { ...b, messages: updateMsgs(b.messages) } : b
+          b.id === cleanConvId ? { ...b, messages: updateMsgs(b.messages) } : b
         ),
       };
     });
