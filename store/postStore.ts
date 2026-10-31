@@ -425,9 +425,12 @@ export const usePostStore = create<PostState>((set) => ({
       posts: state.posts.filter((p) => p.id !== id),
     })),
   editPost: (id, content) =>
-    set((state) => ({
-      posts: state.posts.map((p) => (p.id === id ? { ...p, content } : p)),
-    })),
+    set((state) => {
+      const cleanContent = typeof content === "string" ? content.trim().slice(0, 5000) : content;
+      return {
+        posts: state.posts.map((p) => (p.id === id ? { ...p, content: cleanContent } : p)),
+      };
+    }),
   toggleSavePost: (id) =>
     set((state) => ({
       posts: state.posts.map((p) => (p.id === id ? { ...p, saved: !p.saved } : p)),
