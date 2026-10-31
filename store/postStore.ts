@@ -476,10 +476,11 @@ export const usePostStore = create<PostState>((set) => ({
       posts: state.posts.map((p) => {
         if (p.id !== postId || !p.poll) return p;
 
+        const cleanOptionId = (optionId || "").trim();
         const options = p.poll.options.map((opt) => {
           let votes = opt.votes;
           // If this option is voted
-          if (opt.id === optionId) {
+          if (opt.id === cleanOptionId) {
             votes += 1;
           }
           // If user voted previously for a different option, decrement that option's vote
@@ -494,7 +495,7 @@ export const usePostStore = create<PostState>((set) => ({
           poll: {
             ...p.poll,
             options,
-            userVotedOptionId: optionId,
+            userVotedOptionId: cleanOptionId,
           },
         };
       }),
