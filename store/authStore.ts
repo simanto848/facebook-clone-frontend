@@ -85,7 +85,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   login: async (data) => {
     set({ loading: true, error: null });
     try {
-      const response = await axios.post(`${apiBaseUrl}/auth/login`, data);
+      const cleanData: Record<string, any> = { password: data.password };
+      if (typeof data.emailOrUsername === "string" && data.emailOrUsername.trim()) {
+        cleanData.emailOrUsername = data.emailOrUsername.trim();
+      } else if (typeof data.email === "string" && data.email.trim()) {
+        cleanData.email = data.email.trim();
+      } else if (typeof data.username === "string" && data.username.trim()) {
+        cleanData.username = data.username.trim();
+      }
+      const response = await axios.post(`${apiBaseUrl}/auth/login`, cleanData);
       const { user, accessToken } = response.data.data || response.data || {};
 
       if (accessToken && typeof window !== "undefined") {
