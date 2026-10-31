@@ -503,6 +503,7 @@ export const usePostStore = create<PostState>((set) => ({
     set((state) => ({
       posts: state.posts.map((p) => {
         if (p.id !== postId) return p;
+        const cleanText = typeof commentText === "string" ? commentText.trim().slice(0, 2000) : commentText;
         const newComment: CommentType = {
           id: Math.random().toString(36).substring(7),
           author: {
@@ -510,7 +511,7 @@ export const usePostStore = create<PostState>((set) => ({
             username: "alex",
             avatar: "https://images.unsplash.com/photo-1779040622687-42bb00790c67?w=500",
           },
-          content: commentText,
+          content: cleanText,
           createdAt: "Just now",
           likes: 0,
           replies: [],
@@ -525,6 +526,7 @@ export const usePostStore = create<PostState>((set) => ({
     set((state) => ({
       posts: state.posts.map((p) => {
         if (p.id !== postId) return p;
+        const cleanReply = typeof replyText === "string" ? replyText.trim().slice(0, 2000) : replyText;
 
         const newReply: CommentType = {
           id: Math.random().toString(36).substring(7),
@@ -533,7 +535,7 @@ export const usePostStore = create<PostState>((set) => ({
             username: "alex",
             avatar: "https://images.unsplash.com/photo-1779040622687-42bb00790c67?w=500",
           },
-          content: replyText,
+          content: cleanReply,
           createdAt: "Just now",
           likes: 0,
         };
