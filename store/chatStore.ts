@@ -344,18 +344,20 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   editMessage: (convId: string, msgIndex: number, newText: string) => {
     set((state) => {
+      const cleanConvId = (convId || "").trim();
+      const cleanText = typeof newText === "string" ? newText.trim().slice(0, 5000) : newText;
       const updateMsgs = (msgs: Message[]) =>
         msgs.map((m, idx) => {
           if (idx !== msgIndex) return m;
-          return { ...m, text: newText, isEdited: true };
+          return { ...m, text: cleanText, isEdited: true };
         });
 
       return {
         conversations: state.conversations.map((c) =>
-          c.id === convId ? { ...c, messages: updateMsgs(c.messages) } : c
+          c.id === cleanConvId ? { ...c, messages: updateMsgs(c.messages) } : c
         ),
         openChatBoxes: state.openChatBoxes.map((b) =>
-          b.id === convId ? { ...b, messages: updateMsgs(b.messages) } : b
+          b.id === cleanConvId ? { ...b, messages: updateMsgs(b.messages) } : b
         ),
       };
     });
