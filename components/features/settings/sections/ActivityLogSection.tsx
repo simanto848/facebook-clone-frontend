@@ -37,7 +37,8 @@ export default function ActivityLogSection() {
   const fetchLogs = async (category = filterCategory) => {
     setLoading(true);
     try {
-      const action = category !== "ALL" ? category : undefined;
+      const cleanCategory = (category || "").trim();
+      const action = cleanCategory && cleanCategory !== "ALL" ? cleanCategory : undefined;
       const res = await activityLogService.getActivityLogs(1, 50, action);
       const raw = res?.data?.logs || res?.logs || res?.data || res || [];
       const items = Array.isArray(raw) ? raw : [];
