@@ -129,7 +129,8 @@ export async function unfollowUser(userId: string): Promise<any> {
  * Block a user (POST /api/v1/users/:id/block)
  */
 export async function blockUser(userId: string): Promise<any> {
-  const res = await axios.post(`${baseURL}/users/${userId}/block`, {}, {
+  const cleanId = (userId || "").trim();
+  const res = await axios.post(`${baseURL}/users/${cleanId}/block`, {}, {
     withCredentials: true,
   });
   return res.data;
@@ -139,7 +140,8 @@ export async function blockUser(userId: string): Promise<any> {
  * Unblock a user (POST /api/v1/users/:id/unblock)
  */
 export async function unblockUser(userId: string): Promise<any> {
-  const res = await axios.post(`${baseURL}/users/${userId}/unblock`, {}, {
+  const cleanId = (userId || "").trim();
+  const res = await axios.post(`${baseURL}/users/${cleanId}/unblock`, {}, {
     withCredentials: true,
   });
   return res.data;
