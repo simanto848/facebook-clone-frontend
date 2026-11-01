@@ -47,7 +47,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   initAuth: () => {
     if (typeof window === "undefined") return;
-    const token = localStorage.getItem("accessToken");
+    const rawToken = localStorage.getItem("accessToken");
+    const token = (rawToken || "").trim();
     const userJson = localStorage.getItem("authUser");
     if (token && userJson) {
       try {
