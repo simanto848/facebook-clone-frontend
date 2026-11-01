@@ -94,8 +94,10 @@ export async function searchUsers(query: string, page = 1, pageSize = 20): Promi
  * Get user suggestions (GET /api/v1/users/suggestions)
  */
 export async function getUserSuggestions(page = 1, pageSize = 20): Promise<UserSuggestionsResult> {
+  const safePage = Math.max(1, Math.floor(page || 1));
+  const safePageSize = Math.max(1, Math.min(Math.floor(pageSize || 20), 50));
   const res = await axios.get(`${baseURL}/users/suggestions`, {
-    params: { page, pageSize },
+    params: { page: safePage, pageSize: safePageSize },
     withCredentials: true,
   });
   return res.data;
