@@ -169,16 +169,16 @@ export function useUsers(endpoint?: string) {
       if (target === "/me") {
         result = await getCurrentUser();
       } else if (target.startsWith("/username/")) {
-        const username = target.replace("/username/", "");
+        const username = target.replace("/username/", "").trim();
         result = await getUserByUsername(username);
       } else if (target.startsWith("/suggestions")) {
         result = await getUserSuggestions();
       } else if (target.startsWith("/search")) {
         const urlParams = new URLSearchParams(target.split("?")[1] || "");
-        const q = urlParams.get("q") || "";
+        const q = (urlParams.get("q") || "").trim();
         result = await searchUsers(q);
       } else {
-        const id = target.replace(/^\//, "");
+        const id = target.replace(/^\//, "").trim();
         result = await getUserById(id);
       }
       setData(result);
