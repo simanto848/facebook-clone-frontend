@@ -107,7 +107,8 @@ export async function getUserSuggestions(page = 1, pageSize = 20): Promise<UserS
  * Follow a user (POST /api/v1/users/:id/follow)
  */
 export async function followUser(userId: string): Promise<any> {
-  const res = await axios.post(`${baseURL}/users/${userId}/follow`, {}, {
+  const cleanId = (userId || "").trim();
+  const res = await axios.post(`${baseURL}/users/${cleanId}/follow`, {}, {
     withCredentials: true,
   });
   return res.data;
@@ -117,7 +118,8 @@ export async function followUser(userId: string): Promise<any> {
  * Unfollow a user (POST /api/v1/users/:id/unfollow)
  */
 export async function unfollowUser(userId: string): Promise<any> {
-  const res = await axios.post(`${baseURL}/users/${userId}/unfollow`, {}, {
+  const cleanId = (userId || "").trim();
+  const res = await axios.post(`${baseURL}/users/${cleanId}/unfollow`, {}, {
     withCredentials: true,
   });
   return res.data;
