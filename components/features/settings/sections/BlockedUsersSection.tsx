@@ -39,16 +39,17 @@ export default function BlockedUsersSection() {
 
   const handleBlockSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!blockUsername.trim() || blockingLoading) return;
+    const cleanTarget = blockUsername.trim();
+    if (!cleanTarget || blockingLoading) return;
     setBlockingLoading(true);
     setBlockError(null);
     try {
-      await blockService.blockUser(blockUsername.trim());
+      await blockService.blockUser(cleanTarget);
       setBlocked((prev) => [
         ...prev,
         {
           id: `b-${Date.now()}`,
-          name: blockUsername.trim(),
+          name: cleanTarget,
           avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
         },
       ]);
