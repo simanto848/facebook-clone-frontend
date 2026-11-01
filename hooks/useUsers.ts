@@ -80,8 +80,11 @@ export async function getUserByUsername(username: string): Promise<UserProfile> 
  * Search users (GET /api/v1/users/search?q=...)
  */
 export async function searchUsers(query: string, page = 1, pageSize = 20): Promise<any> {
+  const cleanQuery = (query || "").trim().slice(0, 100);
+  const safePage = Math.max(1, Math.floor(page || 1));
+  const safePageSize = Math.max(1, Math.min(Math.floor(pageSize || 20), 50));
   const res = await axios.get(`${baseURL}/users/search`, {
-    params: { q: query, page, pageSize },
+    params: { q: cleanQuery, page: safePage, pageSize: safePageSize },
     withCredentials: true,
   });
   return res.data;
