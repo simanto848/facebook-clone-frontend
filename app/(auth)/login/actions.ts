@@ -3,8 +3,8 @@
 import { useAxios } from "@/lib/useAxios";
 
 export async function loginAction(state: any, formData: FormData) {
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
+  const email = ((formData.get("email") as string) || "").trim();
+  const password = (formData.get("password") as string) || "";
 
   if (!email || !password) {
     return {
