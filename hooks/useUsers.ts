@@ -58,7 +58,8 @@ export async function getCurrentUser(): Promise<UserProfile> {
  * Fetches user profile by ID (GET /api/v1/users/:id)
  */
 export async function getUserById(userId: string): Promise<UserProfile> {
-  const res = await axios.get(`${baseURL}/users/${userId}`, {
+  const cleanId = (userId || "").trim();
+  const res = await axios.get(`${baseURL}/users/${cleanId}`, {
     withCredentials: true,
   });
   return res.data;
@@ -68,7 +69,8 @@ export async function getUserById(userId: string): Promise<UserProfile> {
  * Fetches user profile by username (GET /api/v1/users/username/:username)
  */
 export async function getUserByUsername(username: string): Promise<UserProfile> {
-  const res = await axios.get(`${baseURL}/users/username/${username}`, {
+  const cleanUsername = (username || "").trim();
+  const res = await axios.get(`${baseURL}/users/username/${encodeURIComponent(cleanUsername)}`, {
     withCredentials: true,
   });
   return res.data;
