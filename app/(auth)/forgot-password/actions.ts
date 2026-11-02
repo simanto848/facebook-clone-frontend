@@ -3,12 +3,19 @@
 import { useAxios } from "@/lib/useAxios";
 
 export async function forgotPasswordAction(state: any, formData: FormData) {
-  const email = formData.get("email") as string;
+  const email = ((formData.get("email") as string) || "").trim();
 
   if (!email) {
     return {
       success: false,
       message: "Email address is required.",
+    };
+  }
+
+  if (!email.includes("@")) {
+    return {
+      success: false,
+      message: "Please enter a valid email address.",
     };
   }
 
