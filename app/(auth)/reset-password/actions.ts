@@ -3,13 +3,20 @@
 import { useAxios } from "@/lib/useAxios";
 
 export async function resetPasswordAction(state: any, formData: FormData) {
-  const token = formData.get("token") as string;
-  const newPassword = formData.get("newPassword") as string;
+  const token = ((formData.get("token") as string) || "").trim();
+  const newPassword = (formData.get("newPassword") as string) || "";
 
   if (!token || !newPassword) {
     return {
       success: false,
       message: "Missing token or password.",
+    };
+  }
+
+  if (newPassword.length < 6) {
+    return {
+      success: false,
+      message: "New password must be at least 6 characters long.",
     };
   }
 
