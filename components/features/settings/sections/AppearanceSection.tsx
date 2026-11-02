@@ -91,10 +91,6 @@ export default function AppearanceSection() {
       localStorage.setItem("app-reduce-motion", String(reduceMotion));
       localStorage.setItem("app-high-contrast", String(highContrast));
 
-      await userService.updateProfile({
-        theme,
-      } as any);
-
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 2500);
     } catch {
