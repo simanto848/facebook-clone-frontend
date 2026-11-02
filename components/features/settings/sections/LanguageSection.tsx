@@ -35,10 +35,6 @@ export default function LanguageSection() {
       localStorage.setItem("user_timezone", timezone);
       localStorage.setItem("user_date_format", dateFormat);
 
-      await userService.updateProfile({
-        language: lang,
-      } as any);
-
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 2500);
     } catch {
