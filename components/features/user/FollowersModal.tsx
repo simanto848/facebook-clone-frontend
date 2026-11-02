@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Dialog, Tabs, Avatar, Button, EmptyState } from "@/components/ui";
 import { UserPlus, UserCheck, Search, X } from "lucide-react";
 import Link from "next/link";
+import { followService } from "@/services/followService";
 
 interface UserItem {
   id: string;
@@ -37,8 +38,23 @@ export function FollowersModal({
     { id: "following", label: "Following", badge: following.length },
   ];
 
-  const handleToggleFollow = (id: string) => {
-    setFollowingMap((prev) => ({ ...prev, [id]: !prev[id] }));
+  const handleToggleFollow = async (id: string, currentStatus?: boolean) => {
+    const cleanId = (id || "").trim();
+    if (!cleanId) return;
+    const isCurrentlyFollowing = followingMap[cleanId] ?? currentStatus;
+    const nextStatus = !isCurrentlyFollowing;
+    setFollowingMap((prev) => ({ ...prev, [cleanId]: nextStatus }));
+
+    try {
+      if (nextStatus) {
+        await followService.followUser(cleanId);
+      } else {
+        await followService.unfollowUser(cleanId);
+      }
+    } catch {
+      // Revert on error
+      setFollowingMap((prev) => ({ ...prev, [cleanId]: isCurrentlyFollowing }));
+    }
   };
 
   const activeList = activeTab === "followers" ? followers : following;
@@ -115,7 +131,7 @@ export function FollowersModal({
                     size="sm"
                     variant={isFollowing ? "secondary" : "primary"}
                     leftIcon={isFollowing ? <UserCheck size={13} /> : <UserPlus size={13} />}
-                    onClick={() => handleToggleFollow(user.id)}
+                    onClick={() => handleToggleFollow(user.id, user.isFollowing)}
                   >
                     {isFollowing ? "Following" : "Follow"}
                   </Button>
