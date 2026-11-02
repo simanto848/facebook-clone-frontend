@@ -39,10 +39,15 @@ export const callService = {
     return response.data;
   },
 
-  updateAudioCallStatus: async (callId: string, status: CallStatus, duration?: number) => {
+  updateAudioCallStatus: async (callId: string, status: CallStatus | string, duration?: number) => {
     const cleanId = (callId || "").trim();
     const axios = await useAxios();
-    const payload: { status: CallStatus; duration?: number } = { status };
+    const upperStatus = (status || "").toUpperCase() as CallStatus;
+    const validStatus: CallStatus =
+      upperStatus === "MISSED" || upperStatus === "REJECTED" || upperStatus === "ONGOING"
+        ? upperStatus
+        : "COMPLETED";
+    const payload: { status: CallStatus; duration?: number } = { status: validStatus };
     if (typeof duration === "number" && !isNaN(duration)) {
       payload.duration = Math.max(0, Math.round(duration));
     }
