@@ -107,15 +107,10 @@ export default function PrivacySection() {
         JSON.stringify({ isPrivate, profileLocked, allowSearchEngines, reviewTags, showOnlineStatus, visibility, friendRequestAudience, lookupAudience })
       );
 
-      await userService.updateProfile({
-        isPrivate,
-        showOnlineStatus,
-      });
-
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 3000);
     } catch (err) {
-      console.warn("Failed to persist privacy settings to backend, cached locally:", err);
+      console.warn("Failed to persist privacy settings locally:", err);
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 3000);
     } finally {
