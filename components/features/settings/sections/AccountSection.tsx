@@ -98,16 +98,20 @@ export default function AccountSection() {
       return;
     }
 
+    const cleanFullName = (fullName || "").trim().slice(0, 100);
+    const cleanBio = (bio || "").trim().slice(0, 500);
+    const rawAvatar = (avatarUrl || "").trim();
+    const cleanAvatar = /^https?:\/\/.+/.test(rawAvatar) ? rawAvatar : undefined;
+
     try {
       await userService.updateProfile({
-        displayName: fullName,
-        bio: bio,
-        avatar: avatarUrl,
-        website: website.trim(),
+        displayName: cleanFullName || undefined,
+        bio: cleanBio,
+        avatarUrl: cleanAvatar,
       });
       updateUser({
-        displayName: fullName,
-        avatar: avatarUrl,
+        displayName: cleanFullName || fullName,
+        avatar: cleanAvatar || avatarUrl,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 3500);
