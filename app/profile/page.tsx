@@ -264,26 +264,31 @@ export default function ProfilePage() {
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
+    const cleanDisplayName = (editForm.displayName || "").trim().slice(0, 100);
+    const cleanBio = (editForm.bio || "").trim().slice(0, 500);
+    const rawAvatar = (editForm.avatar || "").trim();
+    const cleanAvatar = /^https?:\/\/.+/.test(rawAvatar) ? rawAvatar : undefined;
+    const rawCover = (editForm.coverPhoto || "").trim();
+    const cleanCover = /^https?:\/\/.+/.test(rawCover) ? rawCover : undefined;
+
     try {
       const updated = await userService.updateProfile({
-        displayName: editForm.displayName,
-        bio: editForm.bio,
-        location: editForm.location,
-        website: editForm.website,
-        avatar: editForm.avatar,
-        coverPhoto: editForm.coverPhoto,
+        displayName: cleanDisplayName || undefined,
+        bio: cleanBio,
+        avatarUrl: cleanAvatar,
+        coverUrl: cleanCover,
       });
 
       const updatedData = updated.data || updated;
       setProfile((prev: any) => ({
         ...prev,
         ...updatedData,
-        displayName: editForm.displayName || prev?.displayName,
-        bio: editForm.bio || prev?.bio,
+        displayName: cleanDisplayName || prev?.displayName,
+        bio: cleanBio || prev?.bio,
         location: editForm.location || prev?.location,
         website: editForm.website || prev?.website,
-        avatar: editForm.avatar || prev?.avatar,
-        coverPhoto: editForm.coverPhoto || prev?.coverPhoto,
+        avatar: cleanAvatar || prev?.avatar,
+        coverPhoto: cleanCover || prev?.coverPhoto,
       }));
       setIsEditOpen(false);
     } catch (err) {
