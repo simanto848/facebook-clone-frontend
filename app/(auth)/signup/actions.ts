@@ -3,12 +3,12 @@
 import { useAxios } from "@/lib/useAxios";
 
 export async function registerAction(state: any, formData: FormData) {
-  const displayName = formData.get("displayName") as string;
-  const username = formData.get("username") as string;
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
-  const dateOfBirth = formData.get("dateOfBirth") as string;
-  const gender = formData.get("gender") as string;
+  const displayName = ((formData.get("displayName") as string) || "").trim();
+  const username = ((formData.get("username") as string) || "").trim();
+  const email = ((formData.get("email") as string) || "").trim();
+  const password = (formData.get("password") as string) || "";
+  const dateOfBirth = ((formData.get("dateOfBirth") as string) || "").trim();
+  const gender = ((formData.get("gender") as string) || "").trim();
 
   // Validate fields on the server
   if (!displayName || !username || !email || !password || !dateOfBirth || !gender) {
