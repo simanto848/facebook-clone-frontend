@@ -48,18 +48,25 @@ export function ProfileHeaderEdit({
     e.preventDefault();
     setLoading(true);
 
+    const cleanDisplayName = (name || "").trim().slice(0, 100);
+    const cleanBio = (bio || "").trim().slice(0, 500);
+    const rawAvatar = (avatar || "").trim();
+    const cleanAvatar = /^https?:\/\/.+/.test(rawAvatar) ? rawAvatar : undefined;
+    const rawCover = (coverPhoto || "").trim();
+    const cleanCover = /^https?:\/\/.+/.test(rawCover) ? rawCover : undefined;
+
     try {
       const res = await userService.updateProfile({
-        name,
-        bio,
-        avatar,
-        coverPhoto,
+        displayName: cleanDisplayName || undefined,
+        bio: cleanBio,
+        avatarUrl: cleanAvatar,
+        coverUrl: cleanCover,
       });
-      onUpdated(res?.data || { name, bio, avatar, coverPhoto });
+      onUpdated(res?.data || { name: cleanDisplayName, bio: cleanBio, avatar: cleanAvatar || avatar, coverPhoto: cleanCover || coverPhoto });
       onClose();
     } catch (err) {
       console.error("Update profile error:", err);
-      onUpdated({ name, bio, avatar, coverPhoto });
+      onUpdated({ name: cleanDisplayName, bio: cleanBio, avatar: cleanAvatar || avatar, coverPhoto: cleanCover || coverPhoto });
       onClose();
     } finally {
       setLoading(false);
