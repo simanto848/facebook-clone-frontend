@@ -131,13 +131,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   checkSession: async () => {
     set({ loading: true });
     try {
-      const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
+      const rawToken = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
+      const token = (rawToken || "").trim();
       if (token && !axios.defaults.headers.common["Authorization"]) {
         axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
       }
       const response = await axios.get(`${apiBaseUrl}/users/me`);
       const user = response.data?.data?.user || response.data?.data;
-      const accessToken = response.data?.data?.accessToken || token;
+      const accessToken = response.data?.data?.accessToken || token || null;
 
       if (accessToken && typeof window !== "undefined") {
         localStorage.setItem("accessToken", accessToken);
