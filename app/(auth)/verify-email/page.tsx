@@ -24,7 +24,7 @@ function VerifyEmailContent() {
 
     const executeVerify = async () => {
       try {
-        await authService.verifyEmail(token);
+        await authService.verifyEmail(token.trim());
         setSuccess(true);
         setTimeout(() => {
           router.push("/login");
