@@ -3,17 +3,15 @@ import { useAxios } from "@/lib/useAxios";
 export interface UpdateProfilePayload {
   name?: string;
   displayName?: string;
-  bio?: string;
-  dateOfBirth?: string | Date;
-  gender?: string;
+  bio?: string | null;
+  dateOfBirth?: string | Date | null;
+  gender?: string | null;
   avatar?: string;
   avatarUrl?: string;
   coverPhoto?: string;
   coverUrl?: string;
   location?: string;
   website?: string;
-  isPrivate?: boolean;
-  showOnlineStatus?: boolean;
 }
 
 export interface ChangePasswordPayload {
