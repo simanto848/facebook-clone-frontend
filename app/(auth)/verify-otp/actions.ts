@@ -3,7 +3,7 @@
 import { useAxios } from "@/lib/useAxios";
 
 export async function verifyOtpAction(state: any, formData: FormData) {
-  const token = formData.get("token") as string;
+  const token = ((formData.get("token") as string) || "").trim();
 
   if (!token) {
     return {
