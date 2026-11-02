@@ -170,24 +170,27 @@ export default function SecuritySection() {
     setSuccessMsg(null);
     setErrorMsg(null);
 
-    if (!currentPassword) {
+    const cleanCurrent = currentPassword.trim();
+    const cleanNew = newPassword;
+
+    if (!cleanCurrent) {
       setErrorMsg("Current password is required");
       return;
     }
 
-    if (newPassword.length < 8) {
-      setErrorMsg("New password must be at least 8 characters long");
+    if (cleanNew.length < 6) {
+      setErrorMsg("New password must be at least 6 characters long");
       return;
     }
 
-    if (newPassword !== confirmPassword) {
+    if (cleanNew !== confirmPassword) {
       setErrorMsg("New password and confirmation do not match");
       return;
     }
 
     setLoading(true);
     try {
-      await userService.changePassword({ currentPassword, newPassword });
+      await userService.changePassword({ currentPassword: cleanCurrent, newPassword: cleanNew });
       setSuccessMsg("Password changed successfully!");
       setCurrentPassword("");
       setNewPassword("");
