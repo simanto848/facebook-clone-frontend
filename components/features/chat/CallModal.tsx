@@ -265,6 +265,13 @@ export function CallModal({
             callerId: recipient.id,
             answer,
           });
+          if (incomingCallId) {
+            if (callType === "video") {
+              callService.answerVideoCall(incomingCallId).catch(() => {});
+            } else {
+              callService.answerCall(incomingCallId).catch(() => {});
+            }
+          }
           setCallStatus("connected");
         } else {
           // CALLER: Create offer and emit initiate over socket (even if target is joining)
