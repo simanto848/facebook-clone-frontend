@@ -55,16 +55,18 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
   );
 
   const handleToggleFollowAuthor = async () => {
+    const authorTargetId = (((post.author as any).id || post.author.username) || "").trim();
+    if (!authorTargetId) return;
     const nextFollowing = !isFollowingAuthor;
     setIsFollowingAuthor(nextFollowing);
     try {
       if (nextFollowing) {
-        await followService.followUser(post.author.username);
+        await followService.followUser(authorTargetId);
       } else {
-        await followService.unfollowUser(post.author.username);
+        await followService.unfollowUser(authorTargetId);
       }
     } catch {
-      // ignore
+      setIsFollowingAuthor(!nextFollowing);
     }
   };
   const [showReactionsModal, setShowReactionsModal] = useState(false);
