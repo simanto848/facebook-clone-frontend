@@ -361,12 +361,12 @@ export default function ReelsPage() {
 
   const handleAddComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newComment.trim() || submittingComment) return;
-    const text = newComment.trim();
+    const text = newComment.trim().slice(0, 2000);
+    if (!text || submittingComment) return;
     setSubmittingComment(true);
     try {
       const created = await commentService.createComment({
-        postId: currentReel.id,
+        postId: (currentReel.id || "").trim(),
         content: text,
       });
       const commentObj = created?.data || created || {
