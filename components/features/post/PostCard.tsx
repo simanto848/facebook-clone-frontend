@@ -147,10 +147,16 @@ export default function PostCard({ post, defaultShowComments = false }: Props) {
   useEffect(() => {
     const fetchShares = async () => {
       try {
-        const res = await shareService.getPostShares(post.id);
-        const count = res?.count ?? (Array.isArray(res?.data) ? res.data.length : res?.shares?.length ?? 0);
+        const countRes = await shareService.getPostShareCount(post.id);
+        const count = countRes?.data?.count ?? countRes?.count;
         if (typeof count === "number" && count >= 0) {
           setSharesCount(count);
+          return;
+        }
+        const res = await shareService.getPostShares(post.id);
+        const fallbackCount = res?.count ?? (Array.isArray(res?.data) ? res.data.length : res?.shares?.length ?? 0);
+        if (typeof fallbackCount === "number" && fallbackCount >= 0) {
+          setSharesCount(fallbackCount);
         }
       } catch {
         // Silent fallback
