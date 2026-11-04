@@ -474,12 +474,24 @@ export function CallModal({
     }
 
     const eventPrefix = callType === "video" ? "video-call" : "call";
+    const targetCallId = activeCallId || incomingCallId;
     if (socket && recipient.id) {
       socket.emit(`${eventPrefix}:end`, {
-        callId: activeCallId || incomingCallId,
+        callId: targetCallId,
         targetId: recipient.id,
         duration,
       });
+    }
+    if (targetCallId) {
+      if (duration > 0) {
+        if (callType === "video") {
+          callService.endVideoCall(targetCallId, duration).catch(() => {});
+        } else {
+          callService.endCall(targetCallId, duration).catch(() => {});
+        }
+      } else {
+        callService.rejectCall(targetCallId, callType === "video").catch(() => {});
+      }
     }
     setCallStatus("ended");
     cleanup();
