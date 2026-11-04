@@ -188,11 +188,16 @@ export default function PostComments({ postId, comments }: Props) {
       });
     };
 
+    const cleanReplyText = replyText.trim().slice(0, 2000);
+    if (!cleanReplyText) return;
+    const cleanPostId = (postId || "").trim();
+    const cleanCommentId = (commentId || "").trim();
+
     setCommentList((prev) => addReplyRecursive(prev));
-    addReplyToComment(postId, commentId, replyText);
+    addReplyToComment(cleanPostId, cleanCommentId, cleanReplyText);
 
     try {
-      const res = await commentService.createComment({ postId, parentId: commentId, content: replyText });
+      const res = await commentService.createComment({ postId: cleanPostId, parentId: cleanCommentId, content: cleanReplyText });
       const data = res?.data || res;
       if (data?.id) {
         const backendId = data.id;
