@@ -124,15 +124,15 @@ export default function PostComments({ postId, comments }: Props) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!commentText.trim() || submitting) return;
+    const content = commentText.trim().slice(0, 2000);
+    if (!content || submitting) return;
 
     setSubmitting(true);
-    const content = commentText.trim();
     setCommentText("");
 
     let backendId: string | undefined;
     try {
-      const res = await commentService.createComment({ postId, content });
+      const res = await commentService.createComment({ postId: (postId || "").trim(), content });
       const data = res?.data || res;
       if (data?.id) backendId = data.id;
     } catch (err) {
