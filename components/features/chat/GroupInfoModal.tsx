@@ -75,32 +75,36 @@ export function GroupInfoModal({
   };
 
   const handleAddParticipant = async (userToAdd: { id: string; name: string; avatar?: string }) => {
-    setAddingId(userToAdd.id);
+    const cleanId = (userToAdd.id || "").trim();
+    if (!cleanId) return;
+    setAddingId(cleanId);
     const newParticipant: GroupParticipant = {
-      id: userToAdd.id,
+      id: cleanId,
       name: userToAdd.name,
       avatar: userToAdd.avatar || "/avatars/default.png",
       role: "MEMBER",
     };
     setParticipants((prev) => [...prev, newParticipant]);
     try {
-      await groupChatService.addParticipants(groupId, [userToAdd.id]);
+      await groupChatService.addParticipants(groupId.trim(), [cleanId]);
       await fetchConversations();
     } catch (e) {
       console.error("Failed to add participant:", e);
+      setParticipants((prev) => prev.filter((p) => p.id !== cleanId));
     } finally {
       setAddingId(null);
     }
   };
 
   const handleUpdateTitle = async () => {
-    if (!titleInput.trim() || titleInput === groupTitle) {
+    const cleanTitle = titleInput.trim();
+    if (!cleanTitle || cleanTitle === groupTitle) {
       setIsEditingTitle(false);
       return;
     }
     try {
-      await groupChatService.updateGroupChatTitle(groupId, titleInput.trim());
-      setGroupTitle(titleInput.trim());
+      await groupChatService.updateGroupChatTitle(groupId.trim(), cleanTitle);
+      setGroupTitle(cleanTitle);
       await fetchConversations();
     } catch (e) {
       console.error("Failed to update group title:", e);
@@ -110,9 +114,11 @@ export function GroupInfoModal({
   };
 
   const handleRemoveParticipant = async (userId: string) => {
-    setParticipants((prev) => prev.filter((p) => p.id !== userId));
+    const cleanUserId = (userId || "").trim();
+    if (!cleanUserId) return;
+    setParticipants((prev) => prev.filter((p) => p.id !== cleanUserId));
     try {
-      await groupChatService.removeParticipant(groupId, userId);
+      await groupChatService.removeParticipant(groupId.trim(), cleanUserId);
       await fetchConversations();
     } catch (e) {
       console.error("Failed to remove participant:", e);
@@ -120,13 +126,15 @@ export function GroupInfoModal({
   };
 
   const handleToggleRole = async (userId: string, currentRole: "ADMIN" | "MEMBER") => {
+    const cleanUserId = (userId || "").trim();
+    if (!cleanUserId) return;
     const newRole = currentRole === "ADMIN" ? "MEMBER" : "ADMIN";
-    setRoleUpdatingId(userId);
+    setRoleUpdatingId(cleanUserId);
     setRoleError(null);
     try {
-      await groupChatService.updateParticipantRole(groupId, userId, newRole);
+      await groupChatService.updateParticipantRole(groupId.trim(), cleanUserId, newRole);
       setParticipants((prev) =>
-        prev.map((p) => (p.id === userId ? { ...p, role: newRole } : p))
+        prev.map((p) => (p.id === cleanUserId ? { ...p, role: newRole } : p))
       );
       await fetchConversations();
     } catch (e: any) {
@@ -140,7 +148,7 @@ export function GroupInfoModal({
 
   const handleCopyGroupLink = () => {
     if (typeof window !== "undefined") {
-      const inviteUrl = `${window.location.origin}/messages?group=${encodeURIComponent(groupId)}`;
+      const inviteUrl = `${window.location.origin}/messages?group=${encodeURIComponent(groupId.trim())}`;
       navigator.clipboard.writeText(inviteUrl);
       setCopiedLink(true);
       setTimeout(() => setCopiedLink(false), 2000);
@@ -150,7 +158,7 @@ export function GroupInfoModal({
   const handleLeaveGroup = async () => {
     setIsLeaving(true);
     try {
-      await groupChatService.leaveGroupChat(groupId);
+      await groupChatService.leaveGroupChat(groupId.trim());
     } catch (e) {
       console.error("Error leaving group:", e);
     } finally {
