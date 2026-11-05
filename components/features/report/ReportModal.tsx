@@ -27,14 +27,19 @@ export function ReportModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const cleanTargetId = (targetId || "").trim();
+    const cleanReason = (reason || "SPAM").trim().slice(0, 50);
+    const cleanDetails = details ? details.trim().slice(0, 500) : undefined;
+    if (!cleanTargetId || loading) return;
+
     setLoading(true);
 
     try {
       await reportService.createReport({
-        targetId,
+        targetId: cleanTargetId,
         targetType,
-        reason,
-        details,
+        reason: cleanReason,
+        details: cleanDetails,
       });
       setSubmitted(true);
       setTimeout(() => {
