@@ -28,7 +28,7 @@ import RightSidebar from "@/components/layout/RightSidebar";
 import { postService } from "@/services/postService";
 import { reactionService } from "@/services/reactionService";
 import { commentService } from "@/services/commentService";
-import { friendshipService } from "@/services/friendshipService";
+import { followService } from "@/services/followService";
 
 interface ReelItem {
   id: string;
@@ -487,17 +487,19 @@ export default function ReelsPage() {
   };
 
   const handleFollowAuthor = async (authorId?: string) => {
-    if (!authorId) return;
-    const isCurrentlyFollowing = !!followedAuthors[authorId];
-    setFollowedAuthors((prev) => ({ ...prev, [authorId]: !isCurrentlyFollowing }));
+    const cleanAuthorId = (authorId || "").trim();
+    if (!cleanAuthorId) return;
+    const isCurrentlyFollowing = !!followedAuthors[cleanAuthorId];
+    setFollowedAuthors((prev) => ({ ...prev, [cleanAuthorId]: !isCurrentlyFollowing }));
     try {
       if (isCurrentlyFollowing) {
-        await friendshipService.unfollowUser(authorId);
+        await followService.unfollowUser(cleanAuthorId);
       } else {
-        await friendshipService.followUser(authorId);
+        await followService.followUser(cleanAuthorId);
       }
     } catch (err) {
       console.warn("Failed to toggle follow author:", err);
+      setFollowedAuthors((prev) => ({ ...prev, [cleanAuthorId]: isCurrentlyFollowing }));
     }
   };
 
