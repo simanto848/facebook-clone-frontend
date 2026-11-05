@@ -149,6 +149,12 @@ export default function ExplorePage() {
     setSearching(true);
     const delayDebounceFn = setTimeout(async () => {
       try {
+        const cleanQuery = searchQuery.trim().slice(0, 100);
+        if (!cleanQuery) {
+          setSearching(false);
+          return;
+        }
+
         const searchType =
           activeCategory === "people"
             ? "users"
@@ -160,7 +166,7 @@ export default function ExplorePage() {
             ? "pages"
             : "all";
 
-        const res = await searchService.search(searchQuery, searchType as any);
+        const res = await searchService.search(cleanQuery, searchType as any);
         const data = res?.data || res;
 
         if (data?.users && Array.isArray(data.users)) {
