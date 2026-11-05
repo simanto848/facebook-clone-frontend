@@ -23,14 +23,19 @@ export function ReportModal({ isOpen, onClose, targetId, targetType }: ReportMod
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const cleanTargetId = (targetId || "").trim();
+    const cleanReason = (reason || "SPAM").trim().slice(0, 50);
+    const cleanDetails = details ? details.trim().slice(0, 500) : undefined;
+    if (!cleanTargetId || submitting) return;
+
     setSubmitting(true);
 
     if (blockAuthor && typeof window !== "undefined") {
       try {
         const stored = localStorage.getItem("blocked_reported_users") || "[]";
         const list = JSON.parse(stored);
-        if (!list.includes(targetId)) {
-          list.push(targetId);
+        if (!list.includes(cleanTargetId)) {
+          list.push(cleanTargetId);
           localStorage.setItem("blocked_reported_users", JSON.stringify(list));
         }
       } catch {}
@@ -38,10 +43,10 @@ export function ReportModal({ isOpen, onClose, targetId, targetType }: ReportMod
 
     try {
       await reportService.createReport({
-        targetId,
+        targetId: cleanTargetId,
         targetType,
-        reason,
-        details,
+        reason: cleanReason,
+        details: cleanDetails,
       });
       setSubmitted(true);
       setTimeout(() => {
