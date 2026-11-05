@@ -234,7 +234,7 @@ export default function ConnectionsPage() {
     try {
       if (isSent) {
         setSentRequestIds((prev) => prev.filter((id) => id !== user.id));
-        await friendshipService.declineFriendRequest(user.id);
+        await friendshipService.cancelFriendRequest(user.id);
       } else {
         setSentRequestIds((prev) => [...prev, user.id]);
         await friendshipService.sendFriendRequest(user.id);
