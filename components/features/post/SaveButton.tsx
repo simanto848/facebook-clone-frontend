@@ -21,9 +21,10 @@ export default function SaveButton({ isSaved, onClick, showText = false, postId 
   const [savedToast, setSavedToast] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!postId || typeof window === "undefined") return;
+    const cleanPostId = (postId || "").trim();
+    if (!cleanPostId || typeof window === "undefined") return;
     try {
-      const stored = localStorage.getItem(`saved_cat_${postId}`);
+      const stored = localStorage.getItem(`saved_cat_${cleanPostId}`);
       if (stored) setSelectedCollection(stored);
     } catch {
       // ignore
@@ -33,9 +34,10 @@ export default function SaveButton({ isSaved, onClick, showText = false, postId 
   const handleSelectCollection = (colId: string, colLabel: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setSelectedCollection(colId);
-    if (postId && typeof window !== "undefined") {
+    const cleanPostId = (postId || "").trim();
+    if (cleanPostId && typeof window !== "undefined") {
       try {
-        localStorage.setItem(`saved_cat_${postId}`, colId);
+        localStorage.setItem(`saved_cat_${cleanPostId}`, colId);
       } catch {
         // ignore
       }
