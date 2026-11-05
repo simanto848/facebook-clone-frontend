@@ -32,6 +32,7 @@ import PostCard from "@/components/features/post/PostCard";
 import ReportModal from "@/components/features/post/ReportModal";
 import { userService } from "@/services/userService";
 import { friendshipService } from "@/services/friendshipService";
+import { followService } from "@/services/followService";
 import { blockService } from "@/services/blockService";
 import { usePostStore, mapBackendPostToPostType, PostType } from "@/store/postStore";
 import { useAuthStore } from "@/store/authStore";
@@ -170,15 +171,17 @@ export default function UserProfileDetailPage({ params }: ProfilePageProps) {
 
   const handleFriendAction = async () => {
     if (!user?.id || actionLoading) return;
+    const cleanUserId = user.id.trim();
     setActionLoading(true);
     try {
       if (friendStatus === "none") {
-        await friendshipService.sendFriendRequest(user.id);
+        await friendshipService.sendFriendRequest(cleanUserId);
         setFriendStatus("sent");
       } else if (friendStatus === "friends") {
-        await friendshipService.unfriend(user.id);
+        await friendshipService.unfriend(cleanUserId);
         setFriendStatus("none");
       } else if (friendStatus === "sent") {
+        await friendshipService.cancelFriendRequest(cleanUserId);
         setFriendStatus("none");
       }
     } catch (err) {
@@ -190,13 +193,14 @@ export default function UserProfileDetailPage({ params }: ProfilePageProps) {
 
   const handleFollowToggle = async () => {
     if (!user?.id || actionLoading) return;
+    const cleanUserId = user.id.trim();
     setActionLoading(true);
     try {
       if (isFollowing) {
-        await friendshipService.unfollowUser(user.id);
+        await followService.unfollowUser(cleanUserId);
         setIsFollowing(false);
       } else {
-        await friendshipService.followUser(user.id);
+        await followService.followUser(cleanUserId);
         setIsFollowing(true);
       }
     } catch (err) {
