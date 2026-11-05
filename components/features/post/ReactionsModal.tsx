@@ -50,9 +50,11 @@ export default function ReactionsModal({
 
     const fetchData = async () => {
       try {
+        const cleanTargetId = (targetId || "").trim();
+        const upperTargetType = (targetType || "POST").toUpperCase() === "COMMENT" ? "COMMENT" : "POST";
         const [resList, resStats] = await Promise.allSettled([
-          reactionService.getReactions(targetId, targetType, 1, 50),
-          reactionService.getStats(targetId, targetType),
+          reactionService.getReactions(cleanTargetId, upperTargetType, 1, 50),
+          reactionService.getStats(cleanTargetId, upperTargetType),
         ]);
 
         if (isMounted) {
