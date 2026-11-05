@@ -17,7 +17,7 @@ import { PageHeader, Badge, Button, EmptyState, Avatar, Dialog } from "@/compone
 export default function HashtagPage() {
   const params = useParams();
   const rawTag = (params?.tag as string) || "design";
-  const tag = decodeURIComponent(rawTag);
+  const tag = decodeURIComponent(rawTag).replace(/^#+/, "").trim();
   const user = useAuthStore((s) => s.user);
   const { posts } = usePostStore();
   const [following, setFollowing] = useState(false);
