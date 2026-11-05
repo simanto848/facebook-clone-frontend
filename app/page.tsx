@@ -99,8 +99,10 @@ export default function Home() {
     if (showLoading) setIsLoading(true);
     try {
       let res;
-      if (activeFilter === "trending") {
+      if (activeFilter === "trending" || activeFilter === "popular") {
         res = await feedService.getTrendingFeed({ page: 1, pageSize: 25 });
+      } else if (formatFilter === "media") {
+        res = await feedService.getMediaFeed({ page: 1, pageSize: 25 });
       } else {
         res = await feedService.getChronologicalFeed({ page: 1, pageSize: 25 });
       }
