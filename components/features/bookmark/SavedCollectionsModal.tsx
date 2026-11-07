@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { FolderPlus, Folder, Check, Search, X, Trash2 } from "lucide-react";
 import { Dialog, Input, Button, Badge } from "@/components/ui";
+import { bookmarkService } from "@/services/bookmarkService";
 
 interface CollectionItem {
   id: string;
@@ -33,6 +34,7 @@ export function SavedCollectionsModal({
   const [searchQuery, setSearchQuery] = useState("");
   const [newFolder, setNewFolder] = useState("");
   const [selectedCollection, setSelectedCollection] = useState<string>("c1");
+  const [savingBookmark, setSavingBookmark] = useState(false);
 
   const handleDeleteCollection = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
@@ -56,7 +58,18 @@ export function SavedCollectionsModal({
     setNewFolder("");
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    const cleanPostId = (postId || "").trim();
+    if (cleanPostId) {
+      setSavingBookmark(true);
+      try {
+        await bookmarkService.createBookmark(cleanPostId);
+      } catch (err) {
+        console.warn("Backend bookmark creation failed in modal:", err);
+      } finally {
+        setSavingBookmark(false);
+      }
+    }
     if (onSaveToCollection) {
       onSaveToCollection(selectedCollection);
     }
@@ -163,10 +176,10 @@ export function SavedCollectionsModal({
         </form>
 
         <div className="flex justify-end gap-2 pt-3 border-t border-[#1f2937]">
-          <Button variant="secondary" onClick={onClose}>
+          <Button variant="secondary" onClick={onClose} disabled={savingBookmark}>
             Cancel
           </Button>
-          <Button variant="primary" onClick={handleSave}>
+          <Button variant="primary" onClick={handleSave} loading={savingBookmark}>
             Save Post
           </Button>
         </div>
