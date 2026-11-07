@@ -104,6 +104,13 @@ export default function AccountSection() {
     const cleanAvatar = /^https?:\/\/.+/.test(rawAvatar) ? rawAvatar : undefined;
 
     try {
+      if (cleanAvatar) {
+        try {
+          await userService.updateAvatar(cleanAvatar);
+        } catch {
+          // Fall back to updateProfile
+        }
+      }
       await userService.updateProfile({
         displayName: cleanFullName || undefined,
         bio: cleanBio,
