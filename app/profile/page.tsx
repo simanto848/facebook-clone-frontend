@@ -227,8 +227,8 @@ export default function ProfilePage() {
 
         // Fetch friends
         try {
-          const fRes = await friendshipService.getFriends(6);
-          const fList = fRes.data || fRes || [];
+          const fRes = await friendshipService.getFriends(1, 6);
+          const fList = fRes.data?.friends || fRes.data || fRes.friends || fRes || [];
           if (Array.isArray(fList)) {
             setFriends(fList);
           }
