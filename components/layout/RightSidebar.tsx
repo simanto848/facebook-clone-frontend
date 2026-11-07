@@ -100,7 +100,7 @@ const RightSidebar = () => {
     const fetchFriends = async () => {
       try {
         const res = await friendshipService.getFriends();
-        const items = res?.data || res || [];
+        const items = res?.data?.friends || res?.data || res?.friends || res || [];
         if (Array.isArray(items) && items.length > 0) {
           const mapped: FriendItem[] = items.map((f: any) => {
             const u = f.friend || f;
