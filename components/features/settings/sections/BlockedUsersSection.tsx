@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { UserX, ShieldOff, Search, Plus, AlertCircle, CheckCircle2, X } from "lucide-react";
 import Image from "next/image";
 import { blockService } from "@/services/blockService";
+import { userService } from "@/services/userService";
 import { Button, Dialog, Input } from "@/components/ui";
 
 interface BlockedUser {
@@ -44,11 +45,24 @@ export default function BlockedUsersSection() {
     setBlockingLoading(true);
     setBlockError(null);
     try {
-      await blockService.blockUser(cleanTarget);
+      let resolvedUserId = cleanTarget;
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanTarget);
+      if (!isUuid) {
+        try {
+          const userRes = await userService.getUserByUsername(cleanTarget);
+          const userData = userRes?.data || userRes;
+          if (userData?.id) {
+            resolvedUserId = userData.id;
+          }
+        } catch {
+          // Fall through to direct block attempt
+        }
+      }
+      await blockService.blockUser(resolvedUserId);
       setBlocked((prev) => [
         ...prev,
         {
-          id: `b-${Date.now()}`,
+          id: resolvedUserId,
           name: cleanTarget,
           avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
         },
