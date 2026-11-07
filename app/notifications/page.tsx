@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Avatar, Badge, Button, EmptyState, Tabs, Dialog } from "@/components/ui";
 import { notificationService } from "@/services/notificationService";
+import { friendshipService } from "@/services/friendshipService";
 
 export interface NotificationItem {
   id: string;
@@ -26,6 +27,7 @@ export interface NotificationItem {
   time: string;
   unread: boolean;
   type?: "like" | "comment" | "follow" | "mention" | "system" | "friend_request";
+  actorId?: string;
 }
 
 const fallbackNotifications: NotificationItem[] = [
@@ -157,12 +159,13 @@ export default function NotificationsPage() {
       if (Array.isArray(items) && items.length > 0) {
         const parsed: NotificationItem[] = items.map((n: any) => ({
           id: n.id || n._id,
-          sender: n.sender?.name || (n.sender?.firstName ? `${n.sender.firstName} ${n.sender.lastName || ""}`.trim() : "Community Member"),
-          avatar: n.sender?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
-          text: n.message || n.text || "New notification activity",
+          sender: n.actor?.displayName || n.actor?.username || n.sender?.name || (n.sender?.firstName ? `${n.sender.firstName} ${n.sender.lastName || ""}`.trim() : "Community Member"),
+          avatar: n.actor?.avatarUrl || n.sender?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
+          text: n.message || n.text || (n.type === "FRIEND_REQUEST" ? "sent you a friend connection request." : "New notification activity"),
           time: n.createdAt ? new Date(n.createdAt).toLocaleDateString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "Recently",
           unread: !n.isRead,
           type: (n.type?.toLowerCase() as any) || "system",
+          actorId: n.actorId || n.actor?.id || n.senderId || n.sender?.id,
         }));
         setNotifications(parsed);
         if (soundEnabled && parsed.some((n) => n.unread)) {
@@ -218,19 +221,33 @@ export default function NotificationsPage() {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
   };
 
-  const handleAcceptRequest = (id: string, e: React.MouseEvent) => {
+  const handleAcceptRequest = async (item: NotificationItem, e: React.MouseEvent) => {
     e.stopPropagation();
-    setRequestStatus((prev) => ({ ...prev, [id]: "accepted" }));
+    setRequestStatus((prev) => ({ ...prev, [item.id]: "accepted" }));
     setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, unread: false, text: "is now your friend." } : n))
+      prev.map((n) => (n.id === item.id ? { ...n, unread: false, text: "is now your friend." } : n))
     );
+    if (item.actorId) {
+      try {
+        await friendshipService.acceptFriendRequest(item.actorId);
+      } catch (err) {
+        console.warn("Backend accept friend request from notification failed:", err);
+      }
+    }
     setReadBanner("Friend request confirmed!");
     setTimeout(() => setReadBanner(null), 3000);
   };
 
-  const handleDeclineRequest = (id: string, e: React.MouseEvent) => {
+  const handleDeclineRequest = async (item: NotificationItem, e: React.MouseEvent) => {
     e.stopPropagation();
-    setRequestStatus((prev) => ({ ...prev, [id]: "declined" }));
+    setRequestStatus((prev) => ({ ...prev, [item.id]: "declined" }));
+    if (item.actorId) {
+      try {
+        await friendshipService.declineFriendRequest(item.actorId);
+      } catch (err) {
+        console.warn("Backend decline friend request from notification failed:", err);
+      }
+    }
     setReadBanner("Friend request declined.");
     setTimeout(() => setReadBanner(null), 3000);
   };
@@ -476,14 +493,14 @@ export default function NotificationsPage() {
                         <>
                           <button
                             type="button"
-                            onClick={(e) => handleAcceptRequest(item.id, e)}
+                            onClick={(e) => handleAcceptRequest(item, e)}
                             className="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold transition shadow-xs cursor-pointer"
                           >
                             Confirm
                           </button>
                           <button
                             type="button"
-                            onClick={(e) => handleDeclineRequest(item.id, e)}
+                            onClick={(e) => handleDeclineRequest(item, e)}
                             className="px-3 py-1 bg-[#242526] hover:bg-[#3a3b3c] text-slate-300 rounded-lg text-xs font-medium transition cursor-pointer"
                           >
                             Delete
