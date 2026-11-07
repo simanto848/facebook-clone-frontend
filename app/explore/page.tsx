@@ -51,25 +51,27 @@ export default function ExplorePage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const handleSelectHashtag = async (tag: string) => {
-    setSelectedTag(tag);
+    const cleanTag = (tag || "").replace(/^#+/, "").trim();
+    if (!cleanTag) return;
+    setSelectedTag(cleanTag);
     setSearchQuery("");
     setSearching(true);
     try {
-      const res = await hashtagService.getHashtagPosts(tag);
+      const res = await hashtagService.getHashtagPosts(cleanTag);
       const items = res?.data?.posts || res?.data || res?.posts || res || [];
       if (Array.isArray(items) && items.length > 0) {
         setMatchedPosts(items.map(mapBackendPostToPostType));
       } else {
         // Filter local posts with the tag
         const filtered = posts.filter(
-          (p) => p.content.toLowerCase().includes(`#${tag.toLowerCase()}`) || p.content.toLowerCase().includes(tag.toLowerCase())
+          (p) => p.content.toLowerCase().includes(`#${cleanTag.toLowerCase()}`) || p.content.toLowerCase().includes(cleanTag.toLowerCase())
         );
         setMatchedPosts(filtered);
       }
     } catch (e) {
       console.warn("Could not fetch hashtag posts from backend, using fallback filter:", e);
       const filtered = posts.filter(
-        (p) => p.content.toLowerCase().includes(`#${tag.toLowerCase()}`) || p.content.toLowerCase().includes(tag.toLowerCase())
+        (p) => p.content.toLowerCase().includes(`#${cleanTag.toLowerCase()}`) || p.content.toLowerCase().includes(cleanTag.toLowerCase())
       );
       setMatchedPosts(filtered);
     } finally {
