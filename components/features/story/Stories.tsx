@@ -81,7 +81,9 @@ export default function Stories() {
       const res = await storyService.getActiveStories();
       const items = res.data || res || [];
       if (Array.isArray(items) && items.length > 0) {
+        const existingIds = new Set(stories.map((s) => s.id));
         items.forEach((item: any) => {
+          if (item?.id && existingIds.has(item.id)) return;
           const isVideo = item.mediaUrl?.match(/\.(mp4|webm|mov)$/i) || item.mediaType === "VIDEO";
           addStory({
             id: item.id,
