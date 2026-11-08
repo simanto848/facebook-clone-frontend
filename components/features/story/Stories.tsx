@@ -222,7 +222,10 @@ export default function Stories() {
         {stories.map((story, index) => (
           <div
             key={story.id}
-            onClick={() => setActiveStoryIndex(index)}
+            onClick={() => {
+              setActiveStoryIndex(index);
+              viewStory(story.id);
+            }}
             className="relative h-44 w-28 shrink-0 rounded-2xl border border-[#1f2937] bg-[#111827] overflow-hidden cursor-pointer hover:border-blue-500 hover:scale-[1.02] transition-all group shadow-md"
           >
             {story.type === "text" ? (
