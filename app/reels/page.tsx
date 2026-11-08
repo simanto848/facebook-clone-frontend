@@ -29,6 +29,7 @@ import { postService } from "@/services/postService";
 import { reactionService } from "@/services/reactionService";
 import { commentService } from "@/services/commentService";
 import { followService } from "@/services/followService";
+import { shareService } from "@/services/shareService";
 
 interface ReelItem {
   id: string;
@@ -451,12 +452,15 @@ export default function ReelsPage() {
   };
 
   const handleShare = async (reelId: string) => {
+    const cleanReelId = (reelId || "").trim();
+    if (!cleanReelId) return;
+
     setReels((prev) =>
       prev.map((r) => (r.id === reelId ? { ...r, shares: r.shares + 1 } : r))
     );
 
     try {
-      await postService.sharePost(reelId);
+      await shareService.sharePost({ postId: cleanReelId, visibility: "PUBLIC" });
     } catch {
       // ignore
     }
