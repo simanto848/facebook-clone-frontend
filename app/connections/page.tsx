@@ -56,10 +56,11 @@ export default function ConnectionsPage() {
     : mutualList;
 
   const handleViewMutual = async (u: DisplayUser) => {
+    const cleanUserId = (u?.id || "").trim();
     setMutualUser(u);
     setLoadingMutual(true);
     try {
-      const res = await friendshipService.getMutualFriends(u.id);
+      const res = await friendshipService.getMutualFriends(cleanUserId);
       const data = res?.data || res || [];
       if (Array.isArray(data) && data.length > 0) {
         setMutualList(data.map((m: any) => ({
