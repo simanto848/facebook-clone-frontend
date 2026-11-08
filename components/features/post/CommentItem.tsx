@@ -32,9 +32,11 @@ export default function CommentItem({ comment, onLike, onReply, onEdit, onDelete
   }, [comment.replies]);
 
   const handleLoadServerReplies = async () => {
+    const cleanCommentId = (comment.id || "").trim();
+    if (!cleanCommentId) return;
     setLoadingReplies(true);
     try {
-      const res = await commentService.getCommentReplies(comment.id);
+      const res = await commentService.getCommentReplies(cleanCommentId);
       const raw = res?.data?.replies || res?.replies || res?.data || res || [];
       if (Array.isArray(raw) && raw.length > 0) {
         const parsed: CommentType[] = raw.map((r: any) => ({
