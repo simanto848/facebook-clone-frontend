@@ -7,6 +7,7 @@ import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
 import { usePostStore, mapBackendPostToPostType, PostType } from "@/store/postStore";
 import { postService } from "@/services/postService";
+import { bookmarkService } from "@/services/bookmarkService";
 import { ArrowLeft, MessageSquare, Loader2, Copy, Check, Share2, Compass, Bookmark, BookmarkCheck, Eye, Clock, Code2, ExternalLink } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button, Dialog, Badge } from "@/components/ui";
@@ -65,9 +66,19 @@ export default function PostDetailPage({ params }: PageProps) {
 
   const isSaved = Boolean(post?.saved || existingPost?.saved);
 
-  const handleToggleBookmark = () => {
+  const handleToggleBookmark = async () => {
+    const nextSaved = !isSaved;
     toggleSavePost(id);
-    setPost((p) => (p ? { ...p, saved: !isSaved } : p));
+    setPost((p) => (p ? { ...p, saved: nextSaved } : p));
+    try {
+      if (nextSaved) {
+        await bookmarkService.createBookmark(id);
+      } else {
+        await bookmarkService.deleteBookmark(id);
+      }
+    } catch (err) {
+      console.warn("Backend bookmark toggle error:", err);
+    }
   };
 
   const handleCopyLink = () => {
