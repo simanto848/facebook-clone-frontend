@@ -186,7 +186,10 @@ export default function ConnectionsPage() {
 
     try {
       await Promise.allSettled(
-        toAccept.map((u) => friendshipService.acceptFriendRequest(u.id))
+        toAccept.map((u) => {
+          const cleanId = (u?.id || "").trim();
+          return cleanId ? friendshipService.acceptFriendRequest(cleanId) : Promise.resolve();
+        })
       );
       if (typeof window !== "undefined") {
         window.dispatchEvent(new CustomEvent("app:friendship_updated"));
@@ -199,9 +202,11 @@ export default function ConnectionsPage() {
   };
 
   const handleAcceptRequest = async (user: DisplayUser) => {
+    const cleanId = (user?.id || "").trim();
+    if (!cleanId) return;
     setProcessingId(user.id);
     try {
-      await friendshipService.acceptFriendRequest(user.id);
+      await friendshipService.acceptFriendRequest(cleanId);
       setRequests((prev) => prev.filter((r) => r.id !== user.id));
       setConnections((prev) => [user, ...prev]);
       if (typeof window !== "undefined") {
@@ -215,9 +220,11 @@ export default function ConnectionsPage() {
   };
 
   const handleDeclineRequest = async (userId: string) => {
+    const cleanId = (userId || "").trim();
+    if (!cleanId) return;
     setProcessingId(userId);
     try {
-      await friendshipService.declineFriendRequest(userId);
+      await friendshipService.declineFriendRequest(cleanId);
       setRequests((prev) => prev.filter((r) => r.id !== userId));
       if (typeof window !== "undefined") {
         window.dispatchEvent(new CustomEvent("app:friendship_updated"));
@@ -230,15 +237,17 @@ export default function ConnectionsPage() {
   };
 
   const handleToggleFriendRequest = async (user: DisplayUser) => {
+    const cleanId = (user?.id || "").trim();
+    if (!cleanId) return;
     const isSent = sentRequestIds.includes(user.id);
     setProcessingId(user.id);
     try {
       if (isSent) {
         setSentRequestIds((prev) => prev.filter((id) => id !== user.id));
-        await friendshipService.cancelFriendRequest(user.id);
+        await friendshipService.cancelFriendRequest(cleanId);
       } else {
         setSentRequestIds((prev) => [...prev, user.id]);
-        await friendshipService.sendFriendRequest(user.id);
+        await friendshipService.sendFriendRequest(cleanId);
       }
     } catch (e) {
       console.error("Error toggling friend request:", e);
@@ -248,9 +257,11 @@ export default function ConnectionsPage() {
   };
 
   const handleUnfriend = async (userId: string) => {
+    const cleanId = (userId || "").trim();
+    if (!cleanId) return;
     setProcessingId(userId);
     try {
-      await friendshipService.unfriend(userId);
+      await friendshipService.unfriend(cleanId);
       setConnections((prev) => prev.filter((c) => c.id !== userId));
       if (typeof window !== "undefined") {
         window.dispatchEvent(new CustomEvent("app:friendship_updated"));
