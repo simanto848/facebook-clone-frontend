@@ -552,11 +552,19 @@ export default function NotificationsPage() {
             <Button
               variant="destructive"
               size="sm"
-              onClick={() => {
+              onClick={async () => {
+                const toDelete = [...notifications];
                 setNotifications([]);
                 setShowClearConfirm(false);
                 setReadBanner("All notifications have been cleared.");
                 setTimeout(() => setReadBanner(null), 3000);
+                try {
+                  await Promise.allSettled(
+                    toDelete.map((n) => notificationService.deleteNotification(n.id))
+                  );
+                } catch (err) {
+                  console.warn("Backend clear all notifications error:", err);
+                }
               }}
             >
               Clear All Notifications
