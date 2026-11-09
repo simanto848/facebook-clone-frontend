@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
-import { Calendar, MapPin, Users, Ticket, Check, Plus, Image as ImageIcon, Search, Share2, ExternalLink, Flame, ArrowUpDown, Download, Bell, BellRing, History, Sparkles } from "lucide-react";
+import { Calendar, MapPin, Users, Ticket, Check, Plus, Image as ImageIcon, Search, Share2, ExternalLink, Flame, ArrowUpDown, Download, Bell, BellRing, History, Sparkles, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { eventService } from "@/services/eventService";
 import {
@@ -74,6 +74,23 @@ export default function EventsPage() {
   const [copiedEventId, setCopiedEventId] = useState<string | null>(null);
   const [reminders, setReminders] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const handleDeleteEvent = async (eventId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const cleanId = (eventId || "").trim();
+    if (!cleanId || deletingId === cleanId) return;
+    setDeletingId(cleanId);
+    setEvents((prev) => prev.filter((ev) => ev.id !== cleanId));
+    try {
+      await eventService.deleteEvent(cleanId);
+    } catch (err) {
+      console.warn("Backend delete event failed, kept local removal:", err);
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const isEventPast = (dateStr: string): boolean => {
     if (!dateStr) return false;
@@ -770,6 +787,15 @@ export default function EventsPage() {
                             title="Share event link"
                           >
                             {copiedEventId === event.id ? <Check size={14} className="text-emerald-400" /> : <Share2 size={14} />}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="px-2.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10"
+                            onClick={(e) => handleDeleteEvent(event.id, e)}
+                            title="Delete event"
+                          >
+                            <Trash2 size={14} />
                           </Button>
                         </div>
                       </CardContent>
