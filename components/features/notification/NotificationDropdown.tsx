@@ -106,6 +106,16 @@ export function NotificationDropdown({ isOpen, onClose }: NotificationDropdownPr
     }
   };
 
+  const handleClearAll = async () => {
+    const idsToDelete = notifications.map((n) => n.id);
+    setNotifications([]);
+    try {
+      await Promise.allSettled(idsToDelete.map((id) => notificationService.deleteNotification(id)));
+    } catch (e) {
+      console.error("Failed to clear notifications:", e);
+    }
+  };
+
   if (!isOpen) return null;
 
   const unreadCount = notifications.filter((n) => n.unread).length;
@@ -235,8 +245,8 @@ export function NotificationDropdown({ isOpen, onClose }: NotificationDropdownPr
           {notifications.length > 0 && (
             <button
               type="button"
-              onClick={() => setNotifications([])}
-              className="text-[11px] text-slate-400 hover:text-rose-400 transition"
+              onClick={handleClearAll}
+              className="text-[11px] text-slate-400 hover:text-rose-400 transition cursor-pointer"
             >
               Clear all
             </button>
