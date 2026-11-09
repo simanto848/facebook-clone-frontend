@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, Heart, Eye, Trash2, Play, Pause, Volume2, VolumeX, Send, Share2, Download, Maximize2, Minimize2 } from "lucide-react";
 import { Dialog, Avatar, Button, Badge } from "@/components/ui";
+import { messageService } from "@/services/messageService";
 
 export interface StoryItem {
   id: string;
@@ -74,15 +75,31 @@ export function StoryViewerModal({
     }, 2200);
   };
 
-  const handleSendReply = (e: React.FormEvent) => {
+  const handleSendReply = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!replyText.trim()) return;
+    const cleanText = replyText.trim();
+    if (!cleanText) return;
     setReactionToast(`Reply sent to ${currentStory.author.name}!`);
     setReplyText("");
     setIsPaused(false);
     setTimeout(() => {
       setReactionToast(null);
     }, 2200);
+
+    const authorId = currentStory.author.id;
+    if (authorId) {
+      try {
+        const convRes = await messageService.createConversation(authorId);
+        const convId = convRes?.data?.id || convRes?.id;
+        if (convId) {
+          await messageService.sendMessage(convId, {
+            content: `Replied to your story: "${cleanText}"`,
+          });
+        }
+      } catch (err) {
+        console.warn("Failed to dispatch story reply to conversation:", err);
+      }
+    }
   };
 
   const handleQuickReaction = (emoji: string, e: React.MouseEvent) => {
