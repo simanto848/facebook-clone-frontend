@@ -56,6 +56,20 @@ export function ProfileHeaderEdit({
     const cleanCover = /^https?:\/\/.+/.test(rawCover) ? rawCover : undefined;
 
     try {
+      if (cleanAvatar) {
+        try {
+          await userService.updateAvatar(cleanAvatar);
+        } catch {
+          // Fall back to updateProfile
+        }
+      }
+      if (cleanCover) {
+        try {
+          await userService.updateCover(cleanCover);
+        } catch {
+          // Fall back to updateProfile
+        }
+      }
       const res = await userService.updateProfile({
         displayName: cleanDisplayName || undefined,
         bio: cleanBio,
