@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Send, Check, Search, MessageSquare, X } from "lucide-react";
 import { Dialog, Button } from "@/components/ui";
 import { useChatStore } from "@/store/chatStore";
+import { messageService } from "@/services/messageService";
 
 interface DirectMessageModalProps {
   isOpen: boolean;
@@ -31,7 +32,7 @@ export function DirectMessageModal({
     return title.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!selectedConvId) return;
     setSending(true);
 
@@ -41,6 +42,12 @@ export function DirectMessageModal({
       : `Check out this post: ${postUrl}`;
 
     sendDirectMessage(selectedConvId, payload);
+
+    try {
+      await messageService.sendMessage(selectedConvId, { content: payload });
+    } catch (err) {
+      console.warn("Backend sendMessage failed, kept local message:", err);
+    }
 
     setSending(false);
     setSent(true);
