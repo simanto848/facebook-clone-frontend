@@ -24,6 +24,7 @@ import {
   X,
   Bell,
   BellRing,
+  Trash2,
 } from "lucide-react";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
@@ -58,6 +59,8 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
   const [attendeeSearch, setAttendeeSearch] = useState("");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
+  const [deletingEvent, setDeletingEvent] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [reminderSet, setReminderSet] = useState(false);
   const [rsvpToast, setRsvpToast] = useState<{ message: string; type: "success" | "info" } | null>(null);
   const [editForm, setEditForm] = useState({
@@ -533,6 +536,20 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
     setIsEditModalOpen(false);
   };
 
+  const handleDeleteEvent = async () => {
+    const cleanId = (event?.id || id || "").trim();
+    if (!cleanId || deletingEvent) return;
+    setDeletingEvent(true);
+    try {
+      await eventService.deleteEvent(cleanId);
+    } catch (err) {
+      console.warn("Backend deleteEvent failed, redirecting:", err);
+    }
+    setDeletingEvent(false);
+    setIsDeleteModalOpen(false);
+    router.push("/events");
+  };
+
   const startDateFormatted = event?.startTime
     ? new Date(event.startTime).toLocaleDateString(undefined, {
         weekday: "long",
@@ -578,6 +595,16 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
                   className="border border-[#1f2937] text-slate-300 hover:text-white"
                 >
                   Edit Event
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  leftIcon={<Trash2 size={14} />}
+                  onClick={() => setIsDeleteModalOpen(true)}
+                  disabled={!event}
+                  className="border border-[#1f2937] text-slate-300 hover:text-rose-400 hover:border-rose-500/40"
+                >
+                  Delete Event
                 </Button>
                 <Button
                   variant="secondary"
@@ -1183,6 +1210,37 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
                   </Button>
                 </div>
               </form>
+            </Dialog>
+
+            {/* Delete Event Confirmation Modal */}
+            <Dialog
+              isOpen={isDeleteModalOpen}
+              onClose={() => setIsDeleteModalOpen(false)}
+              title="Delete Event"
+            >
+              <div className="space-y-4 pt-2">
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Are you sure you want to delete this event? This action cannot be undone.
+                </p>
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#1f2937]">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsDeleteModalOpen(false)}
+                    disabled={deletingEvent}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleDeleteEvent}
+                    disabled={deletingEvent}
+                  >
+                    {deletingEvent ? "Deleting..." : "Delete Event"}
+                  </Button>
+                </div>
+              </div>
             </Dialog>
           </div>
         </main>
