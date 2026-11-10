@@ -26,6 +26,7 @@ import { useRouter } from "next/navigation";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import { postService } from "@/services/postService";
+import { feedService } from "@/services/feedService";
 import { reactionService } from "@/services/reactionService";
 import { commentService } from "@/services/commentService";
 import { followService } from "@/services/followService";
@@ -179,15 +180,32 @@ export default function ReelsPage() {
   useEffect(() => {
     const loadVideoPosts = async () => {
       try {
-        const res = await postService.getFeed(1, 30);
-        const dataObj = res?.data || res || {};
-        const items = Array.isArray(dataObj)
-          ? dataObj
-          : Array.isArray(dataObj.posts)
-          ? dataObj.posts
-          : Array.isArray(res?.posts)
-          ? res.posts
-          : [];
+        let items: any[] = [];
+        try {
+          const mediaRes = await feedService.getMediaFeed({ page: 1, pageSize: 30 });
+          const mediaData = mediaRes?.data || mediaRes || {};
+          items = Array.isArray(mediaData)
+            ? mediaData
+            : Array.isArray(mediaData.posts)
+            ? mediaData.posts
+            : Array.isArray(mediaRes?.posts)
+            ? mediaRes.posts
+            : [];
+        } catch {
+          // Fall back to general post feed if media feed is unavailable
+        }
+
+        if (items.length === 0) {
+          const res = await postService.getFeed(1, 30);
+          const dataObj = res?.data || res || {};
+          items = Array.isArray(dataObj)
+            ? dataObj
+            : Array.isArray(dataObj.posts)
+            ? dataObj.posts
+            : Array.isArray(res?.posts)
+            ? res.posts
+            : [];
+        }
 
         const videoPosts: ReelItem[] = items
           .filter((p: any) => {
