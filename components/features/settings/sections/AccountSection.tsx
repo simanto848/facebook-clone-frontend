@@ -66,12 +66,12 @@ export default function AccountSection() {
     setDeactivatingAccount(true);
     setDeactivateError(null);
     try {
-      // Simulate deactivation and log out cleanly
-      await new Promise((r) => setTimeout(r, 600));
+      await userService.deleteAccount();
       logout();
       router.push("/login");
     } catch (err: any) {
-      setDeactivateError("Failed to deactivate account. Please try again.");
+      const msg = err.response?.data?.message || err.message || "Failed to deactivate account. Please try again.";
+      setDeactivateError(msg);
       setDeactivatingAccount(false);
     }
   };
