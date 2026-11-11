@@ -283,6 +283,21 @@ export function CallModal({
             receiverId: recipient.id,
             offer,
           });
+
+          if (callType === "audio") {
+            callService
+              .initiateAudioCall({
+                conversationId: recipient.id,
+                receiverId: recipient.id,
+              })
+              .then((res) => {
+                const callId = res?.data?.id || res?.id;
+                if (callId && !activeCallId) {
+                  setActiveCallId(callId);
+                }
+              })
+              .catch(() => {});
+          }
         }
       } catch (err) {
         console.error("WebRTC Setup error:", err);
