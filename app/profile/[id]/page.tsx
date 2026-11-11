@@ -34,6 +34,7 @@ import { userService } from "@/services/userService";
 import { friendshipService } from "@/services/friendshipService";
 import { followService } from "@/services/followService";
 import { blockService } from "@/services/blockService";
+import { activeStatusService } from "@/services/activeStatusService";
 import { usePostStore, mapBackendPostToPostType, PostType } from "@/store/postStore";
 import { useAuthStore } from "@/store/authStore";
 import { useChatStore } from "@/store/chatStore";
@@ -65,6 +66,7 @@ export default function UserProfileDetailPage({ params }: ProfilePageProps) {
   const [blockLoading, setBlockLoading] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [copiedProfile, setCopiedProfile] = useState(false);
+  const [isOnline, setIsOnline] = useState<boolean | null>(null);
 
   const handleCopyProfileLink = async () => {
     if (typeof window !== "undefined") {
@@ -157,6 +159,18 @@ export default function UserProfileDetailPage({ params }: ProfilePageProps) {
               { id: "mf-1", name: "Sarah Connor", username: "sarahc", avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100" },
               { id: "mf-2", name: "David Kim", username: "davidk", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100" },
             ]);
+          }
+
+          // Fetch active status
+          try {
+            const statusRes = await activeStatusService.getUserStatus(userData.id);
+            if (statusRes?.success && statusRes?.data) {
+              setIsOnline(Boolean(statusRes.data.isOnline));
+            } else if (typeof statusRes?.isOnline === "boolean") {
+              setIsOnline(statusRes.isOnline);
+            }
+          } catch {
+            setIsOnline(null);
           }
         }
       } catch (err) {
@@ -301,6 +315,14 @@ export default function UserProfileDetailPage({ params }: ProfilePageProps) {
                       sizes="128px"
                       className="object-cover"
                     />
+                    {isOnline !== null && (
+                      <span
+                        className={`absolute bottom-2 right-2 h-4 w-4 rounded-full border-2 border-[#0f172a] ${
+                          isOnline ? "bg-emerald-500" : "bg-slate-500"
+                        }`}
+                        title={isOnline ? "Online" : "Offline"}
+                      />
+                    )}
                   </div>
                   <div className="space-y-1">
                     <h1 className="text-2xl sm:text-3xl font-extrabold text-white flex items-center gap-2">
