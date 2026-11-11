@@ -297,6 +297,19 @@ export function CallModal({
                 }
               })
               .catch(() => {});
+          } else if (callType === "video") {
+            callService
+              .initiateVideoCall({
+                conversationId: recipient.id,
+                receiverId: recipient.id,
+              })
+              .then((res) => {
+                const callId = res?.data?.id || res?.id;
+                if (callId && !activeCallId) {
+                  setActiveCallId(callId);
+                }
+              })
+              .catch(() => {});
           }
         }
       } catch (err) {
