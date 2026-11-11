@@ -6,6 +6,7 @@ import { UserPlus, UserCheck, MessageSquare, ExternalLink, MapPin, Copy, Check, 
 import Link from "next/link";
 import { Button, Dialog, Avatar } from "@/components/ui";
 import { useChatStore } from "@/store/chatStore";
+import { friendshipService } from "@/services/friendshipService";
 
 export interface ProfileCardProps {
   userId?: string;
@@ -31,12 +32,39 @@ export const ProfileCard = ({
   const [isFollowing, setIsFollowing] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [isMutualModalOpen, setIsMutualModalOpen] = useState(false);
+  const [fetchedMutuals, setFetchedMutuals] = useState<any[] | null>(null);
 
   useEffect(() => {
     if (profile?.user) {
       setIsFollowing(profile.isFollowing ?? false);
     }
   }, [profile]);
+
+  useEffect(() => {
+    const targetId = userId && userId !== "me" ? userId : profile?.user?.id;
+    if (!targetId || targetId === "me") return;
+    let isMounted = true;
+    friendshipService
+      .getMutualFriends(targetId)
+      .then((res) => {
+        if (!isMounted) return;
+        const list = res?.data || res;
+        if (Array.isArray(list)) {
+          setFetchedMutuals(
+            list.map((m: any) => ({
+              id: m.id || m.userId,
+              name: m.name || `${m.firstName || ""} ${m.lastName || ""}`.trim() || m.username || "Friend",
+              username: m.username || "user",
+              avatar: m.avatar || m.avatarUrl || m.profilePicture || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
+            }))
+          );
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, [userId, profile?.user?.id]);
 
   const handleCopyLink = () => {
     if (typeof window !== "undefined") {
@@ -71,7 +99,7 @@ export const ProfileCard = ({
     avatar: string;
   }
 
-  const mutualFriends: MutualFriend[] = user.mutualFriends || [
+  const mutualFriends: MutualFriend[] = fetchedMutuals || user.mutualFriends || [
     { id: "mf-1", name: "Sarah Chen", username: "sarahc", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100" },
     { id: "mf-2", name: "Elena Rostova", username: "elena", avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100" },
     { id: "mf-3", name: "David Kim", username: "davidk", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100" },
