@@ -29,6 +29,7 @@ export default function HashtagPage() {
   const [viewMode, setViewMode] = useState<"feed" | "grid">("feed");
   const [previewPost, setPreviewPost] = useState<PostType | null>(null);
   const [tagSearchQuery, setTagSearchQuery] = useState("");
+  const [hashtagSuggestions, setHashtagSuggestions] = useState<any[]>([]);
   const [copiedLink, setCopiedLink] = useState(false);
   const [trendingTopics, setTrendingTopics] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -131,6 +132,34 @@ export default function HashtagPage() {
       // ignore
     }
   };
+
+  useEffect(() => {
+    const q = tagSearchQuery.trim();
+    if (!q) {
+      setHashtagSuggestions([]);
+      return;
+    }
+    let isMounted = true;
+    const timeout = setTimeout(() => {
+      hashtagService
+        .searchHashtags(q, 6)
+        .then((res) => {
+          if (!isMounted) return;
+          const items = res?.data || res || [];
+          if (Array.isArray(items)) {
+            setHashtagSuggestions(items);
+          }
+        })
+        .catch(() => {
+          if (isMounted) setHashtagSuggestions([]);
+        });
+    }, 250);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timeout);
+    };
+  }, [tagSearchQuery]);
 
   useEffect(() => {
     const fetchTrending = async () => {
@@ -479,6 +508,34 @@ export default function HashtagPage() {
                     >
                       <X size={12} />
                     </button>
+                  )}
+
+                  {hashtagSuggestions.length > 0 && (
+                    <div className="absolute right-0 top-full mt-1.5 w-48 rounded-xl bg-[#0f172a] border border-[#1f2937] shadow-xl z-20 overflow-hidden py-1">
+                      <div className="px-2.5 py-1 text-[10px] uppercase tracking-wider text-slate-400 font-bold border-b border-[#1f2937]/50">
+                        Related Tags
+                      </div>
+                      {hashtagSuggestions.map((s: any) => {
+                        const name = (s.name || s.tag || s).replace(/^#/, "");
+                        return (
+                          <Link
+                            key={name}
+                            href={`/hashtag/${encodeURIComponent(name)}`}
+                            onClick={() => {
+                              setTagSearchQuery("");
+                              setHashtagSuggestions([]);
+                            }}
+                            className="flex items-center justify-between px-3 py-1.5 text-xs text-slate-300 hover:bg-[#1f2937] hover:text-white transition"
+                          >
+                            <span className="flex items-center gap-1.5 truncate">
+                              <Hash size={12} className="text-blue-400 shrink-0" />
+                              <span className="truncate">{name}</span>
+                            </span>
+                            {s.count && <span className="text-[10px] text-slate-500">{s.count}</span>}
+                          </Link>
+                        );
+                      })}
+                    </div>
                   )}
                 </div>
               </div>
