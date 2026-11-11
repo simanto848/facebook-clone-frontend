@@ -75,6 +75,7 @@ export default function GroupDetailPage({ params }: PageProps) {
   const [editGroupName, setEditGroupName] = useState("");
   const [editGroupDescription, setEditGroupDescription] = useState("");
   const [editGroupPrivacy, setEditGroupPrivacy] = useState<"PUBLIC" | "PRIVATE">("PUBLIC");
+  const [editGroupCoverUrl, setEditGroupCoverUrl] = useState("");
   const [updatingGroup, setUpdatingGroup] = useState(false);
   const [deletingGroup, setDeletingGroup] = useState(false);
 
@@ -133,6 +134,7 @@ export default function GroupDetailPage({ params }: PageProps) {
         setEditGroupName(data.name || "");
         setEditGroupDescription(data.description || "");
         setEditGroupPrivacy(data.privacy === "PRIVATE" ? "PRIVATE" : "PUBLIC");
+        setEditGroupCoverUrl(data.coverUrl || data.coverImage || data.cover || "");
       }
 
       // Fetch dynamic group posts
@@ -183,12 +185,14 @@ export default function GroupDetailPage({ params }: PageProps) {
         name: editGroupName.trim(),
         description: editGroupDescription.trim(),
         privacy: editGroupPrivacy,
+        coverUrl: editGroupCoverUrl.trim(),
       });
       setGroup((prev: any) => ({
         ...prev,
         name: editGroupName.trim(),
         description: editGroupDescription.trim(),
         privacy: editGroupPrivacy,
+        coverUrl: editGroupCoverUrl.trim(),
       }));
       setIsEditGroupOpen(false);
     } catch (err) {
@@ -1241,6 +1245,14 @@ export default function GroupDetailPage({ params }: PageProps) {
                         <option value="PUBLIC">Public - Anyone can see who is in the group and what they post</option>
                         <option value="PRIVATE">Private - Only members can see who is in the group and what they post</option>
                       </select>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-slate-300 block mb-1">Cover Image URL</label>
+                      <Input
+                        value={editGroupCoverUrl}
+                        onChange={(e) => setEditGroupCoverUrl(e.target.value)}
+                        placeholder="https://example.com/cover.jpg"
+                      />
                     </div>
                     <div>
                       <label className="text-xs font-medium text-slate-300 block mb-1">Description</label>
