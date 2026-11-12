@@ -23,3 +23,4 @@ export * from "./time-picker";
 export * from "./toaster";
 export * from "./toggle-group";
 export * from "./AudioPlayer";
+export * from "./ScrollToTop";

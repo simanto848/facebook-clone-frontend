@@ -11,8 +11,8 @@ import RightSidebar from "@/components/layout/RightSidebar";
 import { usePostStore, mapBackendPostToPostType } from "@/store/postStore";
 import { postService } from "@/services/postService";
 import { feedService } from "@/services/feedService";
-import { ShieldAlert, RefreshCw, ArrowUp, Search, X, Clock, TrendingUp, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui";
+import { ShieldAlert, RefreshCw, Search, X, Clock, TrendingUp, Sparkles } from "lucide-react";
+import { Button, ScrollToTop } from "@/components/ui";
 
 const TOPIC_CATEGORIES = [
   { id: "all", label: "All Posts", icon: "🌐" },
@@ -54,23 +54,10 @@ export default function Home() {
   const { posts, filter, setFilter, setPosts } = usePostStore();
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [showScrollTop, setShowScrollTop] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [formatFilter, setFormatFilter] = useState<"all" | "media" | "text" | "poll">("all");
   const [topicCategory, setTopicCategory] = useState<string>("all");
   const [sortOrder, setSortOrder] = useState<"recent" | "top">("recent");
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setShowScrollTop(window.scrollY > 400);
-    };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
 
   const fetchFeed = async (activeFilter = filter, showLoading = true) => {
     if (showLoading) setIsLoading(true);
@@ -296,17 +283,7 @@ export default function Home() {
       </div>
 
       {/* Floating Scroll to Top Button */}
-      {showScrollTop && (
-        <button
-          type="button"
-          onClick={scrollToTop}
-          className="fixed bottom-6 right-6 z-50 p-3 rounded-full bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/40 border border-blue-400/30 transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer animate-in fade-in slide-in-from-bottom-2"
-          title="Scroll to top"
-          aria-label="Scroll to top"
-        >
-          <ArrowUp size={18} />
-        </button>
-      )}
+      <ScrollToTop threshold={400} />
     </div>
   );
 }
