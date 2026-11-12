@@ -7,8 +7,7 @@ import PostSkeleton from "@/components/features/post/PostSkeleton";
 import FeedFilter from "@/components/features/post/FeedFilter";
 import Stories from "@/components/features/story/Stories";
 import StoriesSkeleton from "@/components/features/story/StoriesSkeleton";
-import LeftSidebar from "@/components/layout/LeftSidebar";
-import RightSidebar from "@/components/layout/RightSidebar";
+import FeedLayoutWrapper from "@/components/layout/FeedLayoutWrapper";
 import { usePostStore, mapBackendPostToPostType } from "@/store/postStore";
 import { postService } from "@/services/postService";
 import { feedService } from "@/services/feedService";
@@ -151,20 +150,11 @@ export default function Home() {
   const filteredPosts = getFilteredPosts();
 
   return (
-    <div className="min-h-screen bg-[#0f172a]">
-      <div className="flex">
-        {/* LEFT SIDEBAR */}
-        <aside className="hidden lg:block w-72 shrink-0">
-          <LeftSidebar />
-        </aside>
+    <FeedLayoutWrapper>
+      {isLoading ? <StoriesSkeleton /> : <Stories />}
+      <CreatePost />
 
-        {/* MAIN FEED */}
-        <main className="flex-1 flex justify-center">
-          <div className="w-full max-w-3xl px-6 py-6 space-y-6">
-            {isLoading ? <StoriesSkeleton /> : <Stories />}
-            <CreatePost />
-
-            {/* Facebook-style Topic Category Pills */}
+      {/* Facebook-style Topic Category Pills */}
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
               {TOPIC_CATEGORIES.map((topic) => (
                 <button
@@ -232,17 +222,9 @@ export default function Home() {
                 <EmptyState />
               )}
             </div>
-          </div>
-        </main>
-
-        {/* RIGHT SIDEBAR */}
-        <aside className="hidden xl:block w-80 shrink-0">
-          <RightSidebar />
-        </aside>
-      </div>
 
       {/* Floating Scroll to Top Button */}
       <ScrollToTop threshold={400} />
-    </div>
+    </FeedLayoutWrapper>
   );
 }
