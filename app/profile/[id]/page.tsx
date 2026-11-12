@@ -30,6 +30,7 @@ import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
 import MediaGrid from "@/components/features/profile/MediaGrid";
+import ProfileStatsBar from "@/components/features/profile/ProfileStatsBar";
 import ReportModal from "@/components/features/post/ReportModal";
 import { userService } from "@/services/userService";
 import { friendshipService } from "@/services/friendshipService";
@@ -424,20 +425,11 @@ export default function UserProfileDetailPage({ params }: ProfilePageProps) {
               </div>
 
               {/* Stats Bar */}
-              <div className="grid grid-cols-3 border-t border-[#1f2937]/80 bg-[#111827]/60 py-3 text-center text-xs">
-                <div>
-                  <p className="font-extrabold text-base text-white">{userPosts.length}</p>
-                  <p className="text-[10px] text-slate-400 uppercase tracking-wider">Posts</p>
-                </div>
-                <div>
-                  <p className="font-extrabold text-base text-white">{user.followersCount || user._count?.followers || 0}</p>
-                  <p className="text-[10px] text-slate-400 uppercase tracking-wider">Followers</p>
-                </div>
-                <div>
-                  <p className="font-extrabold text-base text-white">{user.followingCount || user._count?.following || 0}</p>
-                  <p className="text-[10px] text-slate-400 uppercase tracking-wider">Following</p>
-                </div>
-              </div>
+              <ProfileStatsBar
+                postsCount={userPosts.length}
+                followersCount={user.followersCount || user._count?.followers || 0}
+                followingCount={user.followingCount || user._count?.following || 0}
+              />
             </div>
 
             {/* Blocked State Banner */}
