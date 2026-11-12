@@ -5,6 +5,7 @@ import Link from "next/link";
 import CreatePost from "@/components/features/post/CreatePost";
 import PostCard from "@/components/features/post/PostCard";
 import MediaGrid from "@/components/features/profile/MediaGrid";
+import ShareProfileButton from "@/components/features/profile/ShareProfileButton";
 import { usePostStore, mapBackendPostToPostType, PostType } from "@/store/postStore";
 import { useAuthStore } from "@/store/authStore";
 import { userService } from "@/services/userService";
@@ -539,15 +540,13 @@ export default function ProfilePage() {
         </div>
 
         <div className="flex items-center gap-2.5">
-          <button
-            type="button"
-            onClick={handleShareProfile}
-            className="flex items-center gap-1.5 rounded-full bg-[#1f2937] px-4 py-2 text-xs font-bold text-slate-200 hover:text-white hover:bg-[#2e3b4e] transition border border-slate-700 cursor-pointer"
-            title="Share profile link"
-          >
-            {copiedProfile ? <Check size={14} className="text-emerald-400" /> : <Share2 size={14} />}
-            <span>{copiedProfile ? "Link Copied!" : "Share Profile"}</span>
-          </button>
+          <ShareProfileButton
+            url={typeof window !== "undefined" ? `${window.location.origin}/profile/${profile?.username || authUser?.username || "alex"}` : undefined}
+            variant="secondary"
+            className="rounded-full bg-[#1f2937] px-4 py-2 text-xs font-bold text-slate-200 hover:text-white hover:bg-[#2e3b4e] transition border border-slate-700 cursor-pointer shadow-none"
+            label="Share Profile"
+            copiedLabel="Link Copied!"
+          />
 
           <button
             onClick={() => setIsEditOpen(true)}

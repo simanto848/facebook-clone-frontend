@@ -32,6 +32,7 @@ import PostCard from "@/components/features/post/PostCard";
 import MediaGrid from "@/components/features/profile/MediaGrid";
 import ProfileStatsBar from "@/components/features/profile/ProfileStatsBar";
 import MutualConnectionsCard from "@/components/features/profile/MutualConnectionsCard";
+import ShareProfileButton from "@/components/features/profile/ShareProfileButton";
 import ReportModal from "@/components/features/post/ReportModal";
 import { userService } from "@/services/userService";
 import { friendshipService } from "@/services/friendshipService";
@@ -68,18 +69,7 @@ export default function UserProfileDetailPage({ params }: ProfilePageProps) {
   const [isBlocked, setIsBlocked] = useState(false);
   const [blockLoading, setBlockLoading] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
-  const [copiedProfile, setCopiedProfile] = useState(false);
   const [isOnline, setIsOnline] = useState<boolean | null>(null);
-
-  const handleCopyProfileLink = async () => {
-    if (typeof window !== "undefined") {
-      try {
-        await navigator.clipboard.writeText(window.location.href);
-        setCopiedProfile(true);
-        setTimeout(() => setCopiedProfile(false), 2000);
-      } catch {}
-    }
-  };
 
   const handleBlockUser = async () => {
     if (!user?.id) return;
@@ -411,16 +401,10 @@ export default function UserProfileDetailPage({ params }: ProfilePageProps) {
                       QR Code
                     </Button>
 
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      leftIcon={copiedProfile ? <Check size={14} className="text-emerald-400" /> : <Share2 size={14} />}
-                      onClick={handleCopyProfileLink}
+                    <ShareProfileButton
                       className="border border-[#1f2937] text-slate-300 hover:text-white"
-                      title="Copy profile link"
-                    >
-                      {copiedProfile ? "Copied!" : "Share"}
-                    </Button>
+                      label="Share"
+                    />
                   </div>
                 )}
               </div>
@@ -754,15 +738,12 @@ export default function UserProfileDetailPage({ params }: ProfilePageProps) {
                 </p>
 
                 <div className="flex gap-2 w-full pt-2 border-t border-[#1f2937]">
-                  <Button
+                  <ShareProfileButton
                     variant="primary"
-                    fullWidth
-                    size="sm"
-                    leftIcon={copiedProfile ? <Check size={14} className="text-emerald-400" /> : <Share2 size={14} />}
-                    onClick={handleCopyProfileLink}
-                  >
-                    {copiedProfile ? "Link Copied!" : "Copy Profile URL"}
-                  </Button>
+                    className="flex-1 justify-center border-transparent bg-blue-600 hover:bg-blue-500 text-white"
+                    label="Copy Profile URL"
+                    copiedLabel="Link Copied!"
+                  />
                   <Button
                     variant="secondary"
                     size="sm"
