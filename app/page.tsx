@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import CreatePost from "@/components/features/post/CreatePost";
 import PostCard from "@/components/features/post/PostCard";
+import PostSkeleton from "@/components/features/post/PostSkeleton";
 import FeedFilter from "@/components/features/post/FeedFilter";
 import Stories from "@/components/features/story/Stories";
 import LeftSidebar from "@/components/layout/LeftSidebar";
@@ -31,30 +32,6 @@ const StoriesSkeleton = () => (
         <div className="h-2.5 w-12 rounded-md bg-[#1f2937]/60 animate-pulse" />
       </div>
     ))}
-  </div>
-);
-
-// Post Card Skeleton Loader
-const PostSkeleton = () => (
-  <div className="rounded-2xl border border-[#1f2937] bg-[#111827] p-5 space-y-4">
-    <div className="flex items-center gap-3">
-      <div className="h-11 w-11 rounded-full bg-[#1f2937] animate-pulse" />
-      <div className="space-y-2">
-        <div className="h-4 w-32 rounded-md bg-[#1f2937] animate-pulse" />
-        <div className="h-3 w-20 rounded-md bg-[#1f2937] animate-pulse" />
-      </div>
-    </div>
-    <div className="space-y-2">
-      <div className="h-4 w-full rounded-md bg-[#1f2937] animate-pulse" />
-      <div className="h-4 w-5/6 rounded-md bg-[#1f2937] animate-pulse" />
-      <div className="h-4 w-2/3 rounded-md bg-[#1f2937] animate-pulse" />
-    </div>
-    <div className="h-48 w-full rounded-xl bg-[#1f2937] animate-pulse" />
-    <div className="flex justify-between pt-2">
-      <div className="h-8 w-20 rounded-lg bg-[#1f2937] animate-pulse" />
-      <div className="h-8 w-20 rounded-lg bg-[#1f2937] animate-pulse" />
-      <div className="h-8 w-20 rounded-lg bg-[#1f2937] animate-pulse" />
-    </div>
   </div>
 );
 
@@ -300,10 +277,7 @@ export default function Home() {
 
             <div className="space-y-6">
               {isLoading ? (
-                <>
-                  <PostSkeleton />
-                  <PostSkeleton />
-                </>
+                <PostSkeleton count={2} />
               ) : filteredPosts.length > 0 ? (
                 filteredPosts.map((post) => (
                   <PostCard key={post.id} post={post} />
