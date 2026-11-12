@@ -6,6 +6,7 @@ import PostCard from "@/components/features/post/PostCard";
 import PostSkeleton from "@/components/features/post/PostSkeleton";
 import FeedFilter from "@/components/features/post/FeedFilter";
 import Stories from "@/components/features/story/Stories";
+import StoriesSkeleton from "@/components/features/story/StoriesSkeleton";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import { usePostStore, mapBackendPostToPostType } from "@/store/postStore";
@@ -22,18 +23,6 @@ const TOPIC_CATEGORIES = [
   { id: "startups", label: "Startups", icon: "🚀", keywords: ["startup", "launch", "product", "growth", "build", "saas", "team"] },
   { id: "ai", label: "AI & ML", icon: "⚡", keywords: ["ai", "ml", "gpt", "model", "llm", "neural", "deepmind", "agent"] },
 ];
-
-// Stories Skeleton Loader
-const StoriesSkeleton = () => (
-  <div className="flex gap-4 overflow-x-auto pb-2 no-scrollbar">
-    {[...Array(6)].map((_, i) => (
-      <div key={i} className="flex flex-col items-center shrink-0 space-y-2">
-        <div className="h-16 w-16 rounded-full bg-[#1f2937]/60 animate-pulse border-2 border-slate-700/30" />
-        <div className="h-2.5 w-12 rounded-md bg-[#1f2937]/60 animate-pulse" />
-      </div>
-    ))}
-  </div>
-);
 
 // Feed Empty State
 const EmptyState = () => (
