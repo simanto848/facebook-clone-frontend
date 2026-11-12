@@ -12,8 +12,8 @@ import RightSidebar from "@/components/layout/RightSidebar";
 import { usePostStore, mapBackendPostToPostType } from "@/store/postStore";
 import { postService } from "@/services/postService";
 import { feedService } from "@/services/feedService";
-import { ShieldAlert, RefreshCw, Search, X, Clock, TrendingUp, Sparkles } from "lucide-react";
-import { Button, ScrollToTop, SortToggleGroup } from "@/components/ui";
+import { ShieldAlert, RefreshCw, Clock, TrendingUp, Sparkles } from "lucide-react";
+import { Button, ScrollToTop, SortToggleGroup, SearchInput } from "@/components/ui";
 
 const TOPIC_CATEGORIES = [
   { id: "all", label: "All Posts", icon: "🌐" },
@@ -203,25 +203,11 @@ export default function Home() {
                   ]}
                 />
 
-                <div className="relative">
-                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="text"
-                    placeholder="Search posts..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-36 sm:w-44 pl-8 pr-7 py-1.5 rounded-xl bg-[#111827] border border-[#1f2937] text-xs text-white placeholder:text-slate-500 outline-none focus:border-blue-500 transition"
-                  />
-                  {searchQuery && (
-                    <button
-                      type="button"
-                      onClick={() => setSearchQuery("")}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white cursor-pointer"
-                    >
-                      <X size={12} />
-                    </button>
-                  )}
-                </div>
+                <SearchInput
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  placeholder="Search posts..."
+                />
                 <Button
                   variant="ghost"
                   size="sm"
