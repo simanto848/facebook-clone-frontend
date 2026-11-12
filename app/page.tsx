@@ -13,7 +13,7 @@ import { usePostStore, mapBackendPostToPostType } from "@/store/postStore";
 import { postService } from "@/services/postService";
 import { feedService } from "@/services/feedService";
 import { ShieldAlert, RefreshCw, Search, X, Clock, TrendingUp, Sparkles } from "lucide-react";
-import { Button, ScrollToTop } from "@/components/ui";
+import { Button, ScrollToTop, SortToggleGroup } from "@/components/ui";
 
 const TOPIC_CATEGORIES = [
   { id: "all", label: "All Posts", icon: "🌐" },
@@ -194,30 +194,14 @@ export default function Home() {
               </div>
               <div className="flex items-center gap-2">
                 {/* Sort order toggle (Recent vs Top Stories) */}
-                <div className="flex items-center gap-1 bg-[#111827] border border-[#1f2937] rounded-xl p-1 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => setSortOrder("recent")}
-                    className={`flex items-center gap-1 px-2.5 py-1 rounded-lg font-semibold transition cursor-pointer ${
-                      sortOrder === "recent" ? "bg-blue-600 text-white shadow-xs" : "text-slate-400 hover:text-white"
-                    }`}
-                    title="Sort by most recent"
-                  >
-                    <Clock size={12} />
-                    <span>Recent</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSortOrder("top")}
-                    className={`flex items-center gap-1 px-2.5 py-1 rounded-lg font-semibold transition cursor-pointer ${
-                      sortOrder === "top" ? "bg-blue-600 text-white shadow-xs" : "text-slate-400 hover:text-white"
-                    }`}
-                    title="Sort by top engagement"
-                  >
-                    <TrendingUp size={12} />
-                    <span>Top</span>
-                  </button>
-                </div>
+                <SortToggleGroup
+                  value={sortOrder}
+                  onChange={setSortOrder}
+                  options={[
+                    { value: "recent", label: "Recent", icon: <Clock size={12} />, title: "Sort by most recent" },
+                    { value: "top", label: "Top", icon: <TrendingUp size={12} />, title: "Sort by top engagement" },
+                  ]}
+                />
 
                 <div className="relative">
                   <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />

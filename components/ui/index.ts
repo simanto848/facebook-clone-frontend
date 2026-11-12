@@ -24,3 +24,4 @@ export * from "./toaster";
 export * from "./toggle-group";
 export * from "./AudioPlayer";
 export * from "./ScrollToTop";
+export * from "./SortToggleGroup";
