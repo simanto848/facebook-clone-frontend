@@ -6,6 +6,7 @@ import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
 import PostCard from "@/components/features/post/PostCard";
 import ReactionBreakdown from "@/components/features/post/ReactionBreakdown";
+import RelatedDiscussions from "@/components/features/post/RelatedDiscussions";
 import { usePostStore, mapBackendPostToPostType, PostType } from "@/store/postStore";
 import { postService } from "@/services/postService";
 import { bookmarkService } from "@/services/bookmarkService";
@@ -177,31 +178,13 @@ export default function PostDetailPage({ params }: PageProps) {
                 <ReactionBreakdown reactions={post.reactions} />
 
                 {/* Related Discussions Section */}
-                {(() => {
-                  const relatedPosts = posts
-                    .filter(
-                      (p) => p.id !== id && (p.author.username === post.author.username || p.type === post.type)
-                    )
-                    .slice(0, 3);
-
-                  if (relatedPosts.length === 0) return null;
-
-                  return (
-                    <div className="pt-6 space-y-4 border-t border-[#1f2937]">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-bold text-sm text-white">Related Discussions</h3>
-                        <Link href="/" className="text-xs text-blue-400 hover:underline">
-                          View Feed
-                        </Link>
-                      </div>
-                      <div className="space-y-4">
-                        {relatedPosts.map((rp) => (
-                          <PostCard key={rp.id} post={rp} defaultShowComments={false} />
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })()}
+                <RelatedDiscussions
+                  posts={posts}
+                  currentPostId={id}
+                  authorUsername={post.author?.username}
+                  postType={post.type}
+                  limit={3}
+                />
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-16 text-center space-y-4 rounded-2xl border border-dashed border-[#1f2937] bg-[#111827]/30">
