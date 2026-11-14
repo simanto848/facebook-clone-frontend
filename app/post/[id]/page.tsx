@@ -12,7 +12,7 @@ import { postService } from "@/services/postService";
 import { bookmarkService } from "@/services/bookmarkService";
 import { ArrowLeft, MessageSquare, Loader2, Copy, Check, Share2, Compass, Bookmark, BookmarkCheck, Eye, Clock, Code2, ExternalLink } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { Button, Dialog, Badge, BreadcrumbNav } from "@/components/ui";
+import { Button, Dialog, Badge, BreadcrumbNav, DetailPageHeader } from "@/components/ui";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -102,52 +102,40 @@ export default function PostDetailPage({ params }: PageProps) {
         ]}
       />
 
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => router.back()}
-                  className="h-10 w-10 rounded-full border border-[#1f2937] bg-[#111827]/50 flex items-center justify-center text-slate-300 hover:text-white transition cursor-pointer"
-                  title="Go back"
-                >
-                  <ArrowLeft size={18} />
-                </button>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h1 className="text-xl font-bold">Post Details</h1>
-                    {post && <ReadingTimeBadge content={post.content} />}
-                  </div>
-                  <p className="text-xs text-slate-400">Discussion thread & replies</p>
-                </div>
-              </div>
+      <DetailPageHeader
+        title="Post Details"
+        subtitle="Discussion thread & replies"
+        badge={post ? <ReadingTimeBadge content={post.content} /> : undefined}
+        actions={
+          <>
+            <Button
+              variant="secondary"
+              size="sm"
+              leftIcon={
+                isSaved ? (
+                  <BookmarkCheck size={14} className="text-amber-400 fill-amber-400" />
+                ) : (
+                  <Bookmark size={14} />
+                )
+              }
+              onClick={handleToggleBookmark}
+              className="border border-[#1f2937]"
+            >
+              {isSaved ? "Saved" : "Save Post"}
+            </Button>
 
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  leftIcon={
-                    isSaved ? (
-                      <BookmarkCheck size={14} className="text-amber-400 fill-amber-400" />
-                    ) : (
-                      <Bookmark size={14} />
-                    )
-                  }
-                  onClick={handleToggleBookmark}
-                  className="border border-[#1f2937]"
-                >
-                  {isSaved ? "Saved" : "Save Post"}
-                </Button>
-
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  leftIcon={<Share2 size={14} />}
-                  onClick={() => setIsShareModalOpen(true)}
-                  className="border border-[#1f2937]"
-                >
-                  Share
-                </Button>
-              </div>
-            </div>
+            <Button
+              variant="secondary"
+              size="sm"
+              leftIcon={<Share2 size={14} />}
+              onClick={() => setIsShareModalOpen(true)}
+              className="border border-[#1f2937]"
+            >
+              Share
+            </Button>
+          </>
+        }
+      />
 
             {loading ? (
               <div className="flex flex-col items-center justify-center py-20 text-center space-y-3 rounded-2xl border border-[#1f2937] bg-[#111827]/40">
