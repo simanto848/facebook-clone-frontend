@@ -10,9 +10,10 @@ import ReadingTimeBadge from "@/components/features/post/ReadingTimeBadge";
 import { usePostStore, mapBackendPostToPostType, PostType } from "@/store/postStore";
 import { postService } from "@/services/postService";
 import { bookmarkService } from "@/services/bookmarkService";
-import { ArrowLeft, MessageSquare, Loader2, Copy, Check, Share2, Compass, Bookmark, BookmarkCheck, Eye, Clock, Code2, ExternalLink } from "lucide-react";
+import { MessageSquare, Loader2, Share2, Compass, Bookmark, BookmarkCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { Button, Dialog, Badge, BreadcrumbNav, DetailPageHeader } from "@/components/ui";
+import { Button, BreadcrumbNav, DetailPageHeader } from "@/components/ui";
+import ShareModal from "@/components/features/post/ShareModal";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -27,9 +28,7 @@ export default function PostDetailPage({ params }: PageProps) {
   const [post, setPost] = useState<PostType | null>(existingPost || null);
   const [loading, setLoading] = useState(!existingPost);
   const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-  const [embedCopied, setEmbedCopied] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -80,14 +79,6 @@ export default function PostDetailPage({ params }: PageProps) {
       }
     } catch (err) {
       console.warn("Backend bookmark toggle error:", err);
-    }
-  };
-
-  const handleCopyLink = () => {
-    if (typeof window !== "undefined") {
-      navigator.clipboard.writeText(window.location.href);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
     }
   };
 
@@ -175,108 +166,13 @@ export default function PostDetailPage({ params }: PageProps) {
               </div>
             )}
 
-        {/* SHARE MODAL DIALOG */}
-        <Dialog
+        {/* REUSABLE SHARE MODAL */}
+        <ShareModal
           isOpen={isShareModalOpen}
           onClose={() => setIsShareModalOpen(false)}
-          title="Share Post"
-          description="Share this post with your network or copy the link directly."
-        >
-          <div className="space-y-4 pt-2">
-            {/* Quick Copy Link Box */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-300">Direct Link</label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  readOnly
-                  value={typeof window !== "undefined" ? window.location.href : ""}
-                  className="flex-1 bg-[#0f172a] border border-[#1f2937] rounded-xl px-3 py-2 text-xs text-slate-300 font-mono select-all outline-none"
-                />
-                <Button
-                  size="sm"
-                  variant="primary"
-                  leftIcon={copied ? <Check size={14} /> : <Copy size={14} />}
-                  onClick={handleCopyLink}
-                >
-                  {copied ? "Copied!" : "Copy"}
-                </Button>
-              </div>
-            </div>
-
-            {/* Social Share Buttons */}
-            <div className="space-y-2 pt-2 border-t border-[#1f2937]">
-              <span className="text-xs font-semibold text-slate-300 block">Share to Social</span>
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (typeof window !== "undefined") {
-                      const text = encodeURIComponent(post?.content?.slice(0, 100) || "Check out this post");
-                      window.open(`https://twitter.com/intent/tweet?text=${text}&url=${encodeURIComponent(window.location.href)}`, "_blank");
-                    }
-                  }}
-                  className="p-2.5 rounded-xl bg-[#0f172a] hover:bg-[#1e293b] border border-[#1f2937] text-xs font-semibold text-white flex items-center justify-center gap-2 transition cursor-pointer"
-                >
-                  <span>X / Twitter</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (typeof window !== "undefined") {
-                      window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}`, "_blank");
-                    }
-                  }}
-                  className="p-2.5 rounded-xl bg-[#0f172a] hover:bg-[#1e293b] border border-[#1f2937] text-xs font-semibold text-blue-400 flex items-center justify-center gap-2 transition cursor-pointer"
-                >
-                  <span>LinkedIn</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (typeof window !== "undefined") {
-                      window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`, "_blank");
-                    }
-                  }}
-                  className="p-2.5 rounded-xl bg-[#0f172a] hover:bg-[#1e293b] border border-[#1f2937] text-xs font-semibold text-blue-500 flex items-center justify-center gap-2 transition cursor-pointer"
-                >
-                  <span>Facebook</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Embed Code Snippet */}
-            <div className="space-y-1.5 pt-2 border-t border-[#1f2937]">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-                  <Code2 size={13} className="text-purple-400" /> Embed Post
-                </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (typeof window !== "undefined") {
-                      const snippet = `<iframe src="${window.location.href}" width="500" height="400" frameborder="0"></iframe>`;
-                      navigator.clipboard.writeText(snippet);
-                      setEmbedCopied(true);
-                      setTimeout(() => setEmbedCopied(false), 2000);
-                    }
-                  }}
-                  className="text-[11px] text-purple-400 hover:text-purple-300 font-medium cursor-pointer"
-                >
-                  {embedCopied ? "Snippet Copied!" : "Copy Embed Code"}
-                </button>
-              </div>
-              <textarea
-                readOnly
-                rows={2}
-                value={typeof window !== "undefined" ? `<iframe src="${window.location.href}" width="500" height="400" frameborder="0"></iframe>` : ""}
-                className="w-full bg-[#0f172a] border border-[#1f2937] rounded-xl p-2 text-[11px] text-slate-400 font-mono resize-none select-all outline-none"
-              />
-            </div>
-          </div>
-        </Dialog>
+          postId={id}
+          post={post || undefined}
+        />
     </FeedLayoutWrapper>
   );
 }
