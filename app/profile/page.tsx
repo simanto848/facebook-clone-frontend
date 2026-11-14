@@ -36,7 +36,7 @@ import {
   List,
 } from "lucide-react";
 import Image from "next/image";
-import { Dialog, Input, Button, Avatar, Loader } from "@/components/ui";
+import { Dialog, Input, Button, Avatar, Loader, EmptyState } from "@/components/ui";
 
 export default function ProfilePage() {
   const { posts } = usePostStore();
@@ -358,16 +358,14 @@ export default function ProfilePage() {
 
     if (list.length === 0) {
       return (
-        <div className="flex flex-col items-center justify-center py-16 text-center space-y-3 rounded-2xl border border-dashed border-[#1f2937] bg-[#111827]/40">
-          <p className="text-slate-400 font-semibold text-sm">
-            {postSearchQuery ? `No posts matching "${postSearchQuery}"` : "No items found in this section"}
-          </p>
-          <p className="text-xs text-slate-500 max-w-xs">
-            {postSearchQuery
+        <EmptyState
+          title={postSearchQuery ? `No posts matching "${postSearchQuery}"` : "No items found in this section"}
+          description={
+            postSearchQuery
               ? "Try searching for a different keyword or clear the search query."
-              : "Items you post or interact with will display here."}
-          </p>
-        </div>
+              : "Items you post or interact with will display here."
+          }
+        />
       );
     }
 

@@ -12,7 +12,7 @@ import { usePostStore, mapBackendPostToPostType } from "@/store/postStore";
 import { postService } from "@/services/postService";
 import { feedService } from "@/services/feedService";
 import { ShieldAlert, RefreshCw, Clock, TrendingUp, Sparkles } from "lucide-react";
-import { Button, ScrollToTop, SortToggleGroup, SearchInput, CategoryPills } from "@/components/ui";
+import { Button, ScrollToTop, SortToggleGroup, SearchInput, CategoryPills, EmptyState } from "@/components/ui";
 
 const TOPIC_CATEGORIES = [
   { id: "all", label: "All Posts", icon: "🌐" },
@@ -23,20 +23,6 @@ const TOPIC_CATEGORIES = [
   { id: "ai", label: "AI & ML", icon: "⚡", keywords: ["ai", "ml", "gpt", "model", "llm", "neural", "deepmind", "agent"] },
 ];
 
-// Feed Empty State
-const EmptyState = () => (
-  <div className="flex flex-col items-center justify-center py-16 text-center space-y-4 rounded-2xl border border-dashed border-[#1f2937] bg-[#111827]/40 p-6">
-    <div className="h-16 w-16 rounded-full bg-slate-800/30 flex items-center justify-center text-slate-500">
-      <ShieldAlert size={32} />
-    </div>
-    <div className="space-y-1">
-      <h3 className="text-lg font-bold text-white">No posts found</h3>
-      <p className="text-sm text-slate-400 max-w-sm">
-        We couldn't find any posts matching this filter. Try switching to "Latest" or creating a new post.
-      </p>
-    </div>
-  </div>
-);
 
 export default function Home() {
   const { posts, filter, setFilter, setPosts } = usePostStore();
@@ -207,7 +193,11 @@ export default function Home() {
                   <PostCard key={post.id} post={post} />
                 ))
               ) : (
-                <EmptyState />
+                <EmptyState
+                  icon={<ShieldAlert size={32} className="text-slate-500" />}
+                  title="No posts found"
+                  description="We couldn't find any posts matching this filter. Try switching to 'Latest' or creating a new post."
+                />
               )}
             </div>
 
