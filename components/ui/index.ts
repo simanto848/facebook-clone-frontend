@@ -26,3 +26,4 @@ export * from "./AudioPlayer";
 export * from "./ScrollToTop";
 export * from "./SortToggleGroup";
 export * from "./SearchInput";
+export * from "./BreadcrumbNav";

@@ -11,7 +11,7 @@ import { postService } from "@/services/postService";
 import { bookmarkService } from "@/services/bookmarkService";
 import { ArrowLeft, MessageSquare, Loader2, Copy, Check, Share2, Compass, Bookmark, BookmarkCheck, Eye, Clock, Code2, ExternalLink } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { Button, Dialog, Badge } from "@/components/ui";
+import { Button, Dialog, Badge, BreadcrumbNav } from "@/components/ui";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -93,15 +93,13 @@ export default function PostDetailPage({ params }: PageProps) {
   return (
     <FeedLayoutWrapper>
       {/* Breadcrumb Navigation */}
-      <div className="flex items-center gap-1.5 text-xs text-slate-400">
-        <Link href="/" className="hover:text-blue-400 transition-colors">Home</Link>
-        <span>/</span>
-        <Link href="/" className="hover:text-blue-400 transition-colors">Feed</Link>
-        <span>/</span>
-        <span className="text-slate-200 truncate max-w-[200px]">
-          {post ? `${post.author.name}'s Post` : "Post"}
-        </span>
-      </div>
+      <BreadcrumbNav
+        items={[
+          { label: "Home", href: "/" },
+          { label: "Feed", href: "/" },
+          { label: post ? `${post.author.name}'s Post` : "Post" },
+        ]}
+      />
 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3">
