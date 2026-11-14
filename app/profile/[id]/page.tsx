@@ -33,6 +33,7 @@ import MediaGrid from "@/components/features/profile/MediaGrid";
 import ProfileStatsBar from "@/components/features/profile/ProfileStatsBar";
 import MutualConnectionsCard from "@/components/features/profile/MutualConnectionsCard";
 import ShareProfileButton from "@/components/features/profile/ShareProfileButton";
+import BlockedUserBanner from "@/components/features/profile/BlockedUserBanner";
 import ReportModal from "@/components/features/post/ReportModal";
 import { userService } from "@/services/userService";
 import { friendshipService } from "@/services/friendshipService";
@@ -419,21 +420,11 @@ export default function UserProfileDetailPage({ params }: ProfilePageProps) {
 
             {/* Blocked State Banner */}
             {isBlocked && (
-              <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 flex items-center justify-between text-rose-300 text-sm">
-                <div className="flex items-center gap-2.5">
-                  <UserX size={18} className="text-rose-400 shrink-0" />
-                  <span>You have blocked @{user.username}. Their posts and activities are hidden from your view.</span>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleUnblockUser}
-                  disabled={blockLoading}
-                  className="border-rose-500/30 text-rose-300 hover:bg-rose-500/20 shrink-0"
-                >
-                  {blockLoading ? "Unblocking..." : "Unblock"}
-                </Button>
-              </div>
+              <BlockedUserBanner
+                username={user.username}
+                onUnblock={handleUnblockUser}
+                loading={blockLoading}
+              />
             )}
 
             {/* Mutual Friends Preview Card */}
