@@ -6,6 +6,7 @@ import CreatePost from "@/components/features/post/CreatePost";
 import PostCard from "@/components/features/post/PostCard";
 import MediaGrid from "@/components/features/profile/MediaGrid";
 import ShareProfileButton from "@/components/features/profile/ShareProfileButton";
+import ProfileAvatar from "@/components/features/profile/ProfileAvatar";
 import { usePostStore, mapBackendPostToPostType, PostType } from "@/store/postStore";
 import { useAuthStore } from "@/store/authStore";
 import { userService } from "@/services/userService";
@@ -489,27 +490,16 @@ export default function ProfilePage() {
         </div>
 
         {/* Avatar */}
-        <div className="absolute left-12 -bottom-16 group/avatar">
-          <div className="relative h-32 w-32 overflow-hidden rounded-full border-4 border-[#0f172a] shadow-[0_0_30px_rgba(59,130,246,0.4)] bg-[#111827]">
-            <Image
-              src={avatarUrl}
-              alt={displayName}
-              fill
-              sizes="128px"
-              className="object-cover"
-            />
-          </div>
-          <button
-            type="button"
-            onClick={() => {
+        <div className="absolute left-12 -bottom-16">
+          <ProfileAvatar
+            src={avatarUrl}
+            alt={displayName}
+            size="xl"
+            onEditAvatar={() => {
               setAvatarInput(avatarUrl);
               setIsAvatarModalOpen(true);
             }}
-            title="Update avatar"
-            className="absolute bottom-1 right-1 p-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-black/50 transition cursor-pointer"
-          >
-            <Camera size={14} />
-          </button>
+          />
         </div>
       </div>
 

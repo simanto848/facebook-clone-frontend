@@ -34,6 +34,7 @@ import ProfileStatsBar from "@/components/features/profile/ProfileStatsBar";
 import MutualConnectionsCard from "@/components/features/profile/MutualConnectionsCard";
 import ShareProfileButton from "@/components/features/profile/ShareProfileButton";
 import BlockedUserBanner from "@/components/features/profile/BlockedUserBanner";
+import ProfileAvatar from "@/components/features/profile/ProfileAvatar";
 import ReportModal from "@/components/features/post/ReportModal";
 import { userService } from "@/services/userService";
 import { friendshipService } from "@/services/friendshipService";
@@ -301,23 +302,12 @@ export default function UserProfileDetailPage({ params }: ProfilePageProps) {
               <div className="relative px-6 pb-6 pt-4 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
                 {/* Avatar overlapping */}
                 <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4 -mt-16 sm:-mt-20">
-                  <div className="relative h-28 w-28 sm:h-32 sm:w-32 rounded-full overflow-hidden border-4 border-[#0f172a] shadow-xl bg-[#111827] shrink-0">
-                    <Image
-                      src={avatarUrl}
-                      alt={displayName}
-                      fill
-                      sizes="128px"
-                      className="object-cover"
-                    />
-                    {isOnline !== null && (
-                      <span
-                        className={`absolute bottom-2 right-2 h-4 w-4 rounded-full border-2 border-[#0f172a] ${
-                          isOnline ? "bg-emerald-500" : "bg-slate-500"
-                        }`}
-                        title={isOnline ? "Online" : "Offline"}
-                      />
-                    )}
-                  </div>
+                  <ProfileAvatar
+                    src={avatarUrl}
+                    alt={displayName}
+                    size="lg"
+                    isOnline={isOnline}
+                  />
                   <div className="space-y-1">
                     <h1 className="text-2xl sm:text-3xl font-extrabold text-white flex items-center gap-2">
                       {displayName}
