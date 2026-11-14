@@ -7,6 +7,7 @@ import PostCard from "@/components/features/post/PostCard";
 import MediaGrid from "@/components/features/profile/MediaGrid";
 import ShareProfileButton from "@/components/features/profile/ShareProfileButton";
 import ProfileAvatar from "@/components/features/profile/ProfileAvatar";
+import ProfileCover from "@/components/features/profile/ProfileCover";
 import { usePostStore, mapBackendPostToPostType, PostType } from "@/store/postStore";
 import { useAuthStore } from "@/store/authStore";
 import { userService } from "@/services/userService";
@@ -464,30 +465,15 @@ export default function ProfilePage() {
       {/* COVER + PROFILE HEADER */}
       <div className="relative">
         {/* Cover */}
-        <div className="relative h-72 w-full overflow-hidden group/cover">
-          <Image
-            src={coverPhoto}
-            alt="Cover"
-            fill
-            priority
-            sizes="100vw"
-            className="object-cover"
-          />
-          <div className="absolute inset-0 bg-black/40" />
-
-          {/* Edit Cover Trigger */}
-          <button
-            type="button"
-            onClick={() => {
-              setCoverInput(coverPhoto);
-              setIsCoverModalOpen(true);
-            }}
-            className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/60 hover:bg-black/80 backdrop-blur-md text-xs font-semibold text-white transition border border-white/10 shadow-lg cursor-pointer"
-          >
-            <Camera size={14} />
-            Edit Cover Photo
-          </button>
-        </div>
+        <ProfileCover
+          src={coverPhoto}
+          alt="Cover"
+          heightClassName="h-72"
+          onEditCover={() => {
+            setCoverInput(coverPhoto);
+            setIsCoverModalOpen(true);
+          }}
+        />
 
         {/* Avatar */}
         <div className="absolute left-12 -bottom-16">

@@ -35,6 +35,7 @@ import MutualConnectionsCard from "@/components/features/profile/MutualConnectio
 import ShareProfileButton from "@/components/features/profile/ShareProfileButton";
 import BlockedUserBanner from "@/components/features/profile/BlockedUserBanner";
 import ProfileAvatar from "@/components/features/profile/ProfileAvatar";
+import ProfileCover from "@/components/features/profile/ProfileCover";
 import ReportModal from "@/components/features/post/ReportModal";
 import { userService } from "@/services/userService";
 import { friendshipService } from "@/services/friendshipService";
@@ -286,17 +287,11 @@ export default function UserProfileDetailPage({ params }: ProfilePageProps) {
             {/* Profile Header Banner */}
             <div className="relative rounded-2xl overflow-hidden border border-[#1f2937] bg-[#111827] shadow-2xl">
               {/* Cover Photo */}
-              <div className="relative h-60 w-full overflow-hidden">
-                <Image
-                  src={coverPhoto}
-                  alt={displayName}
-                  fill
-                  priority
-                  sizes="100vw"
-                  className="object-cover"
-                />
-                <div className="absolute inset-0 bg-black/40" />
-              </div>
+              <ProfileCover
+                src={coverPhoto}
+                alt={displayName}
+                heightClassName="h-60"
+              />
 
               {/* Profile Details Bar */}
               <div className="relative px-6 pb-6 pt-4 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
