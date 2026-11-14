@@ -6,6 +6,7 @@ import FeedLayoutWrapper from "@/components/layout/FeedLayoutWrapper";
 import PostCard from "@/components/features/post/PostCard";
 import ReactionBreakdown from "@/components/features/post/ReactionBreakdown";
 import RelatedDiscussions from "@/components/features/post/RelatedDiscussions";
+import ReadingTimeBadge from "@/components/features/post/ReadingTimeBadge";
 import { usePostStore, mapBackendPostToPostType, PostType } from "@/store/postStore";
 import { postService } from "@/services/postService";
 import { bookmarkService } from "@/services/bookmarkService";
@@ -113,12 +114,7 @@ export default function PostDetailPage({ params }: PageProps) {
                 <div>
                   <div className="flex items-center gap-2">
                     <h1 className="text-xl font-bold">Post Details</h1>
-                    {post && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-800 text-[10px] text-slate-400 border border-slate-700 font-mono">
-                        <Clock size={10} />
-                        {Math.max(1, Math.ceil((post.content?.split(/\s+/).length || 1) / 200))} min read
-                      </span>
-                    )}
+                    {post && <ReadingTimeBadge content={post.content} />}
                   </div>
                   <p className="text-xs text-slate-400">Discussion thread & replies</p>
                 </div>
