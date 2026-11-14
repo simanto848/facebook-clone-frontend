@@ -28,3 +28,4 @@ export * from "./SortToggleGroup";
 export * from "./SearchInput";
 export * from "./BreadcrumbNav";
 export * from "./DetailPageHeader";
+export * from "./CategoryPills";

@@ -12,7 +12,7 @@ import { usePostStore, mapBackendPostToPostType } from "@/store/postStore";
 import { postService } from "@/services/postService";
 import { feedService } from "@/services/feedService";
 import { ShieldAlert, RefreshCw, Clock, TrendingUp, Sparkles } from "lucide-react";
-import { Button, ScrollToTop, SortToggleGroup, SearchInput } from "@/components/ui";
+import { Button, ScrollToTop, SortToggleGroup, SearchInput, CategoryPills } from "@/components/ui";
 
 const TOPIC_CATEGORIES = [
   { id: "all", label: "All Posts", icon: "🌐" },
@@ -155,23 +155,11 @@ export default function Home() {
       <CreatePost />
 
       {/* Facebook-style Topic Category Pills */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-              {TOPIC_CATEGORIES.map((topic) => (
-                <button
-                  key={topic.id}
-                  type="button"
-                  onClick={() => setTopicCategory(topic.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-all cursor-pointer ${
-                    topicCategory === topic.id
-                      ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
-                      : "bg-[#111827] text-slate-300 hover:text-white border border-[#1f2937] hover:bg-slate-800"
-                  }`}
-                >
-                  <span>{topic.icon}</span>
-                  <span>{topic.label}</span>
-                </button>
-              ))}
-            </div>
+      <CategoryPills
+        categories={TOPIC_CATEGORIES}
+        activeCategory={topicCategory}
+        onSelect={setTopicCategory}
+      />
 
             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
               <div className="flex-1">
