@@ -9,6 +9,7 @@ import MediaGrid from "@/components/features/profile/MediaGrid";
 import ShareProfileButton from "@/components/features/profile/ShareProfileButton";
 import ProfileAvatar from "@/components/features/profile/ProfileAvatar";
 import ProfileCover from "@/components/features/profile/ProfileCover";
+import ProfileQrModal from "@/components/features/profile/ProfileQrModal";
 import { usePostStore, mapBackendPostToPostType, PostType } from "@/store/postStore";
 import { useAuthStore } from "@/store/authStore";
 import { userService } from "@/services/userService";
@@ -35,6 +36,7 @@ import {
   Film,
   LayoutGrid,
   List,
+  QrCode,
 } from "lucide-react";
 import Image from "next/image";
 import { Dialog, Input, Button, Avatar, Loader, EmptyState } from "@/components/ui";
@@ -51,6 +53,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"posts" | "media" | "likes" | "saved" | "tagged">("posts");
   const [copiedProfile, setCopiedProfile] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
   const [skills, setSkills] = useState<string[]>(["UI/UX", "Fullstack", "React 19", "TypeScript"]);
   const [newSkillInput, setNewSkillInput] = useState("");
   const [isAddingSkill, setIsAddingSkill] = useState(false);
@@ -471,6 +474,17 @@ export default function ProfilePage() {
             label="Share Profile"
             copiedLabel="Link Copied!"
           />
+
+          <Button
+            variant="secondary"
+            size="sm"
+            leftIcon={<QrCode size={14} />}
+            onClick={() => setShowQrModal(true)}
+            className="rounded-full bg-[#1f2937] px-4 py-2 text-xs font-bold text-slate-200 hover:text-white hover:bg-[#2e3b4e] transition border border-slate-700 cursor-pointer shadow-none"
+            title="Display Profile QR Code"
+          >
+            QR Code
+          </Button>
 
           <button
             onClick={() => setIsEditOpen(true)}
@@ -1065,6 +1079,20 @@ export default function ProfilePage() {
           </div>
         </form>
       </Dialog>
+
+      {/* PROFILE QR CODE MODAL */}
+      <ProfileQrModal
+        isOpen={showQrModal}
+        onClose={() => setShowQrModal(false)}
+        username={username}
+        displayName={displayName}
+        avatarUrl={avatarUrl}
+        profileUrl={
+          typeof window !== "undefined"
+            ? `${window.location.origin}/profile/${username}`
+            : undefined
+        }
+      />
     </div>
   );
 }
