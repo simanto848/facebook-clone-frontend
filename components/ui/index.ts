@@ -29,3 +29,4 @@ export * from "./SearchInput";
 export * from "./BreadcrumbNav";
 export * from "./DetailPageHeader";
 export * from "./CategoryPills";
+export * from "./ViewModeToggle";

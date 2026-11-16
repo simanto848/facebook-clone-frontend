@@ -39,7 +39,7 @@ import {
   QrCode,
 } from "lucide-react";
 import Image from "next/image";
-import { Dialog, Input, Button, Avatar, Loader, EmptyState } from "@/components/ui";
+import { Dialog, Input, Button, Avatar, Loader, EmptyState, ViewModeToggle } from "@/components/ui";
 
 export default function ProfilePage() {
   const { posts } = usePostStore();
@@ -547,28 +547,7 @@ export default function ProfilePage() {
             />
           </div>
 
-          <div className="flex items-center bg-[#111827] p-0.5 rounded-xl border border-[#1f2937]">
-            <button
-              type="button"
-              onClick={() => setPostLayout("feed")}
-              className={`p-1.5 rounded-lg text-xs transition cursor-pointer ${
-                postLayout === "feed" ? "bg-blue-600 text-white shadow-sm" : "text-slate-400 hover:text-white"
-              }`}
-              title="Feed layout"
-            >
-              <List size={14} />
-            </button>
-            <button
-              type="button"
-              onClick={() => setPostLayout("grid")}
-              className={`p-1.5 rounded-lg text-xs transition cursor-pointer ${
-                postLayout === "grid" ? "bg-blue-600 text-white shadow-sm" : "text-slate-400 hover:text-white"
-              }`}
-              title="Compact grid layout"
-            >
-              <LayoutGrid size={14} />
-            </button>
-          </div>
+          <ViewModeToggle mode={postLayout} onChange={setPostLayout} />
         </div>
       </div>
 
