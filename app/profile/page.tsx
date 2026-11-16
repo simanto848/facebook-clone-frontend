@@ -14,6 +14,7 @@ import TopConnectionsCard from "@/components/features/profile/TopConnectionsCard
 import FeaturedHighlightsCard from "@/components/features/profile/FeaturedHighlightsCard";
 import ProfileAboutCard from "@/components/features/profile/ProfileAboutCard";
 import EditProfileModal, { EditProfileFormData } from "@/components/features/profile/EditProfileModal";
+import GuildsCommunitiesCard from "@/components/features/profile/GuildsCommunitiesCard";
 import { usePostStore, mapBackendPostToPostType, PostType } from "@/store/postStore";
 import { useAuthStore } from "@/store/authStore";
 import { userService } from "@/services/userService";
@@ -586,15 +587,7 @@ export default function ProfilePage() {
           <div className="col-span-12 lg:col-span-3 space-y-6">
             <TopConnectionsCard friends={friends} />
 
-            <div className="rounded-2xl border border-[#1f2937] bg-[#111827] p-6 shadow-xl">
-              <h2 className="mb-4 font-semibold text-sm">Guilds & Communities</h2>
-              <div className="space-y-3 text-xs">
-                <div className="rounded-xl bg-[#1f2937] p-3 font-semibold text-slate-300">UI Brutalists & Architects</div>
-                <div className="rounded-xl bg-[#1f2937] p-3 font-semibold text-slate-300">
-                  Next.js & React 19 Core Guild
-                </div>
-              </div>
-            </div>
+            <GuildsCommunitiesCard />
           </div>
         </div>
       </div>
