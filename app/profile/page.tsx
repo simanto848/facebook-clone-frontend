@@ -12,6 +12,7 @@ import ProfileCover from "@/components/features/profile/ProfileCover";
 import ProfileQrModal from "@/components/features/profile/ProfileQrModal";
 import TopConnectionsCard from "@/components/features/profile/TopConnectionsCard";
 import FeaturedHighlightsCard from "@/components/features/profile/FeaturedHighlightsCard";
+import ProfileAboutCard from "@/components/features/profile/ProfileAboutCard";
 import { usePostStore, mapBackendPostToPostType, PostType } from "@/store/postStore";
 import { useAuthStore } from "@/store/authStore";
 import { userService } from "@/services/userService";
@@ -57,8 +58,6 @@ export default function ProfilePage() {
   const [copiedProfile, setCopiedProfile] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
   const [skills, setSkills] = useState<string[]>(["UI/UX", "Fullstack", "React 19", "TypeScript"]);
-  const [newSkillInput, setNewSkillInput] = useState("");
-  const [isAddingSkill, setIsAddingSkill] = useState(false);
   const [postSearchQuery, setPostSearchQuery] = useState("");
   const [postLayout, setPostLayout] = useState<"feed" | "grid">("feed");
   const [featuredItems, setFeaturedItems] = useState<{ id: string; title: string; image: string }[]>([
@@ -117,14 +116,10 @@ export default function ProfilePage() {
     }
   }, []);
 
-  const handleAddSkill = (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmed = newSkillInput.trim();
+  const handleAddSkill = (trimmed: string) => {
     if (!trimmed || skills.includes(trimmed)) return;
     const updated = [...skills, trimmed];
     setSkills(updated);
-    setNewSkillInput("");
-    setIsAddingSkill(false);
     try {
       localStorage.setItem("user_profile_skills", JSON.stringify(updated));
     } catch {
@@ -559,70 +554,12 @@ export default function ProfilePage() {
           {/* LEFT SIDEBAR */}
           <div className="col-span-12 lg:col-span-3 space-y-6">
             {/* About */}
-            <div className="rounded-2xl border border-[#1f2937] bg-[#111827] p-6 shadow-xl">
-              <div className="mb-4 flex items-center gap-2">
-                <BadgeInfo size={18} className="text-blue-400" />
-                <h2 className="font-semibold text-sm">About</h2>
-              </div>
-
-              <p className="text-xs leading-6 text-slate-300">
-                {bio}
-              </p>
-
-              <div className="mt-5 flex flex-wrap items-center gap-1.5">
-                {skills.map((skill) => (
-                  <span
-                    key={skill}
-                    className="inline-flex items-center gap-1 rounded-full bg-[#1f2937] pl-3 pr-2 py-1 text-[10px] font-semibold text-slate-300 border border-slate-700/50 group"
-                  >
-                    <span>{skill}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveSkill(skill)}
-                      className="text-slate-500 hover:text-rose-400 transition cursor-pointer p-0.5"
-                      title="Remove skill"
-                    >
-                      <X size={10} />
-                    </button>
-                  </span>
-                ))}
-
-                {isAddingSkill ? (
-                  <form onSubmit={handleAddSkill} className="inline-flex items-center gap-1">
-                    <input
-                      type="text"
-                      value={newSkillInput}
-                      onChange={(e) => setNewSkillInput(e.target.value)}
-                      placeholder="Skill..."
-                      className="h-6 w-20 rounded-full bg-[#111827] border border-blue-500 px-2 text-[10px] text-white outline-none"
-                      autoFocus
-                    />
-                    <button
-                      type="submit"
-                      className="h-6 w-6 rounded-full bg-blue-600 hover:bg-blue-500 flex items-center justify-center text-white text-xs cursor-pointer"
-                    >
-                      <Plus size={12} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setIsAddingSkill(false)}
-                      className="h-6 w-6 rounded-full bg-slate-700 hover:bg-slate-600 flex items-center justify-center text-slate-300 text-xs cursor-pointer"
-                    >
-                      <X size={12} />
-                    </button>
-                  </form>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setIsAddingSkill(true)}
-                    className="inline-flex items-center gap-1 rounded-full bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 px-2.5 py-1 text-[10px] font-semibold border border-blue-500/30 transition cursor-pointer"
-                  >
-                    <Plus size={11} />
-                    <span>Add</span>
-                  </button>
-                )}
-              </div>
-            </div>
+            <ProfileAboutCard
+              bio={bio}
+              skills={skills}
+              onAddSkill={handleAddSkill}
+              onRemoveSkill={handleRemoveSkill}
+            />
 
             {/* Recent Highlights / Featured Showcase */}
             <FeaturedHighlightsCard
