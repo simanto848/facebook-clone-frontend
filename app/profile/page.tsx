@@ -13,6 +13,7 @@ import ProfileQrModal from "@/components/features/profile/ProfileQrModal";
 import TopConnectionsCard from "@/components/features/profile/TopConnectionsCard";
 import FeaturedHighlightsCard from "@/components/features/profile/FeaturedHighlightsCard";
 import ProfileAboutCard from "@/components/features/profile/ProfileAboutCard";
+import EditProfileModal, { EditProfileFormData } from "@/components/features/profile/EditProfileModal";
 import { usePostStore, mapBackendPostToPostType, PostType } from "@/store/postStore";
 import { useAuthStore } from "@/store/authStore";
 import { userService } from "@/services/userService";
@@ -266,14 +267,13 @@ export default function ProfilePage() {
     fetchProfileData();
   }, [authUser]);
 
-  const handleUpdateProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleUpdateProfile = async (formData: EditProfileFormData) => {
     setIsSaving(true);
-    const cleanDisplayName = (editForm.displayName || "").trim().slice(0, 100);
-    const cleanBio = (editForm.bio || "").trim().slice(0, 500);
-    const rawAvatar = (editForm.avatar || "").trim();
+    const cleanDisplayName = (formData.displayName || "").trim().slice(0, 100);
+    const cleanBio = (formData.bio || "").trim().slice(0, 500);
+    const rawAvatar = (formData.avatar || "").trim();
     const cleanAvatar = /^https?:\/\/.+/.test(rawAvatar) ? rawAvatar : undefined;
-    const rawCover = (editForm.coverPhoto || "").trim();
+    const rawCover = (formData.coverPhoto || "").trim();
     const cleanCover = /^https?:\/\/.+/.test(rawCover) ? rawCover : undefined;
 
     try {
@@ -290,11 +290,12 @@ export default function ProfilePage() {
         ...updatedData,
         displayName: cleanDisplayName || prev?.displayName,
         bio: cleanBio || prev?.bio,
-        location: editForm.location || prev?.location,
-        website: editForm.website || prev?.website,
+        location: formData.location || prev?.location,
+        website: formData.website || prev?.website,
         avatar: cleanAvatar || prev?.avatar,
         coverPhoto: cleanCover || prev?.coverPhoto,
       }));
+      setEditForm(formData);
       setIsEditOpen(false);
     } catch (err) {
       console.error("Profile update error:", err);
@@ -599,91 +600,13 @@ export default function ProfilePage() {
       </div>
 
       {/* EDIT PROFILE MODAL */}
-      <Dialog
+      <EditProfileModal
         isOpen={isEditOpen}
         onClose={() => setIsEditOpen(false)}
-        title="Edit Profile"
-        description="Update your display name, bio, links, and styling."
-        size="md"
-      >
-        <form onSubmit={handleUpdateProfile} className="space-y-4 pt-2">
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-300">Display Name</label>
-            <Input
-              value={editForm.displayName}
-              onChange={(e) => setEditForm((p) => ({ ...p, displayName: e.target.value }))}
-              placeholder="Your full name"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-300">Bio</label>
-            <textarea
-              rows={3}
-              value={editForm.bio}
-              onChange={(e) => setEditForm((p) => ({ ...p, bio: e.target.value }))}
-              placeholder="Tell others what you are building..."
-              className="w-full bg-[#1e293b] border border-[#334155] rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition resize-none"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-300">Location</label>
-              <Input
-                value={editForm.location}
-                onChange={(e) => setEditForm((p) => ({ ...p, location: e.target.value }))}
-                placeholder="e.g., Tokyo, Japan"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-300">Website</label>
-              <Input
-                value={editForm.website}
-                onChange={(e) => setEditForm((p) => ({ ...p, website: e.target.value }))}
-                placeholder="https://..."
-              />
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-300">Avatar Image URL</label>
-            <Input
-              value={editForm.avatar}
-              onChange={(e) => setEditForm((p) => ({ ...p, avatar: e.target.value }))}
-              placeholder="https://..."
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-300">Cover Photo URL</label>
-            <Input
-              value={editForm.coverPhoto}
-              onChange={(e) => setEditForm((p) => ({ ...p, coverPhoto: e.target.value }))}
-              placeholder="https://..."
-            />
-          </div>
-
-          <div className="flex justify-end gap-2 pt-3 border-t border-[#1f2937]">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsEditOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              size="sm"
-              disabled={isSaving}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              {isSaving ? "Saving..." : "Save Changes"}
-            </Button>
-          </div>
-        </form>
-      </Dialog>
+        initialData={editForm}
+        onSave={handleUpdateProfile}
+        isSaving={isSaving}
+      />
 
       {/* UPDATE AVATAR MODAL */}
       <Dialog
