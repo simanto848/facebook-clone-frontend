@@ -38,6 +38,7 @@ import ProfileAvatar from "@/components/features/profile/ProfileAvatar";
 import ProfileCover from "@/components/features/profile/ProfileCover";
 import ProfileQrModal from "@/components/features/profile/ProfileQrModal";
 import ProfileAboutTab from "@/components/features/profile/ProfileAboutTab";
+import TimelineFilterBar from "@/components/features/profile/TimelineFilterBar";
 import ReportModal from "@/components/features/post/ReportModal";
 import { userService } from "@/services/userService";
 import { friendshipService } from "@/services/friendshipService";
@@ -474,43 +475,12 @@ export default function UserProfileDetailPage({ params }: ProfilePageProps) {
             {activeTab === "posts" && (
               <div className="space-y-4">
                 {userPosts.length > 0 && (
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-[#111827]/60 border border-[#1f2937] p-2 rounded-xl">
-                    <span className="text-[11px] font-semibold text-slate-400 pl-2">Filter Timeline:</span>
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => setPostFormatFilter("all")}
-                        className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                          postFormatFilter === "all"
-                            ? "bg-blue-600 text-white shadow-xs"
-                            : "text-slate-400 hover:text-white"
-                        }`}
-                      >
-                        All ({userPosts.length})
-                      </button>
-                      <button
-                        onClick={() => setPostFormatFilter("text")}
-                        className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                          postFormatFilter === "text"
-                            ? "bg-blue-600 text-white shadow-xs"
-                            : "text-slate-400 hover:text-white"
-                        }`}
-                      >
-                        <FileText size={12} />
-                        <span>Discussions</span>
-                      </button>
-                      <button
-                        onClick={() => setPostFormatFilter("media")}
-                        className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                          postFormatFilter === "media"
-                            ? "bg-blue-600 text-white shadow-xs"
-                            : "text-slate-400 hover:text-white"
-                        }`}
-                      >
-                        <ImageIcon size={12} />
-                        <span>Media ({mediaPosts.length})</span>
-                      </button>
-                    </div>
-                  </div>
+                  <TimelineFilterBar
+                    activeFilter={postFormatFilter}
+                    onChange={setPostFormatFilter}
+                    totalCount={userPosts.length}
+                    mediaCount={mediaPosts.length}
+                  />
                 )}
 
                 {filteredUserPosts.length === 0 ? (
