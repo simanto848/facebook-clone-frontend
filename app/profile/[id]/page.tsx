@@ -39,6 +39,7 @@ import ProfileCover from "@/components/features/profile/ProfileCover";
 import ProfileQrModal from "@/components/features/profile/ProfileQrModal";
 import ProfileAboutTab from "@/components/features/profile/ProfileAboutTab";
 import TimelineFilterBar from "@/components/features/profile/TimelineFilterBar";
+import ProfileConnectionsTab from "@/components/features/profile/ProfileConnectionsTab";
 import ReportModal from "@/components/features/post/ReportModal";
 import { userService } from "@/services/userService";
 import { friendshipService } from "@/services/friendshipService";
@@ -518,35 +519,15 @@ export default function UserProfileDetailPage({ params }: ProfilePageProps) {
             )}
 
             {activeTab === "connections" && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {[
-                  { id: "friend-sarah", name: "Sarah Connor", avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100", handle: "sarahc" },
-                  { id: "friend-elena", name: "Elena Rostova", avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100", handle: "elena" },
-                  { id: "friend-david", name: "David Kim", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100", handle: "davidk" },
-                ].map((friend, i) => (
-                  <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-[#111827] border border-[#1f2937]">
-                    <div className="flex items-center gap-3">
-                      <Avatar src={friend.avatar} name={friend.name} size="md" />
-                      <div>
-                        <p className="text-xs font-bold text-white">{friend.name}</p>
-                        <p className="text-[10px] text-slate-400">@{friend.handle}</p>
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => openChat({
-                        id: friend.id || `friend-${i}`,
-                        name: friend.name,
-                        avatar: friend.avatar || "",
-                      })}
-                      className="text-blue-400 hover:bg-blue-600/10 text-xs"
-                    >
-                      Message
-                    </Button>
-                  </div>
-                ))}
-              </div>
+              <ProfileConnectionsTab
+                onMessageClick={(friend) =>
+                  openChat({
+                    id: friend.id || "",
+                    name: friend.name,
+                    avatar: friend.avatar || "",
+                  })
+                }
+              />
             )}
 
             {activeTab === "about" && (
