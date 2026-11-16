@@ -17,6 +17,7 @@ import EditProfileModal, { EditProfileFormData } from "@/components/features/pro
 import GuildsCommunitiesCard from "@/components/features/profile/GuildsCommunitiesCard";
 import UpdateAvatarModal from "@/components/features/profile/UpdateAvatarModal";
 import UpdateCoverModal from "@/components/features/profile/UpdateCoverModal";
+import AddFeaturedModal from "@/components/features/profile/AddFeaturedModal";
 import { usePostStore, mapBackendPostToPostType, PostType } from "@/store/postStore";
 import { useAuthStore } from "@/store/authStore";
 import { userService } from "@/services/userService";
@@ -70,8 +71,6 @@ export default function ProfilePage() {
     { id: "f3", title: "Creative Lab", image: "https://images.unsplash.com/photo-1778192391493-7436d746b128?w=300" },
   ]);
   const [isAddFeaturedOpen, setIsAddFeaturedOpen] = useState(false);
-  const [newFeaturedTitle, setNewFeaturedTitle] = useState("");
-  const [newFeaturedImage, setNewFeaturedImage] = useState("");
 
   useEffect(() => {
     try {
@@ -82,21 +81,17 @@ export default function ProfilePage() {
     } catch {}
   }, []);
 
-  const handleAddFeatured = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newFeaturedTitle.trim()) return;
+  const handleAddFeatured = (title: string, image?: string) => {
     const item = {
       id: `feat_${Date.now()}`,
-      title: newFeaturedTitle.trim(),
-      image: newFeaturedImage.trim() || "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=300",
+      title: title.trim(),
+      image: image?.trim() || "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=300",
     };
     const updated = [...featuredItems, item];
     setFeaturedItems(updated);
     try {
       localStorage.setItem("user_profile_featured", JSON.stringify(updated));
     } catch {}
-    setNewFeaturedTitle("");
-    setNewFeaturedImage("");
     setIsAddFeaturedOpen(false);
   };
 
@@ -610,75 +605,11 @@ export default function ProfilePage() {
       />
 
       {/* ADD FEATURED MODAL */}
-      <Dialog
+      <AddFeaturedModal
         isOpen={isAddFeaturedOpen}
         onClose={() => setIsAddFeaturedOpen(false)}
-        title="Add to Featured Highlights"
-        description="Pin favorite memories, collections, or project showcases to your profile."
-      >
-        <form onSubmit={handleAddFeatured} className="space-y-4 pt-2">
-          <div>
-            <label className="text-xs font-semibold text-slate-300 block mb-1.5">Highlight Title</label>
-            <Input
-              type="text"
-              placeholder="e.g. Vacation 2026, Design Lab, Photography"
-              value={newFeaturedTitle}
-              onChange={(e) => setNewFeaturedTitle(e.target.value)}
-              required
-              autoFocus
-            />
-          </div>
-
-          <div>
-            <label className="text-xs font-semibold text-slate-300 block mb-1.5">Cover Image URL (optional)</label>
-            <Input
-              type="url"
-              placeholder="https://images.unsplash.com/..."
-              value={newFeaturedImage}
-              onChange={(e) => setNewFeaturedImage(e.target.value)}
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <span className="text-[11px] text-slate-400">Quick Image Presets:</span>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                "https://images.unsplash.com/photo-1518770660439-4636190af475?w=300",
-                "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=300",
-                "https://images.unsplash.com/photo-1511447333015-45b65e60f6d5?w=300",
-              ].map((img, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => setNewFeaturedImage(img)}
-                  className="relative h-14 rounded-lg overflow-hidden border border-slate-700 hover:border-blue-500 transition cursor-pointer"
-                >
-                  <Image src={img} fill className="object-cover" alt="" />
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#1f2937]">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setIsAddFeaturedOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="primary"
-              size="sm"
-              disabled={!newFeaturedTitle.trim()}
-            >
-              Save Highlight
-            </Button>
-          </div>
-        </form>
-      </Dialog>
+        onAddHighlight={handleAddFeatured}
+      />
 
       {/* PROFILE QR CODE MODAL */}
       <ProfileQrModal
