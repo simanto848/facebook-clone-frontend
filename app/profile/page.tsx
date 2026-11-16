@@ -16,6 +16,7 @@ import ProfileAboutCard from "@/components/features/profile/ProfileAboutCard";
 import EditProfileModal, { EditProfileFormData } from "@/components/features/profile/EditProfileModal";
 import GuildsCommunitiesCard from "@/components/features/profile/GuildsCommunitiesCard";
 import UpdateAvatarModal from "@/components/features/profile/UpdateAvatarModal";
+import UpdateCoverModal from "@/components/features/profile/UpdateCoverModal";
 import { usePostStore, mapBackendPostToPostType, PostType } from "@/store/postStore";
 import { useAuthStore } from "@/store/authStore";
 import { userService } from "@/services/userService";
@@ -155,7 +156,6 @@ export default function ProfilePage() {
 
   // Cover Photo Modal State
   const [isCoverModalOpen, setIsCoverModalOpen] = useState(false);
-  const [coverInput, setCoverInput] = useState("");
   const [savingCover, setSavingCover] = useState(false);
 
   // Edit Profile Modal
@@ -318,16 +318,14 @@ export default function ProfilePage() {
     setSavingAvatar(false);
   };
 
-  const handleSaveCover = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!coverInput.trim() || savingCover) return;
+  const handleSaveCover = async (cleanCover: string) => {
     setSavingCover(true);
     try {
-      await userService.updateCover(coverInput.trim());
+      await userService.updateCover(cleanCover);
     } catch (err) {
       console.warn("Backend updateCover failed, updating local state:", err);
     }
-    setProfile((prev: any) => ({ ...prev, coverPhoto: coverInput.trim() }));
+    setProfile((prev: any) => ({ ...prev, coverPhoto: cleanCover }));
     setIsCoverModalOpen(false);
     setSavingCover(false);
   };
@@ -417,10 +415,7 @@ export default function ProfilePage() {
           src={coverPhoto}
           alt="Cover"
           heightClassName="h-72"
-          onEditCover={() => {
-            setCoverInput(coverPhoto);
-            setIsCoverModalOpen(true);
-          }}
+          onEditCover={() => setIsCoverModalOpen(true)}
         />
 
         {/* Avatar */}
@@ -606,80 +601,13 @@ export default function ProfilePage() {
       />
 
       {/* UPDATE COVER PHOTO MODAL */}
-      <Dialog
+      <UpdateCoverModal
         isOpen={isCoverModalOpen}
         onClose={() => setIsCoverModalOpen(false)}
-        title="Update Cover Photo"
-        size="lg"
-      >
-        <form onSubmit={handleSaveCover} className="space-y-4 pt-2">
-          {/* Live Widescreen Preview */}
-          <div className="space-y-1">
-            <span className="text-[11px] text-slate-400">Live Preview</span>
-            <div className="relative h-44 w-full rounded-2xl overflow-hidden border border-[#1f2937] shadow-xl bg-slate-800">
-              <Image
-                src={coverInput || coverPhoto}
-                alt="Cover Preview"
-                fill
-                className="object-cover"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-300">Cover Image URL</label>
-            <Input
-              type="url"
-              required
-              value={coverInput}
-              onChange={(e) => setCoverInput(e.target.value)}
-              placeholder="https://images.unsplash.com/photo-..."
-              className="bg-[#0f172a] border-[#1f2937]"
-            />
-          </div>
-
-          {/* Quick Presets */}
-          <div className="space-y-1.5">
-            <span className="text-[11px] font-semibold text-slate-400">Or pick a landscape preset:</span>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                "https://images.unsplash.com/photo-1519608487953-e999c86e7455?w=1200",
-                "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1200",
-                "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1200",
-              ].map((preset, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => setCoverInput(preset)}
-                  className="relative h-16 rounded-xl overflow-hidden border border-[#1f2937] hover:border-blue-500 transition cursor-pointer"
-                >
-                  <Image src={preset} fill className="object-cover" alt={`Cover ${idx + 1}`} />
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-2 pt-3 border-t border-[#1f2937]">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsCoverModalOpen(false)}
-              disabled={savingCover}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              size="sm"
-              disabled={!coverInput.trim() || savingCover}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              {savingCover ? "Saving..." : "Save Cover Photo"}
-            </Button>
-          </div>
-        </form>
-      </Dialog>
+        currentCover={coverPhoto}
+        onSave={handleSaveCover}
+        isSaving={savingCover}
+      />
 
       {/* ADD FEATURED MODAL */}
       <Dialog
