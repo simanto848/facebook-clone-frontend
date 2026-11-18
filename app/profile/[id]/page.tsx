@@ -41,6 +41,7 @@ import ProfileAboutTab from "@/components/features/profile/ProfileAboutTab";
 import TimelineFilterBar from "@/components/features/profile/TimelineFilterBar";
 import ProfileConnectionsTab from "@/components/features/profile/ProfileConnectionsTab";
 import BlockUserModal from "@/components/features/profile/BlockUserModal";
+import UserProfileActionButtons from "@/components/features/profile/UserProfileActionButtons";
 import ReportModal from "@/components/features/post/ReportModal";
 import { userService } from "@/services/userService";
 import { friendshipService } from "@/services/friendshipService";
@@ -321,82 +322,23 @@ export default function UserProfileDetailPage({ params }: ProfilePageProps) {
 
                 {/* Actions */}
                 {!isCurrentUser && (
-                  <div className="flex items-center gap-2 w-full sm:w-auto">
-                    <Button
-                      variant={friendStatus === "friends" ? "secondary" : "primary"}
-                      size="sm"
-                      leftIcon={friendStatus === "friends" ? <UserCheck size={14} /> : <UserPlus size={14} />}
-                      onClick={handleFriendAction}
-                      disabled={actionLoading}
-                      className="flex-1 sm:flex-none"
-                    >
-                      {friendStatus === "friends"
-                        ? "Friends"
-                        : friendStatus === "sent"
-                        ? "Request Sent"
-                        : "Add Friend"}
-                    </Button>
-
-                    <Button
-                      variant={isFollowing ? "secondary" : "ghost"}
-                      size="sm"
-                      onClick={handleFollowToggle}
-                      disabled={actionLoading}
-                      className="flex-1 sm:flex-none border border-[#1f2937]"
-                    >
-                      {isFollowing ? "Following" : "Follow"}
-                    </Button>
-
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      leftIcon={<MessageSquare size={14} />}
-                      onClick={() => openChat({
+                  <UserProfileActionButtons
+                    friendStatus={friendStatus}
+                    isFollowing={isFollowing}
+                    actionLoading={actionLoading}
+                    onFriendAction={handleFriendAction}
+                    onFollowToggle={handleFollowToggle}
+                    onMessage={() =>
+                      openChat({
                         id: user.id,
                         name: `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.username || "User",
                         avatar: user.avatar || user.profilePicture || "",
-                      })}
-                      className="border border-[#1f2937] text-blue-400 hover:bg-blue-600/10"
-                    >
-                      Message
-                    </Button>
-
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      leftIcon={<UserX size={14} />}
-                      onClick={() => setShowBlockModal(true)}
-                      className="border border-[#1f2937] text-rose-400 hover:bg-rose-500/10 hover:text-rose-300"
-                    >
-                      Block
-                    </Button>
-
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      leftIcon={<Flag size={14} />}
-                      onClick={() => setShowReportModal(true)}
-                      className="border border-[#1f2937] text-slate-400 hover:text-amber-400 hover:bg-amber-500/10"
-                    >
-                      Report
-                    </Button>
-
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      leftIcon={<QrCode size={14} />}
-                      onClick={() => setShowQrModal(true)}
-                      className="border border-[#1f2937] text-slate-300 hover:text-white"
-                      title="Display Profile QR Code"
-                    >
-                      QR Code
-                    </Button>
-
-                    <ShareProfileButton
-                      className="border border-[#1f2937] text-slate-300 hover:text-white"
-                      label="Share"
-                    />
-                  </div>
+                      })
+                    }
+                    onBlock={() => setShowBlockModal(true)}
+                    onReport={() => setShowReportModal(true)}
+                    onShowQr={() => setShowQrModal(true)}
+                  />
                 )}
               </div>
 
