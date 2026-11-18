@@ -9,6 +9,7 @@ import Link from "next/link";
 import { friendshipService } from "@/services/friendshipService";
 import MutualFriendsModal from "@/components/features/connections/MutualFriendsModal";
 import UnfriendConfirmModal from "@/components/features/connections/UnfriendConfirmModal";
+import ConnectionRequestCard from "@/components/features/connections/ConnectionRequestCard";
 import {
   PageHeader,
   Tabs,
@@ -518,71 +519,17 @@ export default function ConnectionsPage() {
                         </button>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {filteredRequests.map((user) => (
-                        <Card key={user.id} hover>
-                          <CardContent className="space-y-4">
-                            <Link href={`/profile/${user.id}`} className="flex items-start gap-3 group">
-                              <Avatar src={user.avatar} name={user.name} size="lg" />
-                              <div className="space-y-0.5 flex-1 min-w-0">
-                                <p className="text-sm font-bold text-white group-hover:text-blue-400 transition truncate">
-                                  {user.name}
-                                </p>
-                                <p className="text-xs text-slate-400 truncate">{user.role}</p>
-                                {user.mutual > 0 ? (
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      handleViewMutual(user);
-                                    }}
-                                    className="focus:outline-none text-left"
-                                  >
-                                    <Badge variant="secondary" size="sm" className="hover:bg-slate-700 cursor-pointer">
-                                      {user.mutual} mutual connection{user.mutual > 1 ? "s" : ""}
-                                    </Badge>
-                                  </button>
-                                ) : (
-                                  <Badge variant="outline" size="sm">
-                                    New connection
-                                  </Badge>
-                                )}
-                              </div>
-                            </Link>
-
-                            <div className="flex gap-2 pt-2 border-t border-[#1f2937]/60">
-                              <Button
-                                variant="primary"
-                                fullWidth
-                                size="sm"
-                                disabled={processingId === user.id}
-                                leftIcon={<Check size={14} />}
-                                onClick={() => handleAcceptRequest(user)}
-                              >
-                                Accept
-                              </Button>
-                              <Button
-                                variant="secondary"
-                                fullWidth
-                                size="sm"
-                                disabled={processingId === user.id}
-                                leftIcon={<X size={14} />}
-                                onClick={() => handleDeclineRequest(user.id)}
-                              >
-                                Ignore
-                              </Button>
-                              <Button
-                                variant="secondary"
-                                size="sm"
-                                onClick={() => openChat({ id: user.id, name: user.name, avatar: user.avatar })}
-                                title="Message"
-                              >
-                                <MessageSquare size={14} />
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
+                        {filteredRequests.map((user) => (
+                          <ConnectionRequestCard
+                            key={user.id}
+                            user={user}
+                            isProcessing={processingId === user.id}
+                            onAccept={handleAcceptRequest}
+                            onDecline={handleDeclineRequest}
+                            onMessage={(u) => openChat({ id: u.id, name: u.name, avatar: u.avatar })}
+                            onViewMutual={handleViewMutual}
+                          />
+                        ))}
                       </div>
                     </div>
                   )}
