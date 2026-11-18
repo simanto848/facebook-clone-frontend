@@ -40,6 +40,7 @@ import ProfileQrModal from "@/components/features/profile/ProfileQrModal";
 import ProfileAboutTab from "@/components/features/profile/ProfileAboutTab";
 import TimelineFilterBar from "@/components/features/profile/TimelineFilterBar";
 import ProfileConnectionsTab from "@/components/features/profile/ProfileConnectionsTab";
+import BlockUserModal from "@/components/features/profile/BlockUserModal";
 import ReportModal from "@/components/features/post/ReportModal";
 import { userService } from "@/services/userService";
 import { friendshipService } from "@/services/friendshipService";
@@ -544,34 +545,13 @@ export default function UserProfileDetailPage({ params }: ProfilePageProps) {
             />
 
             {/* Block Confirmation Dialog */}
-            <Dialog
+            <BlockUserModal
               isOpen={showBlockModal}
               onClose={() => setShowBlockModal(false)}
-              title={`Block ${displayName}?`}
-            >
-              <div className="space-y-4">
-                <p className="text-sm text-slate-300">
-                  {displayName} will no longer be able to message you, see your posts, or find your profile. They will not be notified that you blocked them.
-                </p>
-                <div className="flex justify-end gap-3 pt-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowBlockModal(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={handleBlockUser}
-                    disabled={blockLoading}
-                  >
-                    {blockLoading ? "Blocking..." : "Block"}
-                  </Button>
-                </div>
-              </div>
-            </Dialog>
+              userName={displayName}
+              onConfirm={handleBlockUser}
+              loading={blockLoading}
+            />
 
             {/* Report User Modal */}
             <ReportModal
