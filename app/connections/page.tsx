@@ -8,6 +8,7 @@ import { Users, UserPlus, MessageSquare, Check, X, UserX, RefreshCw, Search, Arr
 import Link from "next/link";
 import { friendshipService } from "@/services/friendshipService";
 import MutualFriendsModal from "@/components/features/connections/MutualFriendsModal";
+import UnfriendConfirmModal from "@/components/features/connections/UnfriendConfirmModal";
 import {
   PageHeader,
   Tabs,
@@ -792,55 +793,16 @@ export default function ConnectionsPage() {
                 </div>
               )}
 
-              {/* Remove Friend Confirmation Dialog */}
-              <Dialog
+              {/* Remove Connection Confirmation Dialog */}
+              <UnfriendConfirmModal
                 isOpen={!!confirmUnfriendUser}
                 onClose={() => setConfirmUnfriendUser(null)}
-                title="Remove Connection"
-              >
-                <div className="space-y-4 pt-2">
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-[#0f172a] border border-[#1f2937]">
-                    {confirmUnfriendUser && (
-                      <Avatar
-                        src={confirmUnfriendUser.avatar}
-                        name={confirmUnfriendUser.name}
-                        size="md"
-                      />
-                    )}
-                    <div>
-                      <h4 className="text-xs font-bold text-white">{confirmUnfriendUser?.name}</h4>
-                      <p className="text-[10px] text-slate-400">{confirmUnfriendUser?.role}</p>
-                    </div>
-                  </div>
-
-                  <p className="text-xs text-slate-300 leading-relaxed">
-                    Are you sure you want to remove <strong>{confirmUnfriendUser?.name}</strong> from your connections? They won't be notified, but you will no longer see each other's friends-only posts.
-                  </p>
-
-                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#1f2937]">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setConfirmUnfriendUser(null)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={async () => {
-                        if (confirmUnfriendUser) {
-                          const uid = confirmUnfriendUser.id;
-                          setConfirmUnfriendUser(null);
-                          await handleUnfriend(uid);
-                        }
-                      }}
-                    >
-                      Remove Connection
-                    </Button>
-                  </div>
-                </div>
-              </Dialog>
+                user={confirmUnfriendUser}
+                onConfirm={async (uid) => {
+                  setConfirmUnfriendUser(null);
+                  await handleUnfriend(uid);
+                }}
+              />
 
               {/* Mutual Friends Dialog */}
               <MutualFriendsModal
