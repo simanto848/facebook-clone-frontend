@@ -10,6 +10,7 @@ import { friendshipService } from "@/services/friendshipService";
 import MutualFriendsModal from "@/components/features/connections/MutualFriendsModal";
 import UnfriendConfirmModal from "@/components/features/connections/UnfriendConfirmModal";
 import ConnectionRequestCard from "@/components/features/connections/ConnectionRequestCard";
+import ConnectionFilterBar from "@/components/features/connections/ConnectionFilterBar";
 import {
   PageHeader,
   Tabs,
@@ -390,97 +391,19 @@ export default function ConnectionsPage() {
             />
 
             {/* Search and Sort Toolbar */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3 rounded-2xl bg-[#111827] border border-[#1f2937]">
-              <div className="relative flex-1">
-                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Search by name or role..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-8 py-2 rounded-xl bg-[#0f172a] border border-[#1f2937] text-xs text-white placeholder:text-slate-500 outline-none focus:border-blue-500 transition"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery("")}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
-                  >
-                    <X size={13} />
-                  </button>
-                )}
-              </div>
-
-              <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto text-xs flex-wrap">
-                <button
-                  onClick={() => setMutualFilter((curr) => (curr === "all" ? "has_mutual" : "all"))}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                    mutualFilter === "has_mutual"
-                      ? "bg-purple-600 text-white"
-                      : "bg-[#0f172a] text-slate-400 hover:text-white border border-[#1f2937]"
-                  }`}
-                  title="Filter contacts with mutual connections"
-                >
-                  With Mutual
-                </button>
-
-                <span className="text-slate-400 text-[11px] mr-1 flex items-center gap-1">
-                  <ArrowUpDown size={12} /> Sort:
-                </span>
-                <button
-                  onClick={() => setSortBy("recent")}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                    sortBy === "recent"
-                      ? "bg-blue-600 text-white"
-                      : "bg-[#0f172a] text-slate-400 hover:text-white border border-[#1f2937]"
-                  }`}
-                >
-                  Recent
-                </button>
-                <button
-                  onClick={() => setSortBy("name")}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                    sortBy === "name"
-                      ? "bg-blue-600 text-white"
-                      : "bg-[#0f172a] text-slate-400 hover:text-white border border-[#1f2937]"
-                  }`}
-                >
-                  Name (A-Z)
-                </button>
-                <button
-                  onClick={() => setSortBy("mutual")}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                    sortBy === "mutual"
-                      ? "bg-blue-600 text-white"
-                      : "bg-[#0f172a] text-slate-400 hover:text-white border border-[#1f2937]"
-                  }`}
-                >
-                  Mutual
-                </button>
-              </div>
-            </div>
-
-            {/* Role Filter Pills */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
-              <span className="text-slate-400 text-[11px] shrink-0 font-medium">Role:</span>
-              {[
-                { id: "all", label: "All Roles" },
-                { id: "engineering", label: "💻 Engineering" },
-                { id: "design", label: "🎨 Design & UX" },
-                { id: "product", label: "🚀 Product & Mgmt" },
-              ].map((pill) => (
-                <button
-                  key={pill.id}
-                  onClick={() => setRoleCategory(pill.id as any)}
-                  className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
-                    roleCategory === pill.id
-                      ? "bg-blue-600 text-white shadow-sm shadow-blue-500/20"
-                      : "bg-[#111827] text-slate-400 hover:text-white border border-[#1f2937]"
-                  }`}
-                >
-                  {pill.label}
-                </button>
-              ))}
-            </div>
+            <ConnectionFilterBar
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              sortBy={sortBy}
+              onSortChange={setSortBy}
+              roleCategory={roleCategory}
+              onRoleCategoryChange={setRoleCategory}
+              mutualFilter={mutualFilter}
+              onMutualFilterToggle={() =>
+                setMutualFilter((curr) => (curr === "all" ? "has_mutual" : "all"))
+              }
+              searchPlaceholder="Search by name or role..."
+            />
 
             {/* Content Lists */}
             <div className="space-y-4 pt-2">
