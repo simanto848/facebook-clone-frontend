@@ -7,6 +7,7 @@ import { useChatStore } from "@/store/chatStore";
 import { Users, UserPlus, MessageSquare, Check, X, UserX, RefreshCw, Search, ArrowUpDown, Download } from "lucide-react";
 import Link from "next/link";
 import { friendshipService } from "@/services/friendshipService";
+import MutualFriendsModal from "@/components/features/connections/MutualFriendsModal";
 import {
   PageHeader,
   Tabs,
@@ -42,18 +43,9 @@ export default function ConnectionsPage() {
   const [confirmUnfriendUser, setConfirmUnfriendUser] = useState<DisplayUser | null>(null);
   const [mutualUser, setMutualUser] = useState<DisplayUser | null>(null);
   const [mutualList, setMutualList] = useState<any[]>([]);
-  const [mutualSearch, setMutualSearch] = useState("");
   const [loadingMutual, setLoadingMutual] = useState(false);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-
-  const filteredMutualList = mutualSearch.trim()
-    ? mutualList.filter(
-        (m) =>
-          m.name.toLowerCase().includes(mutualSearch.toLowerCase().trim()) ||
-          m.role.toLowerCase().includes(mutualSearch.toLowerCase().trim())
-      )
-    : mutualList;
 
   const handleViewMutual = async (u: DisplayUser) => {
     const cleanUserId = (u?.id || "").trim();
@@ -851,69 +843,14 @@ export default function ConnectionsPage() {
               </Dialog>
 
               {/* Mutual Friends Dialog */}
-              <Dialog
+              <MutualFriendsModal
                 isOpen={!!mutualUser}
-                onClose={() => {
-                  setMutualUser(null);
-                  setMutualSearch("");
-                }}
-                title={`Mutual Connections with ${mutualUser?.name || "User"}`}
-              >
-                <div className="space-y-3 pt-2">
-                  {mutualList.length > 0 && !loadingMutual && (
-                    <div className="relative">
-                      <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                      <input
-                        type="text"
-                        placeholder="Search mutual contacts..."
-                        value={mutualSearch}
-                        onChange={(e) => setMutualSearch(e.target.value)}
-                        className="w-full pl-8 pr-7 py-1.5 rounded-lg bg-[#0f172a] border border-[#1f2937] text-xs text-white placeholder:text-slate-500 outline-none focus:border-blue-500 transition"
-                      />
-                      {mutualSearch && (
-                        <button
-                          onClick={() => setMutualSearch("")}
-                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
-                        >
-                          <X size={12} />
-                        </button>
-                      )}
-                    </div>
-                  )}
-
-                  {loadingMutual ? (
-                    <div className="py-8 text-center">
-                      <Loader label="Loading mutual connections..." />
-                    </div>
-                  ) : mutualList.length === 0 ? (
-                    <p className="text-xs text-slate-400 py-4 text-center">No mutual connections found.</p>
-                  ) : filteredMutualList.length === 0 ? (
-                    <p className="text-xs text-slate-400 py-4 text-center">No mutual connections found matching &quot;{mutualSearch}&quot;.</p>
-                  ) : (
-                    <div className="max-h-60 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
-                      {filteredMutualList.map((m) => (
-                        <div key={m.id} className="flex items-center justify-between p-2 rounded-xl bg-[#0f172a] border border-[#1f2937]">
-                          <Link href={`/profile/${m.id}`} className="flex items-center gap-3 group">
-                            <Avatar src={m.avatar} name={m.name} size="sm" />
-                            <div>
-                              <p className="text-xs font-semibold text-white group-hover:text-blue-400 transition">{m.name}</p>
-                              <p className="text-[10px] text-slate-400">{m.role}</p>
-                            </div>
-                          </Link>
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => openChat({ id: m.id, name: m.name, avatar: m.avatar })}
-                            leftIcon={<MessageSquare size={12} />}
-                          >
-                            Message
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </Dialog>
+                onClose={() => setMutualUser(null)}
+                targetUserName={mutualUser?.name}
+                mutualList={mutualList}
+                loading={loadingMutual}
+                onMessageClick={(m) => openChat({ id: m.id, name: m.name, avatar: m.avatar })}
+              />
             </div>
           </div>
         </main>
