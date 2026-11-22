@@ -10,6 +10,7 @@ import { friendshipService } from "@/services/friendshipService";
 import MutualFriendsModal from "@/components/features/connections/MutualFriendsModal";
 import UnfriendConfirmModal from "@/components/features/connections/UnfriendConfirmModal";
 import ConnectionRequestCard from "@/components/features/connections/ConnectionRequestCard";
+import ConnectionSuggestionCard from "@/components/features/connections/ConnectionSuggestionCard";
 import ConnectionFilterBar from "@/components/features/connections/ConnectionFilterBar";
 import {
   PageHeader,
@@ -474,59 +475,15 @@ export default function ConnectionsPage() {
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {filteredSuggestions.map((user) => (
-                        <Card key={user.id} hover>
-                          <CardContent className="space-y-4">
-                            <Link href={`/profile/${user.id}`} className="flex items-start gap-3 group">
-                              <Avatar src={user.avatar} name={user.name} size="lg" />
-                              <div className="space-y-0.5 flex-1 min-w-0">
-                                <p className="text-sm font-bold text-white group-hover:text-blue-400 transition truncate">
-                                  {user.name}
-                                </p>
-                                <p className="text-xs text-slate-400 truncate">{user.role}</p>
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    handleViewMutual(user);
-                                  }}
-                                  className="focus:outline-none text-left"
-                                >
-                                  <Badge variant="outline" size="sm" className="hover:bg-slate-800 cursor-pointer">
-                                    {user.mutual} mutual connections
-                                  </Badge>
-                                </button>
-                              </div>
-                            </Link>
-
-                            <div className="flex gap-2 pt-2 border-t border-[#1f2937]/60">
-                              <Button
-                                variant={sentRequestIds.includes(user.id) ? "outline" : "primary"}
-                                fullWidth
-                                size="sm"
-                                disabled={processingId === user.id}
-                                leftIcon={
-                                  sentRequestIds.includes(user.id) ? (
-                                    <Check size={14} className="text-emerald-400" />
-                                  ) : (
-                                    <UserPlus size={14} />
-                                  )
-                                }
-                                onClick={() => handleToggleFriendRequest(user)}
-                              >
-                                {sentRequestIds.includes(user.id) ? "Request Sent" : "Connect"}
-                              </Button>
-                              <Button
-                                variant="secondary"
-                                size="sm"
-                                onClick={() => openChat({ id: user.id, name: user.name, avatar: user.avatar })}
-                                title="Message"
-                              >
-                                <MessageSquare size={14} />
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
+                        <ConnectionSuggestionCard
+                          key={user.id}
+                          user={user}
+                          isSent={sentRequestIds.includes(user.id)}
+                          isProcessing={processingId === user.id}
+                          onToggleRequest={handleToggleFriendRequest}
+                          onMessage={(u) => openChat({ id: u.id, name: u.name, avatar: u.avatar })}
+                          onViewMutual={handleViewMutual}
+                        />
                       ))}
                     </div>
                   )}
