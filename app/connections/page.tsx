@@ -11,6 +11,7 @@ import MutualFriendsModal from "@/components/features/connections/MutualFriendsM
 import UnfriendConfirmModal from "@/components/features/connections/UnfriendConfirmModal";
 import ConnectionRequestCard from "@/components/features/connections/ConnectionRequestCard";
 import ConnectionSuggestionCard from "@/components/features/connections/ConnectionSuggestionCard";
+import ConnectedUserCard from "@/components/features/connections/ConnectedUserCard";
 import ConnectionFilterBar from "@/components/features/connections/ConnectionFilterBar";
 import {
   PageHeader,
@@ -505,60 +506,14 @@ export default function ConnectionsPage() {
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {filteredConnections.map((user) => (
-                        <Card key={user.id} hover>
-                          <CardContent className="space-y-4">
-                            <Link href={`/profile/${user.id}`} className="flex items-start gap-3 group">
-                              <Avatar src={user.avatar} name={user.name} size="lg" online />
-                              <div className="space-y-0.5 flex-1 min-w-0">
-                                <p className="text-sm font-bold text-white group-hover:text-blue-400 transition truncate">
-                                  {user.name}
-                                </p>
-                                <p className="text-xs text-slate-400 truncate">{user.role}</p>
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                  <Badge variant="success" size="sm" pulse>
-                                    Connected
-                                  </Badge>
-                                  {user.mutual > 0 && (
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        handleViewMutual(user);
-                                      }}
-                                      className="focus:outline-none"
-                                    >
-                                      <Badge variant="secondary" size="sm" className="hover:bg-slate-700 cursor-pointer">
-                                        {user.mutual} mutual
-                                      </Badge>
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
-                            </Link>
-
-                            <div className="flex gap-2 pt-2 border-t border-[#1f2937]/60">
-                              <Button
-                                variant="primary"
-                                fullWidth
-                                size="sm"
-                                leftIcon={<MessageSquare size={14} />}
-                                onClick={() => openChat({ id: user.id, name: user.name, avatar: user.avatar })}
-                              >
-                                Message
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                disabled={processingId === user.id}
-                                onClick={() => setConfirmUnfriendUser(user)}
-                                title="Remove connection"
-                              >
-                                <UserX size={14} className="text-slate-400 hover:text-red-400" />
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
+                        <ConnectedUserCard
+                          key={user.id}
+                          user={user}
+                          isProcessing={processingId === user.id}
+                          onMessage={(u) => openChat({ id: u.id, name: u.name, avatar: u.avatar })}
+                          onUnfriend={(u) => setConfirmUnfriendUser(u)}
+                          onViewMutual={handleViewMutual}
+                        />
                       ))}
                     </div>
                   )}
