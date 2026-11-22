@@ -9,6 +9,7 @@ import { Bookmark, BookmarkX, Search, X, Tag, Download, Check, Image as ImageIco
 import { bookmarkService } from "@/services/bookmarkService";
 import { mapBackendPostToPostType, PostType, usePostStore } from "@/store/postStore";
 import { PageHeader, Badge, EmptyState, Loader, Dialog, Button } from "@/components/ui";
+import CreateCollectionModal from "@/components/features/saved/CreateCollectionModal";
 
 export default function SavedPostsPage() {
   const [savedPosts, setSavedPosts] = useState<(PostType & { bookmarkId?: string; category?: string })[]>([]);
@@ -27,7 +28,6 @@ export default function SavedPostsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [customCollections, setCustomCollections] = useState<{ id: string; name: string; color?: string }[]>([]);
   const [showNewCollectionModal, setShowNewCollectionModal] = useState(false);
-  const [newCollectionName, setNewCollectionName] = useState("");
   const { toggleSavePost } = usePostStore();
 
   useEffect(() => {
@@ -39,17 +39,15 @@ export default function SavedPostsPage() {
     } catch {}
   }, []);
 
-  const handleCreateCollection = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newCollectionName.trim()) return;
+  const handleCreateCollection = (name: string) => {
+    if (!name.trim()) return;
     const id = `col_${Date.now()}`;
-    const created = { id, name: newCollectionName.trim() };
+    const created = { id, name: name.trim() };
     const updated = [...customCollections, created];
     setCustomCollections(updated);
     try {
       localStorage.setItem("user_custom_collections", JSON.stringify(updated));
     } catch {}
-    setNewCollectionName("");
     setShowNewCollectionModal(false);
     setSelectedCategory(id);
   };
@@ -805,53 +803,11 @@ export default function SavedPostsPage() {
       </div>
 
       {/* New Collection Modal Dialog */}
-      <Dialog
+      <CreateCollectionModal
         isOpen={showNewCollectionModal}
         onClose={() => setShowNewCollectionModal(false)}
-        title="Create New Saved Collection"
-      >
-        <form onSubmit={handleCreateCollection} className="space-y-4 pt-2">
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-              Collection Folder Name
-            </label>
-            <input
-              type="text"
-              placeholder="e.g., Design Inspiration, Recipes, Vacation Ideas"
-              value={newCollectionName}
-              onChange={(e) => setNewCollectionName(e.target.value)}
-              autoFocus
-              className="w-full text-xs bg-[#0f172a] border border-[#374151] rounded-xl px-3 py-2 text-white outline-none focus:border-blue-500 transition"
-            />
-          </div>
-
-          <p className="text-[11px] text-slate-400">
-            Organize your bookmarked posts into custom collections for easy access.
-          </p>
-
-          <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#1f2937]">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setShowNewCollectionModal(false);
-                setNewCollectionName("");
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="primary"
-              size="sm"
-              disabled={!newCollectionName.trim()}
-            >
-              Create Collection
-            </Button>
-          </div>
-        </form>
-      </Dialog>
+        onCreate={handleCreateCollection}
+      />
     </div>
   );
 }
