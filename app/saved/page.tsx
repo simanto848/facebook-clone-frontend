@@ -11,6 +11,7 @@ import { mapBackendPostToPostType, PostType, usePostStore } from "@/store/postSt
 import { PageHeader, Badge, EmptyState, Loader, Dialog, Button } from "@/components/ui";
 import CreateCollectionModal from "@/components/features/saved/CreateCollectionModal";
 import ClearBookmarksBanner from "@/components/features/saved/ClearBookmarksBanner";
+import BatchSelectionBar from "@/components/features/saved/BatchSelectionBar";
 
 export default function SavedPostsPage() {
   const [savedPosts, setSavedPosts] = useState<(PostType & { bookmarkId?: string; category?: string })[]>([]);
@@ -584,46 +585,17 @@ export default function SavedPostsPage() {
 
             {/* Batch Selection Action Bar */}
             {isBatchMode && (
-              <div className="p-3 px-4 rounded-xl bg-slate-900 border border-blue-500/40 flex items-center justify-between gap-3 sticky top-4 z-20 shadow-lg backdrop-blur-md">
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={handleSelectAll}
-                    className="flex items-center gap-2 text-xs font-semibold text-slate-200 hover:text-white cursor-pointer"
-                  >
-                    {selectedIds.size > 0 && selectedIds.size === sortedPosts.length ? (
-                      <CheckSquare size={16} className="text-blue-400" />
-                    ) : (
-                      <Square size={16} className="text-slate-400" />
-                    )}
-                    <span>Select All ({sortedPosts.length})</span>
-                  </button>
-                  <span className="text-xs text-slate-400">
-                    • <strong className="text-white">{selectedIds.size}</strong> selected
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsBatchMode(false);
-                      setSelectedIds(new Set());
-                    }}
-                    className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 transition cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    disabled={selectedIds.size === 0 || isBatchDeleting}
-                    onClick={handleDeleteSelected}
-                    className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-rose-600 hover:bg-rose-500 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer shadow-sm shadow-rose-600/30 flex items-center gap-1.5"
-                  >
-                    {isBatchDeleting ? <Loader size="sm" /> : <Trash2 size={13} />}
-                    <span>Delete Selected ({selectedIds.size})</span>
-                  </button>
-                </div>
-              </div>
+              <BatchSelectionBar
+                selectedCount={selectedIds.size}
+                totalCount={sortedPosts.length}
+                isDeleting={isBatchDeleting}
+                onSelectAll={handleSelectAll}
+                onCancel={() => {
+                  setIsBatchMode(false);
+                  setSelectedIds(new Set());
+                }}
+                onDeleteSelected={handleDeleteSelected}
+              />
             )}
 
             {loading ? (
