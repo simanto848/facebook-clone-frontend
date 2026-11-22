@@ -21,6 +21,7 @@ import {
   Tabs,
   Input,
 } from "@/components/ui";
+import ShareMemoryModal from "@/components/features/memories/ShareMemoryModal";
 
 interface MemoryItem {
   id: string;
@@ -76,7 +77,6 @@ export default function MemoriesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedYear, setSelectedYear] = useState<string>("all");
   const [activeShareMemory, setActiveShareMemory] = useState<MemoryItem | null>(null);
-  const [customCaption, setCustomCaption] = useState("");
   const [isSharing, setIsSharing] = useState(false);
   const [copiedSummary, setCopiedSummary] = useState(false);
   const [copiedMemoryId, setCopiedMemoryId] = useState<string | null>(null);
@@ -226,22 +226,21 @@ export default function MemoriesPage() {
     }
   };
 
-  const handleConfirmShare = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!activeShareMemory || isSharing) return;
+  const handleConfirmShare = async (memory: MemoryItem, caption: string) => {
+    if (!memory || isSharing) return;
 
     setIsSharing(true);
-    const prefix = customCaption.trim() ? `${customCaption.trim()}\n\n` : "";
-    const shareContent = `${prefix}On this day ${activeShareMemory.yearsAgo} year${activeShareMemory.yearsAgo > 1 ? "s" : ""} ago: "${activeShareMemory.content}"`;
+    const prefix = caption.trim() ? `${caption.trim()}\n\n` : "";
+    const shareContent = `${prefix}On this day ${memory.yearsAgo} year${memory.yearsAgo > 1 ? "s" : ""} ago: "${memory.content}"`;
 
     try {
       await Promise.allSettled([
         postService.createPost({
           content: shareContent,
-          mediaUrls: activeShareMemory.mediaUrl ? [activeShareMemory.mediaUrl] : [],
+          mediaUrls: memory.mediaUrl ? [memory.mediaUrl] : [],
           privacy: "PUBLIC",
         }),
-        memoryService.shareMemory(activeShareMemory.id, customCaption.trim() || undefined),
+        memoryService.shareMemory(memory.id, caption.trim() || undefined),
       ]);
     } catch (err) {
       console.warn("Backend share memory post error, fallback to local store:", err);
@@ -254,16 +253,15 @@ export default function MemoriesPage() {
         avatar: "https://images.unsplash.com/photo-1779040622687-42bb00790c67?w=500",
       },
       visibility: "public",
-      type: activeShareMemory.mediaUrl ? "image" : "text",
+      type: memory.mediaUrl ? "image" : "text",
       content: shareContent,
-      images: activeShareMemory.mediaUrl ? [activeShareMemory.mediaUrl] : [],
+      images: memory.mediaUrl ? [memory.mediaUrl] : [],
     });
 
-    setSharedMap((prev) => ({ ...prev, [activeShareMemory.id]: true }));
+    setSharedMap((prev) => ({ ...prev, [memory.id]: true }));
     setToastMessage("Memory shared successfully to your feed timeline!");
     setTimeout(() => setToastMessage(null), 3500);
     setActiveShareMemory(null);
-    setCustomCaption("");
     setIsSharing(false);
   };
 
@@ -651,98 +649,12 @@ export default function MemoriesPage() {
       </div>
 
       {/* SHARE MEMORY MODAL */}
-      <Dialog
-        isOpen={!!activeShareMemory}
+      <ShareMemoryModal
+        memory={activeShareMemory}
         onClose={() => setActiveShareMemory(null)}
-        title="Share Memory to Your Feed"
-        description="Add your thoughts looking back on this moment before sharing with friends."
-      >
-        {activeShareMemory && (
-          <form onSubmit={handleConfirmShare} className="space-y-4 pt-2">
-            {/* Memory Card Preview */}
-            <div className="p-3.5 rounded-2xl border border-purple-500/30 bg-purple-500/10 space-y-3">
-              <div className="flex items-center justify-between text-xs font-semibold text-purple-300">
-                <div className="flex items-center gap-2">
-                  <Sparkles size={14} />
-                  <span>{activeShareMemory.yearsAgo} Year{activeShareMemory.yearsAgo > 1 ? "s" : ""} Ago Today • {activeShareMemory.dateStr}</span>
-                </div>
-                <Badge variant="primary" size="sm" className="bg-purple-600/30 text-purple-300 border-purple-400/30 text-[10px]">
-                  {activeShareMemory.type === "friendship" ? "Friendship" : "Past Post"}
-                </Badge>
-              </div>
-
-              <div className="flex gap-3 items-start">
-                {activeShareMemory.type === "friendship" && activeShareMemory.friendAvatar ? (
-                  <div className="relative shrink-0">
-                    <Avatar src={activeShareMemory.friendAvatar} name={activeShareMemory.friendName || "Friend"} size="md" />
-                    <span className="absolute -bottom-1 -right-1 text-xs">❤️</span>
-                  </div>
-                ) : activeShareMemory.mediaUrl ? (
-                  <div className="relative h-16 w-24 rounded-xl overflow-hidden shrink-0 border border-purple-500/20">
-                    <Image
-                      src={activeShareMemory.mediaUrl}
-                      alt="Memory Media"
-                      fill
-                      sizes="96px"
-                      className="object-cover"
-                    />
-                  </div>
-                ) : null}
-
-                <p className="text-xs text-slate-200 leading-relaxed italic flex-1">
-                  "{activeShareMemory.content}"
-                </p>
-              </div>
-            </div>
-
-            {/* Custom Caption Input */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold text-slate-300">Add a note or reflection (Optional)</label>
-                <span className="text-[10px] text-slate-400">{customCaption.length}/280</span>
-              </div>
-              <textarea
-                rows={3}
-                maxLength={280}
-                placeholder="What are you thinking looking back on this today?..."
-                value={customCaption}
-                onChange={(e) => setCustomCaption(e.target.value)}
-                className="w-full rounded-xl border border-[#374151] bg-[#1f2937] p-3 text-xs text-white placeholder-slate-500 outline-none focus:border-purple-500 transition resize-none"
-              />
-            </div>
-
-            {/* Live Feed Output Preview */}
-            {customCaption.trim() && (
-              <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1.5">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Preview on Feed</span>
-                <p className="text-xs text-slate-100 whitespace-pre-line">{customCaption}</p>
-              </div>
-            )}
-
-            <div className="flex justify-end gap-2 pt-2 border-t border-[#1f2937]">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setActiveShareMemory(null)}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                size="sm"
-                variant="primary"
-                loading={isSharing}
-                disabled={isSharing}
-                leftIcon={<Share2 size={13} />}
-                className="bg-purple-600 hover:bg-purple-700"
-              >
-                {isSharing ? "Sharing..." : "Share to Feed"}
-              </Button>
-            </div>
-          </form>
-        )}
-      </Dialog>
+        onShare={handleConfirmShare}
+        isSharing={isSharing}
+      />
 
       {/* Memories Preferences / Hide Modal */}
       <Dialog
